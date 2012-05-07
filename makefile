@@ -1,5 +1,5 @@
-SRC=$(wildcard *.cpp)
-OBJ=$(SRC:.cpp=.o)
+SRC=$(wildcard src/*.cpp)
+OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))
 EXE=main.exe
 
 CC=g++
@@ -7,8 +7,10 @@ CFLAGS=-Wall -g -O3
 LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lglu32
 RM=del
 
-%.o: %.cpp
-	$(CC) $(CFLAGS) -o $@ -c $<
+vpath %.o bin/
+
+bin/%.o: src/%.cpp
+	$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY: all
 all: $(EXE)
