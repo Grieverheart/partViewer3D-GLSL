@@ -4,7 +4,7 @@
 #include "../include/mouse.h"
 
 OpenGLContext openglContext; // Our OpenGL Context Object
-CKeyboard keyboard;
+CKeyboard keyboard(&openglContext);
 CMouse mouse(&openglContext);
 ////////////GLUT Keyboard Function Wrappers/////////////
 void keyDown(unsigned char key, int x, int y){

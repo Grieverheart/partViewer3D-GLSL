@@ -1,8 +1,9 @@
 #include "../include/keyboard.h"
 
-CKeyboard::CKeyboard(void){
+CKeyboard::CKeyboard(OpenGLContext *context){
 	keyRepeat = false;
 	fullscreen = false;
+	this->context = context;
 }
 
 CKeyboard::~CKeyboard(void){
@@ -41,6 +42,8 @@ void CKeyboard::keyOps(void){
 			fullscreen=!fullscreen;
 		}
 	}
+	
+	if(keyMap['b'])context->drawBox = !context->drawBox;//draw Box
 }
 
 void CKeyboard::keySpOps(void){

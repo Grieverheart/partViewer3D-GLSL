@@ -9,6 +9,7 @@ OpenGLContext::OpenGLContext(void){
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
 	use_dat = false;
+	drawBox = false;
 }
 
 OpenGLContext::~OpenGLContext(void) {  
@@ -26,7 +27,7 @@ bool OpenGLContext::create30Context(void){
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
 	glutInitWindowSize(600,600);
 	windowWidth=windowHeight=600;
-	glutInitWindowPosition(100,100);
+	// glutInitWindowPosition(2000,000);
 	glutCreateWindow("Project");
 	
 	glewExperimental = GL_TRUE;
@@ -47,7 +48,10 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	if(argc>1){
 		use_dat = true;
 		coordparser.parse(argv[1]);
-		init_zoom = -2.0 * coordparser.boxMatrix[2][2];
+		for(int i=0;i<3;i++){
+			GLfloat max_zoom = -3.5f*glm::length(glm::transpose(coordparser.boxMatrix)[i]);
+			if(max_zoom < init_zoom) init_zoom = max_zoom;
+		}
 	}
 	glClearColor(0.4f,0.6f,0.9f,1.0f);
 	
@@ -71,8 +75,8 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0, 0.0, init_zoom));
 	modelMatrix = glm::mat4(1.0);
 	
-	objparser.parse("obj/octahedron.obj",&monkey);
-	monkey.upload(shader->id());
+	objparser.parse("obj/Octahedron.obj",&mesh);
+	mesh.upload(shader->id());
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){
@@ -92,6 +96,73 @@ void OpenGLContext::processScene(void){
 	}
 }
 
+void OpenGLContext::drawConfigurationBox(void){
+	GLfloat vertices[]={
+		0.0f,0.0f,0.0f,
+		coordparser.boxMatrix[0][0],coordparser.boxMatrix[1][0],coordparser.boxMatrix[2][0],
+		coordparser.boxMatrix[0][1],coordparser.boxMatrix[1][1],coordparser.boxMatrix[2][1],
+		coordparser.boxMatrix[0][2],coordparser.boxMatrix[1][2],coordparser.boxMatrix[2][2],
+		coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1],coordparser.boxMatrix[1][0]+coordparser.boxMatrix[1][1],coordparser.boxMatrix[2][0]+coordparser.boxMatrix[2][1],
+		coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][2],coordparser.boxMatrix[1][0]+coordparser.boxMatrix[1][2],coordparser.boxMatrix[2][0]+coordparser.boxMatrix[2][2],
+		coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2],coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2],coordparser.boxMatrix[2][1]+coordparser.boxMatrix[2][2],
+		
+		coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2],
+		coordparser.boxMatrix[1][0]+coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2],
+		coordparser.boxMatrix[2][0]+coordparser.boxMatrix[2][1]+coordparser.boxMatrix[2][2]
+	};
+	
+	GLushort elements[]={
+		3,6,7,5,
+		0,2,4,1,
+		3,0,2,6,4,7,1,5
+	};
+	
+	GLuint vaoBox;
+	GLuint vboBox;
+	GLuint iboBox;
+	
+	glGenVertexArrays(1, &vaoBox);
+	glBindVertexArray(vaoBox);
+	
+	glGenBuffers(1, &vboBox);
+	glBindBuffer(GL_ARRAY_BUFFER, vboBox);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+	glVertexAttribPointer((GLuint)0,3,GL_FLOAT,GL_FALSE,0,0);
+	glEnableVertexAttribArray((GLuint)0);
+	
+	glGenBuffers(1,&iboBox);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW); 
+	
+	glLineWidth(4);
+	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, (GLvoid*)(4*sizeof(GLushort)));
+	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
+	
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER,0);
+	glDeleteBuffers(1, &vaoBox);
+	glDeleteBuffers(1, &vboBox);
+	glDeleteBuffers(1, &iboBox);
+}
+
+void OpenGLContext::drawConfiguration(void){
+	glm::mat4 tMatrix = glm::translate(modelMatrix, glm::vec3(-(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
+															  -(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
+															  -coordparser.boxMatrix[2][2]/2.0));
+	glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &tMatrix[0][0]);
+	if(drawBox) drawConfigurationBox();
+	for(int i = 0; i < coordparser.npart; i++){
+		glm::mat4 tLocalMatrix = glm::translate(tMatrix, coordparser.centers[i]);
+		glm::mat4 rLocalMatrix = glm::rotate(glm::mat4(1.0),
+											coordparser.rotations[i].x,
+											glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w));
+		glm::mat4 tempMatrix = tLocalMatrix * rLocalMatrix ;
+		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &tempMatrix[0][0]);
+		mesh.draw();
+	}
+}
+
 void OpenGLContext::renderScene(void){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -101,19 +172,11 @@ void OpenGLContext::renderScene(void){
 		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, &viewMatrix[0][0]);
 		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &modelMatrix[0][0]);
 		glUniformMatrix4fv(trackballMatrixLocation, 1, GL_FALSE, &trackballMatrix[0][0]);
+		
 		if(use_dat){
-			glm::mat4 tMatrix = glm::translate(modelMatrix, glm::vec3(-coordparser.boxMatrix[0][0]/2.0,-coordparser.boxMatrix[1][1]/2.0,-coordparser.boxMatrix[2][2]/2.0));
-			for(int i = 0; i < coordparser.npart; i++){
-				glm::mat4 tLocalMatrix = glm::translate(tMatrix, coordparser.centers[i]);
-				glm::mat4 rLocalMatrix = glm::rotate(glm::mat4(1.0),
-													coordparser.rotations[i].x,
-													glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w));
-				glm::mat4 tempMatrix = tLocalMatrix * rLocalMatrix ;
-				glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &tempMatrix[0][0]);
-				monkey.draw();
-			}
+			drawConfiguration();
 		}
-		else monkey.draw();
+		else mesh.draw();
 	
 	shader->unbind();
 	

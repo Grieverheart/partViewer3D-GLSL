@@ -5,7 +5,7 @@ EXE=main.exe
 CC=g++
 CFLAGS=-Wall -g -O3
 LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lglu32
-RM=del
+RM=del /q
 
 vpath %.o bin/
 
@@ -21,5 +21,5 @@ $(EXE): $(OBJ)
 	
 .PHONY: clean
 clean:
-	-$(RM) $(OBJ)
+	-$(RM) bin\*
 	@echo Clean Done!

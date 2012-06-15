@@ -17,13 +17,15 @@ public:
 	void renderScene(void); 			// Render scene (display method from previous OpenGL tutorials)
 	void processScene(void);
 	
-	void createSquare(void);
+	void drawConfiguration(void);
+	void drawConfigurationBox(void);
 	
 	float getZoom(void);
 	void setZoom(float zoom);
 	glm::ivec2 getScreen(void);
 	
 	bool redisplay;
+	bool drawBox;
 	glm::mat4 trackballMatrix;
 	
 private:
@@ -45,7 +47,7 @@ private:
 	
 	CObjParser objparser;
 	CCoordParser coordparser;
-	CMesh monkey;
+	CMesh mesh;
 };
 
 

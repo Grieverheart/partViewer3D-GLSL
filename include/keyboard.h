@@ -1,10 +1,11 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
 #include "main.h"
+#include "opengl_3.h"
 
 class CKeyboard{
 public:
-	CKeyboard(void);
+	CKeyboard(OpenGLContext *context);
 	~CKeyboard(void);
 	void keyOps(void);
 	void keySpOps(void);
@@ -17,7 +18,7 @@ private:
 	bool keySpMap[256];
 	bool keyRepeat;
 	bool fullscreen;
-
+	OpenGLContext *context;
 };
 
 void keyDown(unsigned char key, int x, int y);
