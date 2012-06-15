@@ -6,6 +6,7 @@
 #include "obj_parser.h"
 #include "coord_parser.h"
 #include "mesh.h"
+#include "light.h"
 
 class OpenGLContext{
 public:
@@ -38,13 +39,14 @@ private:
 	glm::mat4 viewMatrix;
 	glm::mat4 modelMatrix;
 	
-	int projectionMatrixLocation;
-	int viewMatrixLocation;
-	int modelMatrixLocation;
-	int trackballMatrixLocation;
+	int MVPMatrixLocation;
+	int ModelViewMatrixLocation;
+	int NormalMatrixLocation;
+	int ScaleLocation;
 	
 	bool use_dat;
 	
+	CLight light;
 	CObjParser objparser;
 	CCoordParser coordparser;
 	CMesh mesh;

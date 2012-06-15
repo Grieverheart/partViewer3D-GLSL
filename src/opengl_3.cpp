@@ -1,6 +1,6 @@
 #include "../include/opengl_3.h"
 
-OpenGLContext::OpenGLContext(void){
+OpenGLContext::OpenGLContext(void):mesh(1.0f){
 	/////////////////////////////////////////////////
 	// Default Constructor for OpenGLContext class //
 	/////////////////////////////////////////////////
@@ -10,6 +10,7 @@ OpenGLContext::OpenGLContext(void){
 	trackballMatrix = glm::mat4(1.0);
 	use_dat = false;
 	drawBox = false;
+	light = CLight(glm::vec3(-7.0, 7.0, 0.0), glm::vec3(1.0, -1.0, -1.0));
 }
 
 OpenGLContext::~OpenGLContext(void) {  
@@ -27,12 +28,13 @@ bool OpenGLContext::create30Context(void){
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
 	glutInitWindowSize(600,600);
 	windowWidth=windowHeight=600;
-	// glutInitWindowPosition(2000,000);
+	// glutInitWindowPosition(100,100);
 	glutCreateWindow("Project");
 	
 	glewExperimental = GL_TRUE;
 	GLenum error = glewInit(); //Enable GLEW
 	if(error != GLEW_OK) return false; //Failure!
+	glError(__FILE__,__LINE__);
 	
 	int glVersion[2] = {-1,1};
 	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
@@ -58,24 +60,28 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	
 	shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
 	
-	projectionMatrixLocation = glGetUniformLocation(shader->id(),"projectionMatrix");
-	viewMatrixLocation = glGetUniformLocation(shader->id(),"viewMatrix");
-	modelMatrixLocation = glGetUniformLocation(shader->id(),"modelMatrix");
-	trackballMatrixLocation = glGetUniformLocation(shader->id(),"trackballMatrix");
+	ModelViewMatrixLocation = glGetUniformLocation(shader->id(),"ModelViewMatrix");
+	MVPMatrixLocation = glGetUniformLocation(shader->id(),"MVPMatrix");
+	NormalMatrixLocation = glGetUniformLocation(shader->id(),"NormalMatrix");
+	ScaleLocation = glGetUniformLocation(shader->id(),"scale");
+	if(!light.Init(shader->id())) std::cout << "Could not bind light uniforms" << std::endl;
 	
-	if(projectionMatrixLocation == -1 || viewMatrixLocation == -1 || modelMatrixLocation == -1){
-		std::cout<<"Unable to bind uniform"<<std::endl;
-	}
+	if(
+		ModelViewMatrixLocation == -1 || MVPMatrixLocation == -1 || NormalMatrixLocation == -1 ||
+		ScaleLocation == -1
+	) std::cout<<"Unable to bind uniform"<<std::endl;
 	
 	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
 	viewMatrix = glm::lookAt(glm::vec3(0.0, 2.0, 0.0), glm::vec3(0.0, 0.0, init_zoom), glm::vec3(0.0, 1.0, 0.0));
 	viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0, 0.0, init_zoom));
 	modelMatrix = glm::mat4(1.0);
 	
-	objparser.parse("obj/Octahedron.obj",&mesh);
+	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
 	mesh.upload(shader->id());
 }
 
@@ -150,15 +156,31 @@ void OpenGLContext::drawConfiguration(void){
 	glm::mat4 tMatrix = glm::translate(modelMatrix, glm::vec3(-(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
 															  -(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
 															  -coordparser.boxMatrix[2][2]/2.0));
-	glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &tMatrix[0][0]);
+	
+	glm::mat4 ModelViewMatrix = viewMatrix * tMatrix;
+	glm::mat4 MVPMatrix = projectionMatrix * ModelViewMatrix;
+	
+	glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &ModelViewMatrix[0][0]);
+	glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
+	
 	if(drawBox) drawConfigurationBox();
+	
 	for(int i = 0; i < coordparser.npart; i++){
-		glm::mat4 tLocalMatrix = glm::translate(tMatrix, coordparser.centers[i]);
-		glm::mat4 rLocalMatrix = glm::rotate(glm::mat4(1.0),
-											coordparser.rotations[i].x,
-											glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w));
-		glm::mat4 tempMatrix = tLocalMatrix * rLocalMatrix ;
-		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &tempMatrix[0][0]);
+		glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
+		glm::mat4 rLocalMatrix = glm::rotate(
+			glm::mat4(1.0),
+			coordparser.rotations[i].x,
+			glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w)
+		);
+		
+		glm::mat4 tempModelViewMatrix = tLocalMatrix * rLocalMatrix ;
+		glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(tempModelViewMatrix)));
+		glm::mat4 tempMVPMatrix = projectionMatrix * tempModelViewMatrix;
+		
+		glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &tempModelViewMatrix[0][0]);
+		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &tempNormalMatrix[0][0]);
+		glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &tempMVPMatrix[0][0]);
+		
 		mesh.draw();
 	}
 }
@@ -167,15 +189,18 @@ void OpenGLContext::renderScene(void){
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	shader->bind();
-	
-		glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, &projectionMatrix[0][0]);
-		glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, &viewMatrix[0][0]);
-		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &modelMatrix[0][0]);
-		glUniformMatrix4fv(trackballMatrixLocation, 1, GL_FALSE, &trackballMatrix[0][0]);
 		
-		if(use_dat){
-			drawConfiguration();
-		}
+		modelMatrix = trackballMatrix;
+		glm::mat4 ModelViewMatrix = viewMatrix * modelMatrix;
+		glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(ModelViewMatrix)));
+		glm::mat4 MVPMatrix = projectionMatrix * ModelViewMatrix;
+		
+		glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
+		glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &ModelViewMatrix[0][0]);
+		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &NormalMatrix[0][0]);
+		light.uploadDirection(viewMatrix);
+		
+		if(use_dat)	drawConfiguration();
 		else mesh.draw();
 	
 	shader->unbind();

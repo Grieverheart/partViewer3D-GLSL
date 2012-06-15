@@ -1,27 +1,29 @@
-#version 150 core
+#version 330 core
 
-const vec3 lightPosition = vec3(-100.0,100.0,200.0);
+uniform mat4 ModelViewMatrix;
+uniform mat3 NormalMatrix;
+uniform mat4 MVPMatrix;
 
-uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 modelMatrix;
-uniform mat4 trackballMatrix;
+uniform float scale;
 
-in vec3 in_Position;
-in vec3 in_Normal;
+layout(location = 0) in vec3 in_Position;
+layout(location = 1) in vec3 in_Normal;
 
 smooth out vec3 pass_Normal;
-out vec3 pass_Position;
-smooth out vec3 lightDir;
+smooth out vec3 pass_Position;
+
+const mat4 TexMatrix = mat4(
+	0.5, 0.0, 0.0, 0.0,
+	0.0, 0.5, 0.0, 0.0,
+	0.0, 0.0, 0.5, 0.0,
+	0.5, 0.5, 0.5, 1.0
+);
 
 void main(void){
-	// In principle we should use mat4 normalMatrix = transpose(inverse(modelMatrix)); here.
-	// we only want to re-orient the normal and the modelMatrix contains translations.
-	mat4 tmMatrix = trackballMatrix * modelMatrix;
-	pass_Normal = ( tmMatrix * vec4(in_Normal, 1.0)).xyz; 
-	vec3 eyePosition = (viewMatrix * tmMatrix * vec4(in_Position, 1.0)).xyz;
-	lightDir = normalize(lightPosition-eyePosition);
-	pass_Position = eyePosition;
+
+
+	pass_Normal = NormalMatrix * in_Normal; 
+	pass_Position = (ModelViewMatrix * vec4(scale * in_Position, 1.0)).xyz;
 	
-	gl_Position = projectionMatrix * viewMatrix * tmMatrix * vec4(in_Position, 1.0);
+	gl_Position = MVPMatrix * vec4(scale * in_Position, 1.0);
 }

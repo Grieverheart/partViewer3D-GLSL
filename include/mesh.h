@@ -4,27 +4,39 @@
 #include "main.h"
 #include <vector>
 
+struct Vertex{
+	glm::vec3 _coord;
+	glm::vec3 _normal;
+	glm::vec2 _texCoord;
+	
+	Vertex(void){}
+	~Vertex(void){}
+	Vertex(glm::vec3 coord, glm::vec3 normal, glm::vec2 texCoord = glm::vec2(0.0, 0.0)):
+		_coord(coord),
+		_normal(normal),
+		_texCoord(texCoord)
+	{}
+};
+
 class CMesh{
 public:
-	CMesh(void);
+	CMesh(GLfloat scale);
 	~CMesh(void);
 	
 	void upload(GLuint shaderID);
 	void draw(void);
-	void data(std::vector<glm::vec3> vertices, std::vector<glm::vec3> vertexnormals, std::vector<GLushort> elements);
+	void data(std::vector<Vertex> vertices);
 	
 private:
 	
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec3> vertexnormals;
-	std::vector<GLushort> elements;
-	
+	std::vector<Vertex> vertices;
 	glm::vec3 diffcolor;
 	
-	int diffcolorLocation;
+	GLfloat scale;
+	int scaleLocation;
+	int diffColorLocation;
 	
 	GLuint vaoID;
-	GLuint vboID[2];
-	GLuint iboID;
+	GLuint vboID;
 };
 #endif

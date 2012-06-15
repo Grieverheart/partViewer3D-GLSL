@@ -1,30 +1,33 @@
-#version 150 core
+#version 330 core
 
+struct Light{
+	vec3 direction;
+};
+
+uniform Light light;
 uniform vec3 diffColor;
-// const vec3 ambientColor = vec3(0.0, 0.0, 0.0);
 
 smooth in vec3 pass_Normal;
-smooth in vec3 lightDir;
-in vec3 pass_Position;
+smooth in vec3 pass_Position;
 
 out vec4 out_Color;
 
 void main(void){
 
-	vec3 flat_normal = normalize(cross(dFdx(pass_Position),dFdy(pass_Position)));
-
-	float diffuse = max(0.0, dot(normalize(pass_Normal), normalize(lightDir)));
-	float diffuse2 = max(0.0, dot(normalize(flat_normal), normalize(lightDir)));
+	vec3 Normal = normalize(pass_Normal);
+	vec3 light_Direction = -normalize(light.direction);
+	vec3 camera_Direction = normalize(-pass_Position);
+	vec3 half_vector = normalize(camera_Direction + light_Direction);
 	
-	vec3 temp_Color = 1.5 * diffuse2 * diffuse *  diffColor;
-	// temp_Color += ambientColor;
+	float nlddot = dot(Normal, light_Direction);
+	float diffuse = max(0.0, nlddot) + 0.2;
+	vec3 temp_Color = diffuse * vec3(1.0);
 	
-	// vec3 reflection = normalize( reflect( -normalize(lightDir), normalize(flat_normal) ) );
-	// float specular = max( 0.0, dot( normalize(flat_normal), reflection) );
+	if(nlddot > 0.01){
+		float specular = max( 0.0, dot( Normal, half_vector) );
+		float fspecular = pow(specular, 128.0);
+		temp_Color += fspecular;
+	}
 	
-	// if(diffuse != 0 && diffuse2 != 0){
-		// float fspecular = pow(specular, 128.0);
-		// temp_Color += vec3(fspecular);
-	// }
-	out_Color = vec4(temp_Color,1.0);
+	out_Color = vec4(diffColor * temp_Color, 1.0);
 }
