@@ -10,6 +10,7 @@ public:
 	bool Init(unsigned int WindowWidth, unsigned int WindowHeght);
 	void BindForWriting(void);
 	void BindForReading(GLenum TextureUnit);
+	void Resize(unsigned int WindowWidth, unsigned int WindowHeight);
 private:
 	GLuint m_fbo;
 	GLuint m_shadowMap;

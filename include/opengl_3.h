@@ -7,6 +7,7 @@
 #include "coord_parser.h"
 #include "mesh.h"
 #include "light.h"
+#include "shadowmap_FBO.h"
 
 class OpenGLContext{
 public:
@@ -18,8 +19,10 @@ public:
 	void renderScene(void); 			// Render scene (display method from previous OpenGL tutorials)
 	void processScene(void);
 	
-	void drawConfiguration(void);
+	void drawConfiguration(std::string pass);
 	void drawConfigurationBox(void);
+	void fboPass(void);
+	void drawPass(void);
 	
 	float getZoom(void);
 	void setZoom(float zoom);
@@ -38,18 +41,26 @@ private:
 	glm::mat4 projectionMatrix;
 	glm::mat4 viewMatrix;
 	glm::mat4 modelMatrix;
+	glm::mat4 lightViewMatrix;
+	glm::mat4 IdentityMatrix;
+	glm::mat4 lightProjectionMatrix;
 	
 	int MVPMatrixLocation;
 	int ModelViewMatrixLocation;
 	int NormalMatrixLocation;
 	int ScaleLocation;
+	int m_ShadowMapLocation;
 	
 	bool use_dat;
+	bool m_shmInit;
 	
 	CLight light;
 	CObjParser objparser;
 	CCoordParser coordparser;
 	CMesh mesh;
+	CShadowMapFBO m_ShadowMapFBO;
+	
+	void calcLightViewMatrix(void);
 };
 
 

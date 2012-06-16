@@ -15,9 +15,9 @@ CLight::CLight(glm::vec3 position, glm::vec3 direction){
 
 bool CLight::Init(GLuint shader_id){
 	m_DirectionLocation = glGetUniformLocation(shader_id, "light.direction");
-	// m_MVPLocation = glGetUniformLocation(shader_id, "lightMVP");
+	m_MVPLocation = glGetUniformLocation(shader_id, "lightMVP");
 	
-	if(m_DirectionLocation == -1 /*|| m_MVPLocation == -1*/) return false;
+	if(m_DirectionLocation == -1 || m_MVPLocation == -1) return false;
 	return true;
 }
 
