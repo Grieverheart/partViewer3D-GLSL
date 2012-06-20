@@ -41,7 +41,7 @@ vec3 CalcLight(vec3 position, vec3 normal){
 		vec3 half_vector = normalize(camera_Direction + light_Direction);
 		
 		float specular = max(0.0, dot(normal, half_vector));
-		float fspecular = pow(specular, 28.0);
+		float fspecular = pow(specular, 128.0);
 		SpecularColor = fspecular * vec3(1.0);
 	}
 	return DiffuseColor + SpecularColor + vec3(0.3);

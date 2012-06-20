@@ -97,3 +97,13 @@ void CGBuffer::BindForSSAO(void){
 void CGBuffer::SetReadBuffer(GBUFF_TEXTURE_TYPE TextureType){
 	glReadBuffer(GL_COLOR_ATTACHMENT0 + TextureType);
 }
+
+void CGBuffer::Resize(unsigned int WindowWidth, unsigned int WindowHeight){
+	for(unsigned int i = 0; i < GBUFF_NUM_TEXTURES; i++){
+		glBindTexture(GL_TEXTURE_2D, m_textures[i]);
+		if(i == GBUFF_TEXTURE_TYPE_NORMAL) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+		else if(i == GBUFF_TEXTURE_TYPE_DIFFUSE) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, WindowWidth, WindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	}
+	glBindTexture(GL_TEXTURE_2D, m_depthTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WindowWidth, WindowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+}

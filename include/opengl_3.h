@@ -7,7 +7,6 @@
 #include "coord_parser.h"
 #include "mesh.h"
 #include "light.h"
-#include "shadowmap_FBO.h"
 #include "g-buffer.h"
 #include "ssao.h"
 
@@ -23,9 +22,8 @@ public:
 	void drawPass(void);
 	void fboPass(void);
 	void ssaoPass(void);
-	void shadowPass(void);
 	
-	void drawConfiguration(std::string pass);
+	void drawConfiguration(void);
 	void drawConfigurationBox(void);
 	
 	float getZoom(void);
@@ -53,7 +51,6 @@ private:
 	int MVPMatrixLocation;
 	int ModelViewMatrixLocation;
 	int NormalMatrixLocation;
-	int m_ShadowMapLocation;
 	int DepthMapLocation;
 	int NormalMapLocation;
 	int ColorMapLocation;
@@ -69,18 +66,15 @@ private:
 	int bgColorLocation;
 	
 	bool use_dat;
-	bool m_shmInit;
+	bool m_fboInit;
 	
 	CLight light;
 	CObjParser objparser;
 	CCoordParser coordparser;
 	CMesh mesh;
 	CMesh full_quad;
-	CShadowMapFBO m_ShadowMapFBO;
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;
-	
-	void calcLightViewMatrix(void);
 	
 	Shader *sh_gbuffer; // GLSL Shader
 	Shader *sh_ssao;

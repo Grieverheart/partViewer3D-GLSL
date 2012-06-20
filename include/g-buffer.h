@@ -17,6 +17,7 @@ public:
 	void BindForReading(void);
 	void BindForSSAO(void);
 	void SetReadBuffer(GBUFF_TEXTURE_TYPE TextureType);
+	void Resize(unsigned int WindowWidth, unsigned int WindowHeight);
 private:
 	GLuint m_fbo;
 	GLuint m_textures[GBUFF_NUM_TEXTURES];

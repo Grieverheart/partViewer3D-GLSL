@@ -13,6 +13,7 @@ public:
 	void UploadUniforms(void);
 	void BindForWriting(void);
 	void BindForReading(void);
+	void Resize(unsigned int WindowWidth, unsigned int WindowHeight);
 	
 private:
 	void CreateKernel(void);

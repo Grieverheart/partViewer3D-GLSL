@@ -130,3 +130,10 @@ void Cssao::BindNoise(void){
 	glActiveTexture(GL_TEXTURE0 + 2); // Set to apropriate texture unit
 	glBindTexture(GL_TEXTURE_2D, m_noise_texture);
 }
+
+void Cssao::Resize(unsigned int WindowWidth, unsigned int WindowHeight){
+	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, WindowWidth, WindowHeight, 0, GL_RED, GL_FLOAT, NULL);
+	m_nScale_kSize = glm::ivec3(WindowWidth / m_noise_size, WindowHeight / m_noise_size, m_kernel_size);
+	glUniform3iv(m_nScale_kSizeLocation, 1, &m_nScale_kSize[0]);
+}
