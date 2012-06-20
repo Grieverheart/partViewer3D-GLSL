@@ -1,11 +1,16 @@
 #include "../include/opengl_3.h"
 
-OpenGLContext::OpenGLContext(void):mesh(1.0f){
+OpenGLContext::OpenGLContext(void):
+	mesh(1.0f),
+	full_quad(1.0)
+{
 	/////////////////////////////////////////////////
 	// Default Constructor for OpenGLContext class //
 	/////////////////////////////////////////////////
 	zoom = 0.0f;
 	fov = 60.0f;
+	znear = 1.0f;
+	zfar = 100.0f;
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
 	use_dat = false;
@@ -26,9 +31,9 @@ bool OpenGLContext::create30Context(void){
 	glutInitContextVersion(3,3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA | GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
 	glutInitWindowSize(600,600);
-	windowWidth=windowHeight=600;
+	windowWidth=windowHeight = 600;
 	// glutInitWindowPosition(100,100);
 	glutCreateWindow("Project");
 	
@@ -42,6 +47,8 @@ bool OpenGLContext::create30Context(void){
 	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
 	
 	std::cout << "Using OpenGL: " << glVersion[0] << "." << glVersion[1] << std::endl;
+	std::cout << "Renderer used: " << glGetString(GL_RENDERER) << std::endl;
+	std::cout << "Shading Language: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 	
 	return true; // Success, return true
 }
@@ -56,50 +63,130 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 			if(max_zoom < init_zoom) init_zoom = max_zoom;
 		}
 	}
-	glClearColor(0.4f,0.6f,0.9f,1.0f);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
 	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	glBlendEquation(GL_FUNC_ADD);
+	glBlendFunc(GL_ONE, GL_ONE);
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
-	shader = new Shader("shaders/shader.vert", "shaders/shader.frag");
+	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
+	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
+	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
+	sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
 	
-	ModelViewMatrixLocation = glGetUniformLocation(shader->id(),"ModelViewMatrix");
-	MVPMatrixLocation = glGetUniformLocation(shader->id(),"MVPMatrix");
-	NormalMatrixLocation = glGetUniformLocation(shader->id(),"NormalMatrix");
-	ScaleLocation = glGetUniformLocation(shader->id(),"scale");
-	m_ShadowMapLocation = glGetUniformLocation(shader->id(), "inShadowMap");
-	if(!light.Init(shader->id())) std::cout << "Could not bind light uniforms" << std::endl;
+	// Gbuffer Uniform Locations
+	MVPMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"MVPMatrix");
+	NormalMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"NormalMatrix");
 	
 	if(
-		ModelViewMatrixLocation == -1 || MVPMatrixLocation == -1 || NormalMatrixLocation == -1 ||
-		ScaleLocation == -1 || m_ShadowMapLocation == -1
-	) std::cout<<"Unable to bind uniform"<<std::endl;
+		MVPMatrixLocation == -1	||	NormalMatrixLocation == -1
+	) std::cout<<"Unable to bind GBuffer uniforms"<<std::endl;
 	
-	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
+	// SSAO Uniform Locations
+	ssaoProjMatrixLocation = glGetUniformLocation(sh_ssao->id(), "projectionMatrix");
+	ssaoDepthMapLocation = glGetUniformLocation(sh_ssao->id(), "DepthMap");
+	ssaoNormalMapLocation = glGetUniformLocation(sh_ssao->id(), "NormalMap");
+	ssaoprojABLocation = glGetUniformLocation(sh_ssao->id(), "projAB");
+	ssaoinvProjMatrixLocation = glGetUniformLocation(sh_ssao->id(), "invProjMatrix");
+	if(!m_ssao.Init(windowWidth, windowHeight, sh_ssao->id())) std::cout << "Couldn't initialize SSAO!" << std::endl;
+	
+	if(
+		ssaoProjMatrixLocation == -1	||	ssaoDepthMapLocation == -1	||
+		ssaoNormalMapLocation == -1		||	ssaoprojABLocation == -1	||
+		ssaoinvProjMatrixLocation == -1
+	){ std::cout << "Unable to bind SSAO main uniforms" << std::endl; }
+	
+	// Blur Uniform Locations
+	aoSamplerLocation = glGetUniformLocation(sh_blur->id(), "aoSampler");
+	texelSizeLocation = glGetUniformLocation(sh_blur->id(), "TEXEL_SIZE");
+	
+	if(
+		aoSamplerLocation == -1	||	texelSizeLocation == -1
+	){ std::cout << "Unable to bind blur uniforms" << std::endl; }
+	
+	// Accumulator Uniform Locations
+	DepthMapLocation = glGetUniformLocation(sh_accumulator->id(), "DepthMap");
+	NormalMapLocation = glGetUniformLocation(sh_accumulator->id(), "NormalMap");
+	ColorMapLocation = glGetUniformLocation(sh_accumulator->id(), "ColorMap");
+	if(!light.Init(sh_accumulator->id())) std::cout << "Cannot bind light uniform" << std::endl;
+	projABLocation = glGetUniformLocation(sh_accumulator->id(), "projAB");
+	invProjMatrixLocation = glGetUniformLocation(sh_accumulator->id(), "invProjMatrix");
+	
+	if(
+		invProjMatrixLocation == -1	||	DepthMapLocation == -1	||
+		NormalMapLocation == -1		||	DepthMapLocation == -1	||
+		projABLocation == -1		||	ColorMapLocation == -1
+	){ std::cout << "Unable to bind Accumulator uniforms" << std::endl; }
+	
+	
+	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
 	viewMatrix = glm::lookAt(glm::vec3(0.0, 2.0, 0.0), glm::vec3(0.0, 0.0, init_zoom), glm::vec3(0.0, 1.0, 0.0));
 	viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0, 0.0, init_zoom));
 	modelMatrix = glm::mat4(1.0);
 	
-	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
-	mesh.upload(shader->id());
-	m_shmInit = m_ShadowMapFBO.Init(windowWidth, windowHeight);
-	if(!m_shmInit) std::cout << "Couldn't Initialize Shadow Mapping" << std::endl;
-	shader->bind();
-	{	
-		glUniform1i(m_ShadowMapLocation, 1);
+	// SSAO Uniforms
+	glm::vec2 projAB;
+	glm::mat4 invProjMatrix;
+	sh_ssao->bind();
+	{
+		float projA = (zfar + znear)/ (zfar - znear);
+		float projB = 2.0 * zfar * znear / (zfar - znear);
+		projAB = glm::vec2(projA, projB);
+		invProjMatrix = glm::inverse(projectionMatrix);
+		m_ssao.UploadUniforms();
+		glUniform1i(ssaoNormalMapLocation, 0);
+		glUniform1i(ssaoDepthMapLocation, 1);
+		glUniform2fv(ssaoprojABLocation, 1, &projAB[0]);
+		glUniformMatrix4fv(ssaoProjMatrixLocation, 1, GL_FALSE, &projectionMatrix[0][0]);
+		glUniformMatrix4fv(ssaoinvProjMatrixLocation, 1, GL_FALSE, &invProjMatrix[0][0]);
+		
 	}
-	shader->unbind();
+	sh_ssao->unbind();
+	
+	// Blur Uniforms
+	sh_blur->bind();
+	{
+		glm::vec2 texel_size = glm::vec2(1.0 / windowWidth, 1.0 / windowHeight);
+		glUniform2fv(texelSizeLocation, 1, &texel_size[0]);
+		glUniform1i(aoSamplerLocation, 0);
+	}
+	sh_blur->unbind();
+	
+	// Accumulator Uniforms
+	
+	sh_accumulator->bind();
+	{
+		glUniform1i(ColorMapLocation, 0);
+		glUniform1i(NormalMapLocation, 1);
+		glUniform1i(DepthMapLocation, 2);
+		float projA = (zfar + znear)/ (zfar - znear);
+		float projB = 2.0 * zfar * znear / (zfar - znear);
+		projAB = glm::vec2(projA, projB);
+		glUniform2fv(projABLocation, 1, &projAB[0]);
+		invProjMatrix = glm::inverse(projectionMatrix);
+		glUniformMatrix4fv(invProjMatrixLocation, 1, GL_FALSE, &invProjMatrix[0][0]);
+	}
+	sh_accumulator->unbind();
+	
+	
+	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
+	mesh.upload(sh_gbuffer->id());
+	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
+	full_quad.upload(sh_gbuffer->id());
+	if(!m_gbuffer.Init(windowWidth, windowHeight)) std::cout << "Couldn't initialize FBO!" << std::endl;
+	// m_shmInit = m_ShadowMapFBO.Init(windowWidth, windowHeight);
+	// if(!m_shmInit) std::cout << "Couldn't Initialize Shadow Mapping" << std::endl;
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){
 	windowWidth = w;
 	windowHeight = h;
 	glViewport(0, 0, windowWidth, windowHeight);
-	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
-	if(m_shmInit) m_ShadowMapFBO.Resize(windowWidth, windowHeight);
+	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
+	// if(m_shmInit) m_ShadowMapFBO.Resize(windowWidth, windowHeight);
 }
 
 void OpenGLContext::processScene(void){
@@ -109,7 +196,7 @@ void OpenGLContext::processScene(void){
 	if(this_time-last_time > 1.0f/61.0f){
 		redisplay = true;
 		last_time = this_time;
-		projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, 0.1f, 100.0f);
+		projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
 	}
 }
 
@@ -189,13 +276,13 @@ void OpenGLContext::drawConfiguration(std::string pass){
 	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
 	glm::mat4 MVPMatrix = pMatrix * ModelViewMatrix;
 	
-	if(pass == "draw"){
-		lightModelViewMatrix = lightViewMatrix * tMatrix;
-		lightMVPMatrix = lightProjectionMatrix * lightModelViewMatrix;
-		light.uploadMVP(lightMVPMatrix);
-	}
+	// if(pass == "draw"){
+		// lightModelViewMatrix = lightViewMatrix * tMatrix;
+		// lightMVPMatrix = lightProjectionMatrix * lightModelViewMatrix;
+		// light.uploadMVP(lightMVPMatrix);
+	// }
 	
-	glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &ModelViewMatrix[0][0]);
+	// glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &ModelViewMatrix[0][0]);
 	glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
 	
 	if(drawBox && pass == "draw") drawConfigurationBox();
@@ -212,14 +299,14 @@ void OpenGLContext::drawConfiguration(std::string pass){
 		glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(tempModelViewMatrix)));
 		glm::mat4 tempMVPMatrix = pMatrix * tempModelViewMatrix;
 		
-		if(pass == "draw"){
-			glm::mat4 tlightLocalMatrix = glm::translate(lightModelViewMatrix, coordparser.centers[i]);
-			glm::mat4 templightModelViewMatrix = tlightLocalMatrix * rLocalMatrix;
-			glm::mat4 templightMVPMatrix = lightProjectionMatrix * templightModelViewMatrix;
-			light.uploadMVP(templightMVPMatrix);
-		}
+		// if(pass == "draw"){
+			// glm::mat4 tlightLocalMatrix = glm::translate(lightModelViewMatrix, coordparser.centers[i]);
+			// glm::mat4 templightModelViewMatrix = tlightLocalMatrix * rLocalMatrix;
+			// glm::mat4 templightMVPMatrix = lightProjectionMatrix * templightModelViewMatrix;
+			// light.uploadMVP(templightMVPMatrix);
+		// }
 		
-		glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &tempModelViewMatrix[0][0]);
+		// glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &tempModelViewMatrix[0][0]);
 		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &tempNormalMatrix[0][0]);
 		glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &tempMVPMatrix[0][0]);
 		
@@ -251,7 +338,7 @@ void OpenGLContext::calcLightViewMatrix(void){
 	else lightProjectionMatrix = glm::ortho(-3.0, 3.0, -3.0, 3.0, 10.0, 60.0);
 }
 
-void OpenGLContext::fboPass(void){
+void OpenGLContext::shadowPass(void){
 	// glEnable(GL_POLYGON_OFFSET_FILL);
 	// glPolygonOffset(2.0, 3.0);
 	glCullFace(GL_FRONT);
@@ -273,37 +360,106 @@ void OpenGLContext::fboPass(void){
 	// glDisable(GL_POLYGON_OFFSET_FILL);
 }
 
-void OpenGLContext::drawPass(void){
+void OpenGLContext::fboPass(void){
+
+	glDisable(GL_BLEND);
+	
+	m_gbuffer.BindForWriting();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	m_ShadowMapFBO.BindForReading(GL_TEXTURE0 + 1);
+	sh_gbuffer->bind();
+	{	
+		glm::mat4 ModelViewMatrix = viewMatrix * modelMatrix;
+		glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(ModelViewMatrix)));
+		glm::mat4 MVPMatrix = projectionMatrix * ModelViewMatrix;
+
+		glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
+		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &NormalMatrix[0][0]);
+
+		if(use_dat)	drawConfiguration("draw");
+		else mesh.draw();
+	}
+	sh_gbuffer->unbind();
 	
-	glm::mat4 ModelViewMatrix = viewMatrix * modelMatrix;
-	glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(ModelViewMatrix)));
-	glm::mat4 MVPMatrix = projectionMatrix * ModelViewMatrix;
-	glm::mat4 lightModelViewMatrix = lightViewMatrix * modelMatrix;
-	glm::mat4 lightMVPMatrix = lightProjectionMatrix * lightModelViewMatrix;
-	
-	glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
-	glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &ModelViewMatrix[0][0]);
-	glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &NormalMatrix[0][0]);
-	light.uploadMVP(lightMVPMatrix);
-	light.uploadDirection(viewMatrix);
-	
-	if(use_dat)	drawConfiguration("draw");
-	else mesh.draw();
+	glEnable(GL_BLEND);
 }
 
-void OpenGLContext::renderScene(void){
+void OpenGLContext::ssaoPass(void){
 	
-	shader->bind();
-	{	
-		modelMatrix = trackballMatrix;
-		
-		fboPass();
-		drawPass();
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	m_gbuffer.BindForSSAO();
+	m_ssao.BindNoise();
+	m_ssao.BindForWriting();
+	glClear(GL_COLOR_BUFFER_BIT);
+	
+	sh_ssao->bind();
+	{
+		full_quad.draw();
 	}
-	shader->unbind();
+	sh_ssao->unbind();
+	
+	m_ssao.BindForReading();
+	glClear(GL_COLOR_BUFFER_BIT);
+	m_gbuffer.BindForWriting();
+	
+	sh_blur->bind();
+	{
+		full_quad.draw();
+	}
+	sh_blur->unbind();
+	
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void OpenGLContext::drawPass(void){
+	
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
+	m_gbuffer.BindForReading();
+	
+	sh_accumulator->bind();
+	{
+		light.uploadDirection(viewMatrix);
+		full_quad.draw();
+	}
+	sh_accumulator->unbind();
+	
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
+}
+
+// void OpenGLContext::drawPass(void){
+	// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	
+	// m_ShadowMapFBO.BindForReading(GL_TEXTURE0 + 1);
+	
+	// glm::mat4 ModelViewMatrix = viewMatrix * modelMatrix;
+	// glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(ModelViewMatrix)));
+	// glm::mat4 MVPMatrix = projectionMatrix * ModelViewMatrix;
+	// glm::mat4 lightModelViewMatrix = lightViewMatrix * modelMatrix;
+	// glm::mat4 lightMVPMatrix = lightProjectionMatrix * lightModelViewMatrix;
+	
+	// glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
+	// glUniformMatrix4fv(ModelViewMatrixLocation, 1, GL_FALSE, &ModelViewMatrix[0][0]);
+	// glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &NormalMatrix[0][0]);
+	// light.uploadMVP(lightMVPMatrix);
+	// light.uploadDirection(viewMatrix);
+	
+	// if(use_dat)	drawConfiguration("draw");
+	// else mesh.draw();
+// }
+
+void OpenGLContext::renderScene(void){
+	modelMatrix = trackballMatrix;
+	
+	// shadowPass();
+	fboPass();
+	glDisable(GL_CULL_FACE);
+	ssaoPass();
+	drawPass();
+	glEnable(GL_CULL_FACE);
 	
 	glutSwapBuffers();
 }

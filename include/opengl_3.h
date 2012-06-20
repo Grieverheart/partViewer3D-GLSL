@@ -8,6 +8,8 @@
 #include "mesh.h"
 #include "light.h"
 #include "shadowmap_FBO.h"
+#include "g-buffer.h"
+#include "ssao.h"
 
 class OpenGLContext{
 public:
@@ -18,11 +20,13 @@ public:
 	void reshapeWindow(int w, int h); 	// Method to get our window width and height on resize  
 	void renderScene(void); 			// Render scene (display method from previous OpenGL tutorials)
 	void processScene(void);
+	void drawPass(void);
+	void fboPass(void);
+	void ssaoPass(void);
+	void shadowPass(void);
 	
 	void drawConfiguration(std::string pass);
 	void drawConfigurationBox(void);
-	void fboPass(void);
-	void drawPass(void);
 	
 	float getZoom(void);
 	void setZoom(float zoom);
@@ -36,7 +40,7 @@ private:
 	int windowWidth;	//Store the width of the window
 	int windowHeight;	//Store the height of the window
 	float fov, zoom;
-	Shader *shader; // GLSL Shader
+	float znear,zfar;
 	
 	glm::mat4 projectionMatrix;
 	glm::mat4 viewMatrix;
@@ -48,8 +52,19 @@ private:
 	int MVPMatrixLocation;
 	int ModelViewMatrixLocation;
 	int NormalMatrixLocation;
-	int ScaleLocation;
 	int m_ShadowMapLocation;
+	int DepthMapLocation;
+	int NormalMapLocation;
+	int ColorMapLocation;
+	int projABLocation;	// projA and projB are two uniforms needed to convert the post projective depth to the linear depth
+	int invProjMatrixLocation;
+	int ssaoProjMatrixLocation;
+	int ssaoDepthMapLocation;
+	int ssaoNormalMapLocation;
+	int ssaoprojABLocation;
+	int ssaoinvProjMatrixLocation;
+	int aoSamplerLocation;
+	int texelSizeLocation;
 	
 	bool use_dat;
 	bool m_shmInit;
@@ -58,9 +73,17 @@ private:
 	CObjParser objparser;
 	CCoordParser coordparser;
 	CMesh mesh;
+	CMesh full_quad;
 	CShadowMapFBO m_ShadowMapFBO;
+	CGBuffer m_gbuffer;
+	Cssao m_ssao;
 	
 	void calcLightViewMatrix(void);
+	
+	Shader *sh_gbuffer; // GLSL Shader
+	Shader *sh_ssao;
+	Shader *sh_blur;
+	Shader *sh_accumulator;
 };
 
 
