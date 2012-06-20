@@ -19,6 +19,7 @@ OpenGLContext::OpenGLContext(void):
 	drawBox = false;
 	light = CLight(glm::vec3(-10.0, 10.0, 10.0), glm::vec3(1.0, -1.0, -1.0));
 	IdentityMatrix = glm::mat4(1.0);
+	
 }
 
 OpenGLContext::~OpenGLContext(void) {  
@@ -135,8 +136,8 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glm::mat4 invProjMatrix;
 	sh_ssao->bind();
 	{
-		float projA = (zfar + znear)/ (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
+		float projA = zfar / (zfar - znear);
+		float projB = zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		invProjMatrix = glm::inverse(projectionMatrix);
 		m_ssao.UploadUniforms();
