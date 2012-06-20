@@ -10,7 +10,8 @@ OpenGLContext::OpenGLContext(void):
 	zoom = 0.0f;
 	fov = 60.0f;
 	znear = 1.0f;
-	zfar = 100.0f;
+	zfar = 50.0f;
+	m_bgColor = glm::vec3(0.4, 0.6, 0.9);
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
 	use_dat = false;
@@ -114,11 +115,12 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	if(!light.Init(sh_accumulator->id())) std::cout << "Cannot bind light uniform" << std::endl;
 	projABLocation = glGetUniformLocation(sh_accumulator->id(), "projAB");
 	invProjMatrixLocation = glGetUniformLocation(sh_accumulator->id(), "invProjMatrix");
+	bgColorLocation = glGetUniformLocation(sh_accumulator->id(), "bgColor");
 	
 	if(
 		invProjMatrixLocation == -1	||	DepthMapLocation == -1	||
-		NormalMapLocation == -1		||	DepthMapLocation == -1	||
-		projABLocation == -1		||	ColorMapLocation == -1
+		NormalMapLocation == -1		||	projABLocation == -1	||
+		ColorMapLocation == -1		||	bgColorLocation == -1
 	){ std::cout << "Unable to bind Accumulator uniforms" << std::endl; }
 	
 	
@@ -166,6 +168,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		float projB = 2.0 * zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		glUniform2fv(projABLocation, 1, &projAB[0]);
+		glUniform3fv(bgColorLocation, 1, &m_bgColor[0]);
 		invProjMatrix = glm::inverse(projectionMatrix);
 		glUniformMatrix4fv(invProjMatrixLocation, 1, GL_FALSE, &invProjMatrix[0][0]);
 	}
@@ -400,7 +403,6 @@ void OpenGLContext::ssaoPass(void){
 	sh_ssao->unbind();
 	
 	m_ssao.BindForReading();
-	glClear(GL_COLOR_BUFFER_BIT);
 	m_gbuffer.BindForWriting();
 	
 	sh_blur->bind();
@@ -417,6 +419,7 @@ void OpenGLContext::drawPass(void){
 	
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
+	glDisable(GL_BLEND);
 	m_gbuffer.BindForReading();
 	
 	sh_accumulator->bind();
@@ -427,6 +430,7 @@ void OpenGLContext::drawPass(void){
 	sh_accumulator->unbind();
 	
 	glDepthMask(GL_TRUE);
+	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
 }
 

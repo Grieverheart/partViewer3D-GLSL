@@ -48,6 +48,7 @@ private:
 	glm::mat4 lightViewMatrix;
 	glm::mat4 IdentityMatrix;
 	glm::mat4 lightProjectionMatrix;
+	glm::vec3 m_bgColor;
 	
 	int MVPMatrixLocation;
 	int ModelViewMatrixLocation;
@@ -65,6 +66,7 @@ private:
 	int ssaoinvProjMatrixLocation;
 	int aoSamplerLocation;
 	int texelSizeLocation;
+	int bgColorLocation;
 	
 	bool use_dat;
 	bool m_shmInit;

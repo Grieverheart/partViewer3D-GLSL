@@ -13,7 +13,7 @@ static inline float lerp(float start, float end, float perc){
 }
 
 Cssao::Cssao(void){
-	srand(1);
+	srand(2);
 	m_kernel_size = 16;
 	m_noise_size = 4;
 	m_RADIUS = 4.75f;
