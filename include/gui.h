@@ -11,7 +11,9 @@ public:
 	~Cgui(void);
 	void Init(unsigned int windowWidth, unsigned windowHeight);
 	void Draw(void);
-	void newButton(unsigned int width, unsigned int height, glm::vec2 position, glm::vec4 color);
+	void newButton(unsigned int width, unsigned int height, glm::ivec2 position, glm::vec4 color);
+	unsigned char buttonClicked(int x, int y);
+	void Resize(unsigned int windowWidth, unsigned windowHeight);
 	
 private:
 	Shader *sh_overlay;

@@ -65,6 +65,7 @@ void CMouse::onMouse(int button, int state, int x, int y){
 			dragging=false;
 			if(last_mx==x&&last_my==y){
 			//Regular Clicking goes here//
+				context->mouseListener(x, y);
 			}
 			last_mx=cur_mx;
 			last_my=cur_my;

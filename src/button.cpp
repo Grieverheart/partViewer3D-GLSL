@@ -22,7 +22,6 @@ CButton::CButton(float width, float height, glm::vec2 position, glm::vec4 color)
 	glGenVertexArrays(1,&m_vao);
 	glBindVertexArray(m_vao);
 	
-	GLuint m_vbo;
 	glGenBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
 	glBufferData(GL_ARRAY_BUFFER, 28 * sizeof(float), &vertices[0], GL_STATIC_DRAW);
@@ -36,6 +35,37 @@ CButton::CButton(float width, float height, glm::vec2 position, glm::vec4 color)
 
 CButton::~CButton(void){
 	// glDeleteVertexArrays(1, &m_vao);
+}
+
+bool CButton::isClicked(float x, float y){
+	float n_x = x - m_position.x;
+	float n_y = y - m_position.y;
+	if(n_x < m_width && n_x > 0.0 && n_y < m_height && n_y > 0.0 ) return true;
+	else return false;
+}
+
+void CButton::Resize(float width_fact, float height_fact){
+	m_width /= width_fact;
+	m_height /= height_fact;
+	m_position.x =  (m_position.x + 1.0) / width_fact - 1.0;
+	m_position.y =  (m_position.y - 1.0) / height_fact + 1.0;
+	
+	float vertices[28] = {
+		0.0f, 		0.0f, 		0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
+		m_width,	0.0f, 		0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
+		0.0f,		m_height, 	0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
+		m_width,	m_height, 	0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3]
+	};
+	
+	for(unsigned int i = 0; i < 4; i++){
+		vertices[7 * i] += m_position[0];
+		vertices[7 * i + 1] += m_position[1];
+	}
+	
+	glBindVertexArray(m_vao);
+	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 28 * sizeof(float), &vertices[0]);
+	glBindVertexArray(0);
 }
 
 void CButton::Draw(void){

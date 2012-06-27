@@ -26,6 +26,8 @@ public:
 	
 	void drawConfiguration(void);
 	void drawConfigurationBox(void);
+	void mouseListener(int x, int y);
+	void hideGui(void);
 	
 	float getZoom(void);
 	void setZoom(float zoom);
@@ -40,6 +42,9 @@ private:
 	int windowHeight;	//Store the height of the window
 	float fov, zoom;
 	float znear,zfar;
+	int m_click_x, m_click_y;
+	bool m_clicked;
+	bool m_gui_functional;
 	
 	glm::mat4 projectionMatrix;
 	glm::mat4 viewMatrix;

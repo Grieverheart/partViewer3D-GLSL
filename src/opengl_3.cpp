@@ -12,6 +12,8 @@ OpenGLContext::OpenGLContext(void):
 	fov = 60.0f;
 	znear = 1.0f;
 	zfar = 50.0f;
+	m_clicked = false;
+	m_gui_functional = true;
 	m_bgColor = glm::vec3(0.4, 0.6, 0.9);
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
@@ -56,6 +58,16 @@ bool OpenGLContext::create30Context(void){
 	return true; // Success, return true
 }
 
+void OpenGLContext::mouseListener(int x, int y){
+	m_clicked = true;
+	m_click_x = x;
+	m_click_y = y;
+}
+
+void OpenGLContext::hideGui(void){
+	m_gui_functional = !m_gui_functional;
+}
+
 void OpenGLContext::setupScene(int argc, char *argv[]){
 	float init_zoom = -4.0f;
 	if(argc>1){
@@ -76,12 +88,12 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glCullFace(GL_BACK);
 	
 	m_gui.Init(windowWidth, windowHeight);
-	m_gui.newButton(20, 20, glm::vec2(-0.9, 0.9), glm::vec4(0.0, 1.0, 0.0, 1.0));
-	m_gui.newButton(20, 20, glm::vec2(-0.95, 0.9), glm::vec4(1.0, 0.0, 0.0, 1.0));
-	m_gui.newButton(20, 20, glm::vec2(-0.9, 0.85), glm::vec4(0.0, 1.0, 0.0, 1.0));
-	m_gui.newButton(20, 20, glm::vec2(-0.95, 0.85), glm::vec4(1.0, 0.0, 0.0, 1.0));
-	m_gui.newButton(20, 20, glm::vec2(-0.9, 0.8), glm::vec4(0.0, 1.0, 0.0, 1.0));
-	m_gui.newButton(20, 20, glm::vec2(-0.95, 0.8), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(40, 20), glm::vec4(0.0, 1.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(10, 20), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(40, 40), glm::vec4(0.0, 1.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(10, 40), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(40, 60), glm::vec4(0.0, 1.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(10, 60), glm::vec4(1.0, 0.0, 0.0, 1.0));
 	
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
 	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
@@ -199,6 +211,7 @@ void OpenGLContext::reshapeWindow(int w, int h){
 	glViewport(0, 0, windowWidth, windowHeight);
 	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
 	if(m_fboInit){
+		m_gui.Resize(w, h);
 		m_gbuffer.Resize(windowWidth, windowHeight);
 		sh_ssao->bind();
 		{
@@ -217,6 +230,11 @@ void OpenGLContext::reshapeWindow(int w, int h){
 void OpenGLContext::processScene(void){
 	static float last_time = 0.0;
 	float this_time = glutGet(GLUT_ELAPSED_TIME)/1000.0f;
+	if(m_clicked && m_gui_functional){
+		m_clicked = false;
+		unsigned char num_button = m_gui.buttonClicked(m_click_x, m_click_y);
+		if(num_button != 0 ) std::cout << "Button " << (int)num_button << " clicked." << std::endl;
+	}
 	if(this_time-last_time > 1.0f/61.0f){
 		redisplay = true;
 		last_time = this_time;
@@ -395,7 +413,7 @@ void OpenGLContext::renderScene(void){
 	glDisable(GL_CULL_FACE);
 	ssaoPass();
 	drawPass();
-	m_gui.Draw();
+	if(m_gui_functional) m_gui.Draw();
 	glEnable(GL_CULL_FACE);
 	
 	glutSwapBuffers();
