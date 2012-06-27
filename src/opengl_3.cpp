@@ -88,12 +88,12 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glCullFace(GL_BACK);
 	
 	m_gui.Init(windowWidth, windowHeight);
-	m_gui.newButton(25, 25, glm::ivec2(40, 20), glm::vec4(0.0, 1.0, 0.0, 1.0));
-	m_gui.newButton(25, 25, glm::ivec2(10, 20), glm::vec4(1.0, 0.0, 0.0, 1.0));
-	m_gui.newButton(25, 25, glm::ivec2(40, 40), glm::vec4(0.0, 1.0, 0.0, 1.0));
-	m_gui.newButton(25, 25, glm::ivec2(10, 40), glm::vec4(1.0, 0.0, 0.0, 1.0));
-	m_gui.newButton(25, 25, glm::ivec2(40, 60), glm::vec4(0.0, 1.0, 0.0, 1.0));
-	m_gui.newButton(25, 25, glm::ivec2(10, 60), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	m_gui.newButton(25, 25, glm::ivec2(40, 20), "plus");
+	m_gui.newButton(25, 25, glm::ivec2(10, 20), "minus");
+	m_gui.newButton(25, 25, glm::ivec2(40, 40), "plus");
+	m_gui.newButton(25, 25, glm::ivec2(10, 40), "minus");
+	m_gui.newButton(25, 25, glm::ivec2(40, 60), "plus");
+	m_gui.newButton(25, 25, glm::ivec2(10, 60), "minus");
 	
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
 	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");

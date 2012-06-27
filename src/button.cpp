@@ -1,21 +1,21 @@
 #include "../include/button.h"
 
-CButton::CButton(float width, float height, glm::vec2 position, glm::vec4 color){
+CButton::CButton(float width, float height, glm::vec2 position, std::string type){
 	m_width = width;
 	m_height = height;
 	m_position = position;
-	m_color = color;
+	m_type = type;
 	
-	float vertices[28] = {
-		0.0f, 		0.0f, 		0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
-		m_width,	0.0f, 		0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
-		0.0f,		m_height, 	0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
-		m_width,	m_height, 	0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3]
+	float vertices[20] = {
+		0.0f, 		0.0f, 		0.0f,	 1.0f, 1.0f,
+		m_width,	0.0f, 		0.0f,	 0.0f, 1.0f,
+		0.0f,		m_height, 	0.0f,	 1.0f, 0.0f,
+		m_width,	m_height, 	0.0f,	 0.0f, 0.0f
 	};
 	
 	for(unsigned int i = 0; i < 4; i++){
-		vertices[7 * i] += position[0];
-		vertices[7 * i + 1] += position[1];
+		vertices[5 * i] += position[0];
+		vertices[5 * i + 1] += position[1];
 	}
 	
 	// Create the VAO & VBO
@@ -24,11 +24,11 @@ CButton::CButton(float width, float height, glm::vec2 position, glm::vec4 color)
 	
 	glGenBuffers(1, &m_vbo);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-	glBufferData(GL_ARRAY_BUFFER, 28 * sizeof(float), &vertices[0], GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, 20 * sizeof(float), &vertices[0], GL_STATIC_DRAW);
 	glEnableVertexAttribArray((GLuint)0);
 	glEnableVertexAttribArray((GLuint)1);
-	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (GLvoid*)0);
-	glVertexAttribPointer((GLuint)1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
+	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)0);
+	glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (GLvoid*)(3 * sizeof(float)));
 	
 	glBindVertexArray(0);
 }
@@ -45,26 +45,31 @@ bool CButton::isClicked(float x, float y){
 }
 
 void CButton::Resize(float width_fact, float height_fact){
+	float fact;
+	fact = height_fact;
+	width_fact /= fact;
+	height_fact /= fact;
 	m_width /= width_fact;
 	m_height /= height_fact;
-	m_position.x =  (m_position.x + 1.0) / width_fact - 1.0;
-	m_position.y =  (m_position.y - 1.0) / height_fact + 1.0;
 	
-	float vertices[28] = {
-		0.0f, 		0.0f, 		0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
-		m_width,	0.0f, 		0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
-		0.0f,		m_height, 	0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3],
-		m_width,	m_height, 	0.0f,	 m_color[0], m_color[1], m_color[2], m_color[3]
+	m_position.x = (m_position.x + 1.0) / width_fact - 1.0;
+	m_position.y = (m_position.y - 1.0) / height_fact + 1.0;
+	
+	float vertices[20] = {
+		0.0f, 		0.0f, 		0.0f,	 1.0f, 1.0f,
+		m_width,	0.0f, 		0.0f,	 0.0f, 1.0f,
+		0.0f,		m_height, 	0.0f,	 1.0f, 0.0f,
+		m_width,	m_height, 	0.0f,	 0.0f, 0.0f
 	};
 	
 	for(unsigned int i = 0; i < 4; i++){
-		vertices[7 * i] += m_position[0];
-		vertices[7 * i + 1] += m_position[1];
+		vertices[5 * i] += m_position[0];
+		vertices[5 * i + 1] += m_position[1];
 	}
 	
 	glBindVertexArray(m_vao);
 	glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, 28 * sizeof(float), &vertices[0]);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, 20 * sizeof(float), &vertices[0]);
 	glBindVertexArray(0);
 }
 

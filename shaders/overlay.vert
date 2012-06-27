@@ -1,11 +1,11 @@
 #version 330 core
 
 layout(location = 0) in vec3 in_Position;
-layout(location = 1) in vec4 in_Color;
+layout(location = 1) in vec2 TexCoord;
 
-flat out vec4 pass_Color;
+smooth out vec2 pass_TexCoord;
 
 void main(void){
-	pass_Color = in_Color;
+	pass_TexCoord = TexCoord;
 	gl_Position = vec4(in_Position, 1.0);
 }

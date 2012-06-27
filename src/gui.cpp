@@ -12,13 +12,26 @@ void Cgui::Init(unsigned int windowWidth, unsigned windowHeight){
 	m_windowWidth = windowWidth;
 	m_windowHeight = windowHeight;
 	sh_overlay = new Shader("shaders/overlay.vert", "shaders/overlay.frag");
+	m_plusTex = new Texture(GL_TEXTURE_2D, "textures/plus.bmp");
+	m_minusTex = new Texture(GL_TEXTURE_2D, "textures/minus.bmp");
+	if(!m_plusTex->Load()) std::cout << "Couldn't load plus texture!" << std::endl;
+	if(!m_minusTex->Load()) std::cout << "Couldn't load minus texture!" << std::endl;
+	samplerLocation = glGetUniformLocation(sh_overlay->id(), "g_Sampler");
+	if(samplerLocation == -1) std::cout << "Couldn't bind gui uniforms" << std::endl;
+	else{
+		sh_overlay->bind();
+		{
+			glUniform1i(samplerLocation, 0);
+		}
+		sh_overlay->unbind();
+	}
 }
 
-void Cgui::newButton(unsigned int width, unsigned int height, glm::ivec2 position, glm::vec4 color){
+void Cgui::newButton(unsigned int width, unsigned int height, glm::ivec2 position, std::string type){
 	float ndc_width = float(width) / m_windowWidth;
 	float ndc_height = float(height) / m_windowHeight;
 	glm::vec2 ndc_position = glm::vec2(2.0 * float(position.x) / m_windowWidth - 1.0, 1.0 - 2.0 * float(position.y) / m_windowHeight);
-	buttons.push_back(CButton(ndc_width, ndc_height, ndc_position, color));
+	buttons.push_back(CButton(ndc_width, ndc_height, ndc_position, type));
 	m_num_buttons++;
 	std::cout << "Button " << m_num_buttons << " created." << std::endl;
 }
@@ -46,6 +59,8 @@ void Cgui::Draw(void){
 	sh_overlay->bind();
 	{
 		for(unsigned int i = 0; i < m_num_buttons; i++){
+			if(buttons[i].m_type == "plus") m_plusTex->Bind(GL_TEXTURE0);
+			else if(buttons[i].m_type == "minus") m_minusTex->Bind(GL_TEXTURE0);
 			buttons[i].Draw();
 		}
 	}
