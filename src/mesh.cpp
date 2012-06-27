@@ -8,7 +8,7 @@ CMesh::CMesh(GLfloat scale){
 
 CMesh::~CMesh(void){
 	if(vaoID != 0) glDeleteBuffers(1, &vaoID);
-	if(vboID != 0) glDeleteBuffers(2, &vboID);
+	if(vboID != 0) glDeleteBuffers(1, &vboID);
 }
 
 void CMesh::data(std::vector<Vertex> vertices){
@@ -31,7 +31,7 @@ void CMesh::upload(GLuint shaderID){
 	glEnableVertexAttribArray((GLuint)2);
 	
 	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER,0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	scaleLocation = glGetUniformLocation(shaderID, "scale");
 	diffColorLocation = glGetUniformLocation(shaderID, "diffColor");
@@ -43,7 +43,9 @@ void CMesh::upload(GLuint shaderID){
 
 void CMesh::draw(void){
 	glUniform1fv(scaleLocation, 1, &scale);
+	glGetError();
 	glUniform3fv(diffColorLocation, 1, &diffcolor[0]);
+	glGetError();
 	
 	glBindVertexArray(vaoID); 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size());

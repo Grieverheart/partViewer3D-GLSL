@@ -75,6 +75,14 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
+	m_gui.Init(windowWidth, windowHeight);
+	m_gui.newButton(20, 20, glm::vec2(-0.9, 0.9), glm::vec4(0.0, 1.0, 0.0, 1.0));
+	m_gui.newButton(20, 20, glm::vec2(-0.95, 0.9), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	m_gui.newButton(20, 20, glm::vec2(-0.9, 0.85), glm::vec4(0.0, 1.0, 0.0, 1.0));
+	m_gui.newButton(20, 20, glm::vec2(-0.95, 0.85), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	m_gui.newButton(20, 20, glm::vec2(-0.9, 0.8), glm::vec4(0.0, 1.0, 0.0, 1.0));
+	m_gui.newButton(20, 20, glm::vec2(-0.95, 0.8), glm::vec4(1.0, 0.0, 0.0, 1.0));
+	
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
 	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
 	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
@@ -387,6 +395,7 @@ void OpenGLContext::renderScene(void){
 	glDisable(GL_CULL_FACE);
 	ssaoPass();
 	drawPass();
+	m_gui.Draw();
 	glEnable(GL_CULL_FACE);
 	
 	glutSwapBuffers();

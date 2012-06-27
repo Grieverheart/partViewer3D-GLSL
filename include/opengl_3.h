@@ -9,6 +9,7 @@
 #include "light.h"
 #include "g-buffer.h"
 #include "ssao.h"
+#include "gui.h"
 
 class OpenGLContext{
 public:
@@ -75,6 +76,7 @@ private:
 	CMesh full_quad;
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;
+	Cgui m_gui;
 	
 	Shader *sh_gbuffer; // GLSL Shader
 	Shader *sh_ssao;
