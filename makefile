@@ -4,7 +4,7 @@ EXE=main.exe
 
 CC=g++
 CFLAGS=-Wall -g -O3
-LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lglu32
+LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lglu32 -lAntTweakBar
 RM=del /q
 
 vpath %.o bin/

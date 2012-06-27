@@ -1,6 +1,7 @@
 #ifndef __OPENGL_3_H
 #define __OPENGL_3_H
 
+#include <AntTweakBar.h>
 #include "main.h"
 #include "shader.h"
 #include "obj_parser.h"
@@ -9,7 +10,6 @@
 #include "light.h"
 #include "g-buffer.h"
 #include "ssao.h"
-#include "gui.h"
 
 class OpenGLContext{
 public:
@@ -26,8 +26,8 @@ public:
 	
 	void drawConfiguration(void);
 	void drawConfigurationBox(void);
-	void mouseListener(int x, int y);
-	void hideGui(void);
+	
+	void createGui(void);
 	
 	float getZoom(void);
 	void setZoom(float zoom);
@@ -42,9 +42,6 @@ private:
 	int windowHeight;	//Store the height of the window
 	float fov, zoom;
 	float znear,zfar;
-	int m_click_x, m_click_y;
-	bool m_clicked;
-	bool m_gui_functional;
 	
 	glm::mat4 projectionMatrix;
 	glm::mat4 viewMatrix;
@@ -70,6 +67,7 @@ private:
 	int aoSamplerLocation;
 	int texelSizeLocation;
 	int bgColorLocation;
+	int lineColorLocation;
 	
 	bool use_dat;
 	bool m_fboInit;
@@ -81,12 +79,13 @@ private:
 	CMesh full_quad;
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;
-	Cgui m_gui;
 	
 	Shader *sh_gbuffer; // GLSL Shader
 	Shader *sh_ssao;
 	Shader *sh_blur;
 	Shader *sh_accumulator;
+	
+	TwBar *bar;
 };
 
 

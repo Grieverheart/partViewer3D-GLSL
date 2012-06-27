@@ -52,7 +52,7 @@ void main(void){
 	vec2 TexCoord = pass_TexCoord;
 	vec3 Position = CalcPosition();
 	vec3 Color = texture(ColorMap, TexCoord).rgb;
-	if(Color == 0.0) out_Color = vec4(bgColor, 1.0);
+	if(Color == 0.0) out_Color = vec4(bgColor, 0.0);
 	else {
 		float AO = texture(NormalMap, TexCoord).a;
 		vec3 Normal = normalize(texture(NormalMap, TexCoord).xyz);

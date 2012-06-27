@@ -29,7 +29,6 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	//Create gbuffer and Depth Buffer Textures
 	glGenTextures(array_size, &m_textures[0]);
 	glGenTextures(1, &m_depthTexture);
-	
 	//prepare gbuffer
 	for(unsigned int i = 0; i < array_size; i++){
 		glBindTexture(GL_TEXTURE_2D, m_textures[i]);

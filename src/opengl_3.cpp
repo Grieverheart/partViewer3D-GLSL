@@ -12,8 +12,6 @@ OpenGLContext::OpenGLContext(void):
 	fov = 60.0f;
 	znear = 1.0f;
 	zfar = 50.0f;
-	m_clicked = false;
-	m_gui_functional = true;
 	m_bgColor = glm::vec3(0.4, 0.6, 0.9);
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
@@ -24,7 +22,8 @@ OpenGLContext::OpenGLContext(void):
 	
 }
 
-OpenGLContext::~OpenGLContext(void) {  
+OpenGLContext::~OpenGLContext(void) { 
+	TwTerminate();
 }  
 
 bool OpenGLContext::create30Context(void){
@@ -33,7 +32,7 @@ bool OpenGLContext::create30Context(void){
 	// OpenGL 2.1 Context if it fails.				  //
 	////////////////////////////////////////////////////
 	
-	glutInitContextVersion(3,3);
+	glutInitContextVersion(3, 2);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
@@ -55,17 +54,16 @@ bool OpenGLContext::create30Context(void){
 	std::cout << "Renderer used: " << glGetString(GL_RENDERER) << std::endl;
 	std::cout << "Shading Language: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
 	
+	createGui();
+	
 	return true; // Success, return true
 }
 
-void OpenGLContext::mouseListener(int x, int y){
-	m_clicked = true;
-	m_click_x = x;
-	m_click_y = y;
-}
-
-void OpenGLContext::hideGui(void){
-	m_gui_functional = !m_gui_functional;
+void OpenGLContext::createGui(void){
+	TwInit(TW_OPENGL_CORE, NULL);
+	TwWindowSize(windowWidth, windowHeight);
+	bar = TwNewBar("Parameters");
+	TwAddVarRW(bar, "zoom", TW_TYPE_FLOAT, &zoom, "");
 }
 
 void OpenGLContext::setupScene(int argc, char *argv[]){
@@ -87,14 +85,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
-	m_gui.Init(windowWidth, windowHeight);
-	m_gui.newButton(25, 25, glm::ivec2(40, 20), "plus");
-	m_gui.newButton(25, 25, glm::ivec2(10, 20), "minus");
-	m_gui.newButton(25, 25, glm::ivec2(40, 40), "plus");
-	m_gui.newButton(25, 25, glm::ivec2(10, 40), "minus");
-	m_gui.newButton(25, 25, glm::ivec2(40, 60), "plus");
-	m_gui.newButton(25, 25, glm::ivec2(10, 60), "minus");
-	
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
 	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
 	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
@@ -103,6 +93,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	// Gbuffer Uniform Locations
 	MVPMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"MVPMatrix");
 	NormalMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"NormalMatrix");
+	lineColorLocation = glGetUniformLocation(sh_gbuffer->id(),"diffColor");
 	
 	if(
 		MVPMatrixLocation == -1	||	NormalMatrixLocation == -1
@@ -208,10 +199,10 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 void OpenGLContext::reshapeWindow(int w, int h){
 	windowWidth = w;
 	windowHeight = h;
+	TwWindowSize(w, h);
 	glViewport(0, 0, windowWidth, windowHeight);
 	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
 	if(m_fboInit){
-		m_gui.Resize(w, h);
 		m_gbuffer.Resize(windowWidth, windowHeight);
 		sh_ssao->bind();
 		{
@@ -230,11 +221,6 @@ void OpenGLContext::reshapeWindow(int w, int h){
 void OpenGLContext::processScene(void){
 	static float last_time = 0.0;
 	float this_time = glutGet(GLUT_ELAPSED_TIME)/1000.0f;
-	if(m_clicked && m_gui_functional){
-		m_clicked = false;
-		unsigned char num_button = m_gui.buttonClicked(m_click_x, m_click_y);
-		if(num_button != 0 ) std::cout << "Button " << (int)num_button << " clicked." << std::endl;
-	}
 	if(this_time-last_time > 1.0f/61.0f){
 		redisplay = true;
 		last_time = this_time;
@@ -266,6 +252,8 @@ void OpenGLContext::drawConfigurationBox(void){
 	GLuint vaoBox;
 	GLuint vboBox;
 	GLuint iboBox;
+	
+	glUniform3f(lineColorLocation, 0.1f, 0.1f, 0.1f);
 	
 	glGenVertexArrays(1, &vaoBox);
 	glBindVertexArray(vaoBox);
@@ -413,8 +401,14 @@ void OpenGLContext::renderScene(void){
 	glDisable(GL_CULL_FACE);
 	ssaoPass();
 	drawPass();
-	if(m_gui_functional) m_gui.Draw();
 	glEnable(GL_CULL_FACE);
+	glDepthMask(GL_FALSE);
+	glDisable(GL_DEPTH_TEST);
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	TwDraw();
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
 	
 	glutSwapBuffers();
 }

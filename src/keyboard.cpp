@@ -43,13 +43,6 @@ void CKeyboard::keyOps(void){
 		}
 	}
 	
-	if(keyMap['z']){ //Enter
-		int mod=glutGetModifiers();
-		if(mod==GLUT_ACTIVE_ALT){
-			context->hideGui();
-		}
-	}
-	
 	if(keyMap['b'])context->drawBox = !context->drawBox;//draw Box
 }
 

@@ -1,5 +1,6 @@
 #include "../include/mouse.h"
 #include "../include/main.h"
+#include <AntTweakBar.h>
 
 CMouse::CMouse(OpenGLContext *context){
 	this->context = context;
@@ -52,37 +53,45 @@ void CMouse::idleArcball(void){
 }
 
 void CMouse::onMouse(int button, int state, int x, int y){
-	if(button==GLUT_LEFT_BUTTON){
-		if(state==GLUT_DOWN){
-			dragging=true;
-			cur_mx=x;
-			last_mx=cur_mx;
-			cur_my=y;
-			last_my=cur_my;
-			LastRotMatrix = context->trackballMatrix;
-		}
-		else if(dragging){
-			dragging=false;
-			if(last_mx==x&&last_my==y){
-			//Regular Clicking goes here//
-				context->mouseListener(x, y);
+	if(!TwEventMouseButtonGLUT(button, state, x, y)){
+		if(button==GLUT_LEFT_BUTTON){
+			if(state==GLUT_DOWN){
+				dragging=true;
+				cur_mx=x;
+				last_mx=cur_mx;
+				cur_my=y;
+				last_my=cur_my;
+				LastRotMatrix = context->trackballMatrix;
 			}
-			last_mx=cur_mx;
-			last_my=cur_my;
+			else if(dragging){
+				dragging=false;
+				if(last_mx==x&&last_my==y){
+				//Regular Clicking goes here//
+				}
+				last_mx=cur_mx;
+				last_my=cur_my;
+			}
 		}
-	}
-	if(button==3||button==4){
-		float zoom = context->getZoom();
-		zoom=zoom+(button*2-7)*1.5f; // put wheel up and down in one
-		if(zoom<-58)zoom=-58.0f;
-		else if(zoom>90)zoom=90.0f;
-		context->setZoom(zoom);
+		if(button==3||button==4){
+			float zoom = context->getZoom();
+			zoom=zoom+(button*2-7)*1.5f; // put wheel up and down in one
+			if(zoom<-58)zoom=-58.0f;
+			else if(zoom>90)zoom=90.0f;
+			context->setZoom(zoom);
+		}
 	}
 }
 
 void CMouse::onMotion(int x, int y){
-	if(dragging){
-		cur_mx=x;
-		cur_my=y;
+	if(!TwEventMouseMotionGLUT(x, y)){
+		if(dragging){
+			cur_mx=x;
+			cur_my=y;
+		}
+	}
+}
+
+void CMouse::onPassiveMotion(int x, int y){
+	if(!TwEventMouseMotionGLUT(x, y)){
 	}
 }
