@@ -32,7 +32,7 @@ bool OpenGLContext::create30Context(void){
 	// OpenGL 2.1 Context if it fails.				  //
 	////////////////////////////////////////////////////
 	
-	glutInitContextVersion(3, 2);
+	glutInitContextVersion(3, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	
 	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
