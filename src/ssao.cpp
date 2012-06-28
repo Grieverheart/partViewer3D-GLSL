@@ -16,7 +16,9 @@ Cssao::Cssao(void){
 	srand(2);
 	m_kernel_size = 16;
 	m_noise_size = 4;
-	m_RADIUS = 4.75f;
+	m_RADIUS = 4.00f;
+	m_update = false;
+	m_update_kernel = false;
 }
 
 Cssao::~Cssao(void){
@@ -27,7 +29,7 @@ Cssao::~Cssao(void){
 void Cssao::CreateKernel(void){	
 	m_kernel = new glm::vec3[m_kernel_size];
 	
-	for(unsigned int i = 0; i < m_kernel_size; i++){
+	for(unsigned int i = 0; i < m_kernel_size; i++){ //Create a bigger kernel so we can freely change it later
 		m_kernel[i] = glm::vec3(
 			random(-1.0f, 1.0f),
 			random(-1.0f, 1.0f),
@@ -63,21 +65,22 @@ void Cssao::CreateNoise(void){
 bool Cssao::Init(unsigned int WindowWidth, unsigned int WindowHeight, unsigned int shader_id){
 	m_shader_id = shader_id;
 	
-	m_nScale_kSize = glm::ivec3(WindowWidth / m_noise_size, WindowHeight / m_noise_size, m_kernel_size);
+	m_noiseScale = glm::ivec2(WindowWidth / m_noise_size, WindowHeight / m_noise_size);
 	
 	CreateKernel();
 	CreateNoise();
 	
 	m_kernLocation = glGetUniformLocation(m_shader_id, "kernel");
 	m_noiseSamplerLocation = glGetUniformLocation(m_shader_id, "noise");
-	m_nScale_kSizeLocation = glGetUniformLocation(m_shader_id, "noiseScale_kernelSize");
+	m_noiseScaleLocation = glGetUniformLocation(m_shader_id, "noiseScale");
+	m_kernelSizeLocation = glGetUniformLocation(m_shader_id, "kernelSize");
 	m_RADIUSLocation = glGetUniformLocation(m_shader_id, "RADIUS");
 	
 	if(
-		m_kernLocation == -1 || m_nScale_kSizeLocation == -1 || 
+		m_kernLocation == -1 || m_noiseScaleLocation == -1 || m_kernelSizeLocation == -1||
 		m_noiseSamplerLocation == -1 || m_RADIUSLocation == -1
 	){
-		std::cout << "Couldn't bind SSAO uniforms" << std::endl;
+		std::cout << "Couldn't bind main SSAO uniforms" << std::endl;
 	}
 	
 	//Create FBO
@@ -121,9 +124,20 @@ void Cssao::BindForReading(void){
 
 void Cssao::UploadUniforms(void){
 	glUniform1i(m_noiseSamplerLocation, 2); // Set to apropriate texture unit
-	glUniform3iv(m_nScale_kSizeLocation, 1, &m_nScale_kSize[0]);
+	glUniform1i(m_kernelSizeLocation, (int)m_kernel_size);
+	glUniform2iv(m_noiseScaleLocation, 1, &m_noiseScale[0]);
 	glUniform3fv(m_kernLocation, m_kernel_size, &m_kernel[0][0]);
 	glUniform1fv(m_RADIUSLocation, 1, &m_RADIUS);
+}
+
+void Cssao::UpdateUniforms(void){
+	if(m_update_kernel){
+		glUniform1i(m_kernelSizeLocation, (int)m_kernel_size);
+		glUniform3fv(m_kernLocation, m_kernel_size, &m_kernel[0][0]);
+	}
+	if(m_update)glUniform1fv(m_RADIUSLocation, 1, &m_RADIUS);
+	m_update_kernel = false;
+	m_update = false;
 }
 
 void Cssao::BindNoise(void){
@@ -134,6 +148,27 @@ void Cssao::BindNoise(void){
 void Cssao::Resize(unsigned int WindowWidth, unsigned int WindowHeight){
 	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, WindowWidth, WindowHeight, 0, GL_RED, GL_FLOAT, NULL);
-	m_nScale_kSize = glm::ivec3(WindowWidth / m_noise_size, WindowHeight / m_noise_size, m_kernel_size);
-	glUniform3iv(m_nScale_kSizeLocation, 1, &m_nScale_kSize[0]);
+	m_noiseScale = glm::ivec2(WindowWidth / m_noise_size, WindowHeight / m_noise_size);
+	glUniform2iv(m_noiseScaleLocation, 1, &m_noiseScale[0]);
+}
+
+
+float Cssao::getRadius(void)const{
+	return m_RADIUS;
+}
+
+void Cssao::setRadius(float radius){
+	m_RADIUS = radius;
+	m_update = true;
+}
+
+unsigned int Cssao::getSamples(void)const{
+	return m_kernel_size;
+}
+
+void Cssao::setSamples(unsigned int num_samples){
+	m_kernel_size = num_samples;
+	delete[] m_kernel;
+	CreateKernel();
+	m_update_kernel = true;
 }

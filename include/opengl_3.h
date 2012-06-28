@@ -68,9 +68,11 @@ private:
 	int texelSizeLocation;
 	int bgColorLocation;
 	int lineColorLocation;
+	int m_blurLocation;
 	
 	bool use_dat;
 	bool m_fboInit;
+	bool m_blur;
 	
 	CLight light;
 	CObjParser objparser;

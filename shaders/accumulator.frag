@@ -2,6 +2,10 @@
 
 struct Light{
 	vec3 direction;
+	float Si;
+	float Di;
+	float Ai;
+	float Intensity;
 };
 
 uniform Light light;
@@ -44,7 +48,7 @@ vec3 CalcLight(vec3 position, vec3 normal){
 		float fspecular = pow(specular, 128.0);
 		SpecularColor = fspecular * vec3(1.0);
 	}
-	return DiffuseColor + SpecularColor + vec3(0.3);
+	return light.Intensity * (light.Di * DiffuseColor + light.Si * SpecularColor) + vec3(light.Ai);
 }
 
 void main(void){

@@ -5,8 +5,9 @@ uniform sampler2D NormalMap;
 uniform sampler2D noise;
 
 uniform vec2 projAB;
-uniform ivec3 noiseScale_kernelSize;
-uniform vec3 kernel[16];
+uniform ivec2 noiseScale;
+uniform int kernelSize;
+uniform vec3 kernel[256];
 uniform float RADIUS;
 uniform mat4 projectionMatrix;
 
@@ -24,7 +25,6 @@ vec3 CalcPosition(void){
 }
 
 mat3 CalcRMatrix(vec3 normal, vec2 texcoord){
-	ivec2 noiseScale = noiseScale_kernelSize.xy;
 	vec3 rvec = texture(noise, texcoord * noiseScale).xyz;
 	vec3 tangent = normalize(rvec - normal * dot(rvec, normal));
 	vec3 bitangent = cross(normal, tangent);
@@ -40,8 +40,6 @@ void main(void){
 		vec3 Position = CalcPosition();
 		Normal = normalize(Normal);
 		mat3 RotationMatrix = CalcRMatrix(Normal, TexCoord);
-		
-		int kernelSize = noiseScale_kernelSize.z;
 		
 		float occlusion = 0.0;
 		

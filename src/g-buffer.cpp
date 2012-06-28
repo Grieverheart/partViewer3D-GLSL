@@ -7,9 +7,8 @@ CGBuffer::CGBuffer(void){
 }
 
 CGBuffer::~CGBuffer(void){
-	GLuint array_size = sizeof(m_textures)/sizeof(m_textures[0]);
 	if(m_textures != NULL){
-		glDeleteTextures(array_size, &m_textures[0]);
+		glDeleteTextures(GBUFF_NUM_TEXTURES, &m_textures[0]);
 	}
 	if(m_depthTexture != 0){
 		glDeleteTextures(1, &m_depthTexture);
@@ -24,13 +23,11 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	glGenFramebuffers(1, &m_fbo);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
 	
-	GLuint array_size = sizeof(m_textures)/sizeof(m_textures[0]);
-	
 	//Create gbuffer and Depth Buffer Textures
-	glGenTextures(array_size, &m_textures[0]);
+	glGenTextures(GBUFF_NUM_TEXTURES, &m_textures[0]);
 	glGenTextures(1, &m_depthTexture);
 	//prepare gbuffer
-	for(unsigned int i = 0; i < array_size; i++){
+	for(unsigned int i = 0; i < GBUFF_NUM_TEXTURES; i++){
 		glBindTexture(GL_TEXTURE_2D, m_textures[i]);
 		if(i == GBUFF_TEXTURE_TYPE_NORMAL) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 		else if(i == GBUFF_TEXTURE_TYPE_DIFFUSE) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, WindowWidth, WindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
@@ -56,7 +53,7 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	
 	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
-	glDrawBuffers(array_size, DrawBuffers);
+	glDrawBuffers(GBUFF_NUM_TEXTURES, DrawBuffers);
 	
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	

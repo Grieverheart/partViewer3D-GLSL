@@ -17,6 +17,7 @@ OpenGLContext::OpenGLContext(void):
 	trackballMatrix = glm::mat4(1.0);
 	use_dat = false;
 	drawBox = false;
+	m_blur = true;
 	light = CLight(glm::vec3(-10.0, 10.0, 10.0), glm::vec3(1.0, -1.0, -1.0));
 	IdentityMatrix = glm::mat4(1.0);
 	
@@ -63,7 +64,32 @@ void OpenGLContext::createGui(void){
 	TwInit(TW_OPENGL_CORE, NULL);
 	TwWindowSize(windowWidth, windowHeight);
 	bar = TwNewBar("Parameters");
-	TwAddVarRW(bar, "zoom", TW_TYPE_FLOAT, &zoom, "");
+	
+	TwDefine(
+		"Parameters position='0 0' size='200 200' iconified=true");
+	
+	TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
+		min=0.0 max=2.0	step=0.01 group=Light");
+	
+	TwAddVarCB(bar, "Diffuse", TW_TYPE_FLOAT, CLight::SetDiffIntCallback, CLight::GetDiffIntCallback, &light,"\
+		min=0.0 max=2.0	step=0.01 group=Light");
+	
+	TwAddVarCB(bar, "Ambient", TW_TYPE_FLOAT, CLight::SetAmbIntCallback, CLight::GetAmbIntCallback, &light,"\
+		min=0.0 max=2.0	step=0.01 group=Light");
+	
+	TwAddVarCB(bar, "Intensity", TW_TYPE_FLOAT, CLight::SetIntCallback, CLight::GetIntCallback, &light,"\
+		min=0.0 max=2.0	step=0.01 group=Light");	
+	
+	TwAddVarRW(bar, "Blur", TW_TYPE_BOOLCPP, &m_blur, "\
+		group=AO");	
+	
+	TwAddVarCB(bar, "Radius", TW_TYPE_FLOAT, Cssao::SetRadiusCallback, Cssao::GetRadiusCallback, &m_ssao,"\
+		help='The radius of the ambient occlusion sampling kernel.'\
+		min=0.1 max=10.0 step=0.1 group=AO");
+	
+	TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
+		help='Number of samples for ambient occlusion. Increase for higher quality.'\
+		min=4 max=256 step=2 group=AO");
 }
 
 void OpenGLContext::setupScene(int argc, char *argv[]){
@@ -116,6 +142,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	// Blur Uniform Locations
 	aoSamplerLocation = glGetUniformLocation(sh_blur->id(), "aoSampler");
 	texelSizeLocation = glGetUniformLocation(sh_blur->id(), "TEXEL_SIZE");
+	m_blurLocation = glGetUniformLocation(sh_blur->id(), "use_blur");
 	
 	if(
 		aoSamplerLocation == -1	||	texelSizeLocation == -1
@@ -167,6 +194,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		glm::vec2 texel_size = glm::vec2(1.0 / windowWidth, 1.0 / windowHeight);
 		glUniform2fv(texelSizeLocation, 1, &texel_size[0]);
 		glUniform1i(aoSamplerLocation, 0);
+		glUniform1i(m_blurLocation, int(m_blur));
 	}
 	sh_blur->unbind();
 	
@@ -358,6 +386,7 @@ void OpenGLContext::ssaoPass(void){
 	
 	sh_ssao->bind();
 	{
+		m_ssao.UpdateUniforms();
 		full_quad.draw();
 	}
 	sh_ssao->unbind();
@@ -367,6 +396,7 @@ void OpenGLContext::ssaoPass(void){
 	
 	sh_blur->bind();
 	{
+		glUniform1i(m_blurLocation, int(m_blur));
 		full_quad.draw();
 	}
 	sh_blur->unbind();
@@ -402,13 +432,7 @@ void OpenGLContext::renderScene(void){
 	ssaoPass();
 	drawPass();
 	glEnable(GL_CULL_FACE);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_DEPTH_TEST);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	TwDraw();
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
 	
 	glutSwapBuffers();
 }
