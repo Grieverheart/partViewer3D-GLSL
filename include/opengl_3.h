@@ -50,6 +50,7 @@ private:
 	glm::mat4 IdentityMatrix;
 	glm::mat4 lightProjectionMatrix;
 	glm::vec3 m_bgColor;
+	glm::vec3 diffcolor;
 	
 	int MVPMatrixLocation;
 	int ModelViewMatrixLocation;
@@ -67,7 +68,7 @@ private:
 	int aoSamplerLocation;
 	int texelSizeLocation;
 	int bgColorLocation;
-	int lineColorLocation;
+	int diffColorLocation;
 	int m_blurLocation;
 	
 	bool use_dat;

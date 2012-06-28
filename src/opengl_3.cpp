@@ -20,6 +20,7 @@ OpenGLContext::OpenGLContext(void):
 	m_blur = true;
 	light = CLight(glm::vec3(-10.0, 10.0, 10.0), glm::vec3(1.0, -1.0, -1.0));
 	IdentityMatrix = glm::mat4(1.0);
+	diffcolor = glm::vec3(0.282, 0.239, 0.545);
 	
 }
 
@@ -119,7 +120,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	// Gbuffer Uniform Locations
 	MVPMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"MVPMatrix");
 	NormalMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"NormalMatrix");
-	lineColorLocation = glGetUniformLocation(sh_gbuffer->id(),"diffColor");
+	diffColorLocation = glGetUniformLocation(sh_gbuffer->id(),"diffColor");
 	
 	if(
 		MVPMatrixLocation == -1	||	NormalMatrixLocation == -1
@@ -281,7 +282,7 @@ void OpenGLContext::drawConfigurationBox(void){
 	GLuint vboBox;
 	GLuint iboBox;
 	
-	glUniform3f(lineColorLocation, 0.1f, 0.1f, 0.1f);
+	glUniform3f(diffColorLocation, 0.1f, 0.1f, 0.1f);
 	
 	glGenVertexArrays(1, &vaoBox);
 	glBindVertexArray(vaoBox);
@@ -331,6 +332,8 @@ void OpenGLContext::drawConfiguration(void){
 	
 	if(drawBox) drawConfigurationBox();
 	
+	glUniform3fv(diffColorLocation, 1, &diffcolor[0]);
+	
 	for(int i = 0; i < coordparser.npart; i++){
 		glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
 		glm::mat4 rLocalMatrix = glm::rotate(
@@ -368,7 +371,10 @@ void OpenGLContext::fboPass(void){
 		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &NormalMatrix[0][0]);
 
 		if(use_dat)	drawConfiguration();
-		else mesh.draw();
+		else{
+			glUniform3fv(diffColorLocation, 1, &diffcolor[0]);
+			mesh.draw();
+		}
 	}
 	sh_gbuffer->unbind();
 	

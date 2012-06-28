@@ -30,11 +30,9 @@ public:
 private:
 	
 	std::vector<Vertex> vertices;
-	glm::vec3 diffcolor;
 	
 	GLfloat scale;
 	int scaleLocation;
-	int diffColorLocation;
 	
 	GLuint vaoID;
 	GLuint vboID;

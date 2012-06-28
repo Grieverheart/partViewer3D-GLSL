@@ -2,7 +2,6 @@
 
 CMesh::CMesh(GLfloat scale){
 	// diffcolor = glm::vec3(0.1334, 0.545, 0.1334);
-	diffcolor = glm::vec3(0.282, 0.239, 0.545);
 	this->scale = scale;
 }
 
@@ -34,7 +33,6 @@ void CMesh::upload(GLuint shaderID){
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	scaleLocation = glGetUniformLocation(shaderID, "scale");
-	diffColorLocation = glGetUniformLocation(shaderID, "diffColor");
 	
 	// if(scaleLocation == -1){
 		// std::cout << "Unable to bind uniform" << std::endl;
@@ -43,8 +41,6 @@ void CMesh::upload(GLuint shaderID){
 
 void CMesh::draw(void){
 	glUniform1fv(scaleLocation, 1, &scale);
-	glGetError();
-	glUniform3fv(diffColorLocation, 1, &diffcolor[0]);
 	glGetError();
 	
 	glBindVertexArray(vaoID); 
