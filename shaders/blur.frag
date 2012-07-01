@@ -13,14 +13,14 @@ void main(void){
 	// if( test != 1.0 ){
 	if(use_blur){
 		float result = 0.0;
-		for(int i = 0; i < 4; i++){
-			for(int j = 0; j < 4; j++){
+		for(int i = -1; i < 2; i++){
+			for(int j = -1; j < 2; j++){
 				vec2 offset = vec2(TEXEL_SIZE.x * i, TEXEL_SIZE.y * j);
 				result += texture(aoSampler, TexCoord + offset).r; // -0.004 because the texture seems to be a bit displaced
 			}
 		}
 		
-		out_AO = vec4(vec3(0.0), result * 0.0625);
+		out_AO = vec4(vec3(0.0), result / 9);
 	}
 	else out_AO = vec4(vec3(0.0), texture(aoSampler, TexCoord).r);
 }

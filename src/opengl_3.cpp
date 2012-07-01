@@ -91,6 +91,8 @@ void OpenGLContext::createGui(void){
 	TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
 		help='Number of samples for ambient occlusion. Increase for higher quality.'\
 		min=4 max=256 step=2 group=AO");
+	// float color[3] = {1.0, 1.0, 1.0};
+	TwAddVarRW(bar, "Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
 }
 
 void OpenGLContext::setupScene(int argc, char *argv[]){
