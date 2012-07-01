@@ -10,10 +10,10 @@ CLight::~CLight(void){
 CLight::CLight(glm::vec3 position, glm::vec3 direction){
 	m_position = position;
 	m_direction = direction;
-	m_SpecularIntensity = 1.0f;
-	m_DiffuseIntensity = 1.0f;
-	m_AmbientIntensity = 0.3f;
-	m_Intensity = 1.0f;
+	m_SpecularIntensity = 0.5f;
+	m_DiffuseIntensity = 0.5f;
+	m_AmbientIntensity = 1.2f;
+	m_Intensity = 0.6f;
 }
 
 bool CLight::Init(GLuint shader_id){
