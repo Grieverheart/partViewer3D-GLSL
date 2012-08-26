@@ -18,6 +18,7 @@ OpenGLContext::OpenGLContext(void):
 	use_dat = false;
 	drawBox = false;
 	m_blur = true;
+	m_rotating = false;
 	light = CLight(glm::vec3(-10.0, 10.0, 10.0), glm::vec3(1.0, -1.0, -1.0));
 	IdentityMatrix = glm::mat4(1.0);
 	diffcolor = glm::vec3(0.282, 0.239, 0.545);
@@ -67,7 +68,9 @@ void OpenGLContext::createGui(void){
 	bar = TwNewBar("Parameters");
 	
 	TwDefine(
-		"Parameters position='0 0' size='200 200' iconified=true");
+		"Parameters position='0 0' size='200 250' iconified=true");
+	
+	TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &m_rotating, "");	
 	
 	TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
 		min=0.0 max=2.0	step=0.01 group=Light");
@@ -80,7 +83,7 @@ void OpenGLContext::createGui(void){
 	
 	TwAddVarCB(bar, "Intensity", TW_TYPE_FLOAT, CLight::SetIntCallback, CLight::GetIntCallback, &light,"\
 		min=0.0 max=2.0	step=0.01 group=Light");	
-	
+		
 	TwAddVarRW(bar, "Blur", TW_TYPE_BOOLCPP, &m_blur, "\
 		group=AO");	
 	
@@ -92,7 +95,8 @@ void OpenGLContext::createGui(void){
 		help='Number of samples for ambient occlusion. Increase for higher quality.'\
 		min=4 max=256 step=2 group=AO");
 	// float color[3] = {1.0, 1.0, 1.0};
-	TwAddVarRW(bar, "Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
+	TwAddVarRW(bar, "Particle Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
+	TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
 }
 
 void OpenGLContext::setupScene(int argc, char *argv[]){
@@ -253,6 +257,14 @@ void OpenGLContext::processScene(void){
 	static float last_time = 0.0;
 	float this_time = glutGet(GLUT_ELAPSED_TIME)/1000.0f;
 	if(this_time-last_time > 1.0f/61.0f){
+		if(m_rotating){
+			glm::mat4 rLocalMatrix = glm::rotate(
+				glm::mat4(1.0),
+				(this_time-last_time) * 30.0f,
+				glm::vec3(0.0, 1.0, 0.0)
+			);
+			trackballMatrix = rLocalMatrix * trackballMatrix;
+		}
 		redisplay = true;
 		last_time = this_time;
 		projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
@@ -422,6 +434,7 @@ void OpenGLContext::drawPass(void){
 	
 	sh_accumulator->bind();
 	{
+		glUniform3fv(bgColorLocation, 1, &m_bgColor[0]);
 		light.uploadDirection(viewMatrix);
 		full_quad.draw();
 	}
@@ -432,7 +445,7 @@ void OpenGLContext::drawPass(void){
 	glEnable(GL_DEPTH_TEST);
 }
 
-void OpenGLContext::renderScene(void){
+void OpenGLContext::renderScene(void){	
 	modelMatrix = trackballMatrix;
 	
 	fboPass();

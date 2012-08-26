@@ -74,6 +74,7 @@ private:
 	bool use_dat;
 	bool m_fboInit;
 	bool m_blur;
+	bool m_rotating;
 	
 	CLight light;
 	CObjParser objparser;
