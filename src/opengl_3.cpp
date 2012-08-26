@@ -11,7 +11,7 @@ OpenGLContext::OpenGLContext(void):
 	zoom = 0.0f;
 	fov = 60.0f;
 	znear = 1.0f;
-	zfar = 50.0f;
+	zfar = 100.0f;
 	m_bgColor = glm::vec3(0.4, 0.6, 0.9);
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
@@ -219,7 +219,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_accumulator->unbind();
 	
 	
-	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
+	objparser.parse("obj/Tetrahedron.obj",&mesh, "flat");
 	mesh.upload(sh_gbuffer->id());
 	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
 	full_quad.upload(sh_gbuffer->id());
