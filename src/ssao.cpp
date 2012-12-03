@@ -16,7 +16,7 @@ Cssao::Cssao(void){
 	srand(2);
 	m_kernel_size = 16;
 	m_noise_size = 3;
-	m_RADIUS = 2.6f;
+	m_RADIUS = 3.4f;
 	m_update = false;
 	m_update_kernel = false;
 }
@@ -107,22 +107,22 @@ bool Cssao::Init(unsigned int WindowWidth, unsigned int WindowHeight, unsigned i
 	}
 	
 	//Restore default framebuffer
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	return true;
 }
 
-void Cssao::BindForWriting(void){
+void Cssao::BindForWriting(void)const{
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
 }
 
-void Cssao::BindForReading(void){
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+void Cssao::BindForReading(void)const{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
 }
 
-void Cssao::UploadUniforms(void){
+void Cssao::UploadUniforms(void)const{
 	glUniform1i(m_noiseSamplerLocation, 2); // Set to apropriate texture unit
 	glUniform1i(m_kernelSizeLocation, (int)m_kernel_size);
 	glUniform2iv(m_noiseScaleLocation, 1, &m_noiseScale[0]);
@@ -140,7 +140,7 @@ void Cssao::UpdateUniforms(void){
 	m_update = false;
 }
 
-void Cssao::BindNoise(void){
+void Cssao::BindNoise(void)const{
 	glActiveTexture(GL_TEXTURE0 + 2); // Set to apropriate texture unit
 	glBindTexture(GL_TEXTURE_2D, m_noise_texture);
 }

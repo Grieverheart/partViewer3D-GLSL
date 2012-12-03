@@ -27,15 +27,15 @@ bool CLight::Init(GLuint shader_id){
 	return true;
 }
 
-glm::vec3 CLight::getPosition(void){
+glm::vec3 CLight::getPosition(void)const{
 	return m_position;
 }
 
-glm::vec3 CLight::getDirection(void){
+glm::vec3 CLight::getDirection(void)const{
 	return m_direction;
 }
 
-void CLight::uploadDirection(glm::mat4 ViewMatrix){
+void CLight::uploadDirection(glm::mat4 ViewMatrix)const{
 	glm::vec3 lightViewDirection = glm::mat3(ViewMatrix) * m_direction;
 	glUniform3fv(m_DirectionLocation, 1, &lightViewDirection[0]);
 	glUniform1fv(m_SpecularIntensityLocation, 1, &m_SpecularIntensity);

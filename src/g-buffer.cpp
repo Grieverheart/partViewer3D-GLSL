@@ -31,6 +31,7 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 		glBindTexture(GL_TEXTURE_2D, m_textures[i]);
 		if(i == GBUFF_TEXTURE_TYPE_NORMAL) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 		else if(i == GBUFF_TEXTURE_TYPE_DIFFUSE) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, WindowWidth, WindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		// else if(i == GBUFF_TEXTURE_TYPE_ID) glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, WindowWidth, WindowHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 		else{
 			std::cout << "Error in FBO initialization" << std::endl;
 			return false;
@@ -41,8 +42,8 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	}
-	//prepare depth buffer
 	
+	//prepare depth buffer
 	glBindTexture(GL_TEXTURE_2D, m_depthTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WindowWidth, WindowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_depthTexture, 0);
@@ -52,7 +53,7 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	
-	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
+	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
 	glDrawBuffers(GBUFF_NUM_TEXTURES, DrawBuffers);
 	
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
@@ -63,16 +64,16 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	}
 	
 	//Restore default framebuffer
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	
 	return true;
 }
 
-void CGBuffer::BindForWriting(void){
+void CGBuffer::BindForWriting(void)const{
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
 }
 
-void CGBuffer::BindForReading(void){
+void CGBuffer::BindForReading(void)const{
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 	for(unsigned int i = 0; i < GBUFF_NUM_TEXTURES; i++){
 		glActiveTexture(GL_TEXTURE0 + i);
@@ -82,23 +83,30 @@ void CGBuffer::BindForReading(void){
 	glBindTexture(GL_TEXTURE_2D, m_depthTexture);
 }
 
-void CGBuffer::BindForSSAO(void){
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+void CGBuffer::BindForPicking(void)const{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, m_fbo);
+	glReadBuffer(GL_COLOR_ATTACHMENT0 + 2);
+}
+
+void CGBuffer::BindForSSAO(void)const{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glActiveTexture(GL_TEXTURE0 + 0);
 	glBindTexture(GL_TEXTURE_2D, m_textures[GBUFF_TEXTURE_TYPE_NORMAL]);
 	glActiveTexture(GL_TEXTURE0 + 1);
 	glBindTexture(GL_TEXTURE_2D, m_depthTexture);
 }
 
-void CGBuffer::SetReadBuffer(GBUFF_TEXTURE_TYPE TextureType){
+void CGBuffer::SetReadBuffer(GBUFF_TEXTURE_TYPE TextureType)const{
 	glReadBuffer(GL_COLOR_ATTACHMENT0 + TextureType);
 }
 
-void CGBuffer::Resize(unsigned int WindowWidth, unsigned int WindowHeight){
+void CGBuffer::Resize(unsigned int WindowWidth, unsigned int WindowHeight)const{
 	for(unsigned int i = 0; i < GBUFF_NUM_TEXTURES; i++){
 		glBindTexture(GL_TEXTURE_2D, m_textures[i]);
 		if(i == GBUFF_TEXTURE_TYPE_NORMAL) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 		else if(i == GBUFF_TEXTURE_TYPE_DIFFUSE) glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, WindowWidth, WindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		// else if(i == GBUFF_TEXTURE_TYPE_ID) glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, WindowWidth, WindowHeight, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
 	}
 	glBindTexture(GL_TEXTURE_2D, m_depthTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WindowWidth, WindowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);

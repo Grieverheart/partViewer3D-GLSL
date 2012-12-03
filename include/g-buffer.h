@@ -8,16 +8,18 @@ public:
 	enum GBUFF_TEXTURE_TYPE{
 		GBUFF_TEXTURE_TYPE_DIFFUSE,
 		GBUFF_TEXTURE_TYPE_NORMAL,
+		// GBUFF_TEXTURE_TYPE_ID,
 		GBUFF_NUM_TEXTURES
 	};
 	CGBuffer(void);
 	~CGBuffer(void);
 	bool Init(unsigned int WindowWidth, unsigned int WindowHeight);
-	void BindForWriting(void);
-	void BindForReading(void);
-	void BindForSSAO(void);
-	void SetReadBuffer(GBUFF_TEXTURE_TYPE TextureType);
-	void Resize(unsigned int WindowWidth, unsigned int WindowHeight);
+	void BindForWriting(void)const;
+	void BindForReading(void)const;
+	void BindForPicking(void)const;
+	void BindForSSAO(void)const;
+	void SetReadBuffer(GBUFF_TEXTURE_TYPE TextureType)const;
+	void Resize(unsigned int WindowWidth, unsigned int WindowHeight)const;
 private:
 	GLuint m_fbo;
 	GLuint m_textures[GBUFF_NUM_TEXTURES];

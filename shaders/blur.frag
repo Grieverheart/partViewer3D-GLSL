@@ -9,8 +9,6 @@ noperspective in vec2 TexCoord;
 layout(location = 0) out vec4 out_AO;
 
 void main(void){
-	// float test = texture(aoSampler, TexCoord).r; // Activate test for ~1ms speed
-	// if( test != 1.0 ){
 	if(use_blur){
 		float result = 0.0;
 		for(int i = -1; i < 2; i++){

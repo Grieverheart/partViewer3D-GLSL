@@ -10,11 +10,11 @@ public:
 	~Cssao(void);
 	
 	bool Init(unsigned int WindowWidth, unsigned int WindowHeight, unsigned int shader_id);
-	void BindNoise(void);
-	void UploadUniforms(void);
+	void BindNoise(void)const;
+	void UploadUniforms(void)const;
 	void UpdateUniforms(void);
-	void BindForWriting(void);
-	void BindForReading(void);
+	void BindForWriting(void)const;
+	void BindForReading(void)const;
 	void Resize(unsigned int WindowWidth, unsigned int WindowHeight);
 	
 	float getRadius(void)const;

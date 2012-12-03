@@ -1,6 +1,6 @@
 SRC=$(wildcard src/*.cpp)
 OBJ=$(patsubst src/%.cpp, bin/%.o, $(SRC))
-EXE=main.exe
+EXE=partViewer.exe
 
 CC=g++
 CFLAGS=-Wall -g -O3

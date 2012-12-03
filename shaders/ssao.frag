@@ -60,5 +60,5 @@ void main(void){
 		}
 		out_AO = 1.0 - occlusion / kernelSize;
 	}
-	else out_AO = 1.0;
+	else discard;
 }

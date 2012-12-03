@@ -11,10 +11,10 @@ public:
 	~CLight(void);
 	
 	bool Init(GLuint shade_id);
-	void uploadDirection(glm::mat4 ViewMatrix);
+	void uploadDirection(glm::mat4 ViewMatrix)const;
 	
-	glm::vec3 getPosition(void);
-	glm::vec3 getDirection(void);
+	glm::vec3 getPosition(void)const;
+	glm::vec3 getDirection(void)const;
 	
 	float getSpecInt(void)const;
 	void setSpecInt(float value);

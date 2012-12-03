@@ -24,7 +24,9 @@ public:
 	~CMesh(void);
 	
 	void upload(GLuint shaderID);
-	void draw(void);
+	void draw(void)const;
+	void uploadInstanced(GLuint shaderID);
+	void drawInstanced(unsigned int nInstances, const glm::mat4* MVPs, const glm::mat3 *NMs)const;
 	void data(std::vector<Vertex> vertices);
 	
 private:
@@ -35,6 +37,6 @@ private:
 	int scaleLocation;
 	
 	GLuint vaoID;
-	GLuint vboID;
+	GLuint vboID[3];
 };
 #endif

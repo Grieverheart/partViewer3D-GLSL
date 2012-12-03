@@ -20,18 +20,10 @@ public:
 	void reshapeWindow(int w, int h); 	// Method to get our window width and height on resize  
 	void renderScene(void); 			// Render scene (display method from previous OpenGL tutorials)
 	void processScene(void);
-	void drawPass(void);
-	void fboPass(void);
-	void ssaoPass(void);
 	
-	void drawConfiguration(void);
-	void drawConfigurationBox(void);
-	
-	void createGui(void);
-	
-	float getZoom(void);
+	float getZoom(void)const;
 	void setZoom(float zoom);
-	glm::ivec2 getScreen(void);
+	glm::ivec2 getScreen(void)const;
 	
 	bool redisplay;
 	bool drawBox;
@@ -49,6 +41,10 @@ private:
 	glm::mat4 lightViewMatrix;
 	glm::mat4 IdentityMatrix;
 	glm::mat4 lightProjectionMatrix;
+	
+	glm::mat4 *MVPArray;
+	glm::mat3 *NormalArray;
+	
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
 	
@@ -58,6 +54,7 @@ private:
 	int DepthMapLocation;
 	int NormalMapLocation;
 	int ColorMapLocation;
+	// int IDMapLocation;
 	int projABLocation;	// projA and projB are two uniforms needed to convert the post projective depth to the linear depth
 	int invProjMatrixLocation;
 	int ssaoProjMatrixLocation;
@@ -69,7 +66,14 @@ private:
 	int texelSizeLocation;
 	int bgColorLocation;
 	int diffColorLocation;
+	int scaleLocation;
+	int diffColorInstancedLocation;
 	int m_blurLocation;
+	unsigned int mNInstances;
+	
+	GLuint vaoBox;
+	GLuint vboBox;
+	GLuint iboBox;
 	
 	bool use_dat;
 	bool m_fboInit;
@@ -85,11 +89,22 @@ private:
 	Cssao m_ssao;
 	
 	Shader *sh_gbuffer; // GLSL Shader
+	Shader *sh_gbuffer_instanced; // GLSL Shader
 	Shader *sh_ssao;
 	Shader *sh_blur;
 	Shader *sh_accumulator;
 	
 	TwBar *bar;
+	
+	void drawPass(void)const;
+	void fboPass(void)const;
+	void ssaoPass(void);
+	
+	void drawConfiguration(void)const;
+	void drawConfigurationBox(void)const;
+	void initConfigurationBox(void);
+	
+	void createGui(void);
 };
 
 

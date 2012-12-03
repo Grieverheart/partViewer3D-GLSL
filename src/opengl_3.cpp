@@ -26,6 +26,16 @@ OpenGLContext::OpenGLContext(void):
 }
 
 OpenGLContext::~OpenGLContext(void) { 
+	if(vaoBox != 0) glDeleteBuffers(1, &vaoBox);
+	if(vboBox != 0) glDeleteBuffers(1, &vboBox);
+	if(iboBox != 0) glDeleteBuffers(1, &iboBox);
+	if(sh_gbuffer) delete sh_gbuffer; // GLSL Shader
+	if(sh_gbuffer_instanced) delete sh_gbuffer_instanced; // GLSL Shader
+	if(sh_ssao) delete sh_gbuffer;
+	if(sh_blur) delete sh_gbuffer;
+	if(sh_accumulator) delete sh_gbuffer;
+	if(MVPArray) delete[] MVPArray;
+	if(NormalArray) delete[] NormalArray;
 	TwTerminate();
 }  
 
@@ -42,7 +52,7 @@ bool OpenGLContext::create30Context(void){
 	glutInitWindowSize(600,600);
 	windowWidth=windowHeight = 600;
 	// glutInitWindowPosition(100,100);
-	glutCreateWindow("Project");
+	glutCreateWindow("partViewer GLSL");
 	
 	glewExperimental = GL_TRUE;
 	GLenum error = glewInit(); //Enable GLEW
@@ -108,7 +118,13 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 			GLfloat max_zoom = -3.5f*glm::length(glm::transpose(coordparser.boxMatrix)[i]);
 			if(max_zoom < init_zoom) init_zoom = max_zoom;
 		}
+		mNInstances = coordparser.npart;
 	}
+	else mNInstances = 1;
+	
+	MVPArray = new glm::mat4[mNInstances];
+	NormalArray = new glm::mat3[mNInstances];
+	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	
 	glEnable(GL_BLEND);
@@ -118,7 +134,10 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
+	initConfigurationBox();
+	
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
+	sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
 	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
 	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
 	sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
@@ -127,6 +146,8 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	MVPMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"MVPMatrix");
 	NormalMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"NormalMatrix");
 	diffColorLocation = glGetUniformLocation(sh_gbuffer->id(),"diffColor");
+	scaleLocation = glGetUniformLocation(sh_gbuffer->id(),"scale");
+	diffColorInstancedLocation = glGetUniformLocation(sh_gbuffer_instanced->id(),"diffColor");
 	
 	if(
 		MVPMatrixLocation == -1	||	NormalMatrixLocation == -1
@@ -159,6 +180,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	DepthMapLocation = glGetUniformLocation(sh_accumulator->id(), "DepthMap");
 	NormalMapLocation = glGetUniformLocation(sh_accumulator->id(), "NormalMap");
 	ColorMapLocation = glGetUniformLocation(sh_accumulator->id(), "ColorMap");
+	// IDMapLocation = glGetUniformLocation(sh_accumulator->id(), "IDMap");
 	if(!light.Init(sh_accumulator->id())) std::cout << "Cannot bind light uniform" << std::endl;
 	projABLocation = glGetUniformLocation(sh_accumulator->id(), "projAB");
 	invProjMatrixLocation = glGetUniformLocation(sh_accumulator->id(), "invProjMatrix");
@@ -211,6 +233,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	{
 		glUniform1i(ColorMapLocation, 0);
 		glUniform1i(NormalMapLocation, 1);
+		// glUniform1i(IDMapLocation, 2);
 		glUniform1i(DepthMapLocation, 2);
 		float projA = (zfar + znear)/ (zfar - znear);
 		float projB = 2.0 * zfar * znear / (zfar - znear);
@@ -223,8 +246,8 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_accumulator->unbind();
 	
 	
-	objparser.parse("obj/Tetrahedron.obj",&mesh, "flat");
-	mesh.upload(sh_gbuffer->id());
+	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
+	mesh.uploadInstanced(sh_gbuffer_instanced->id());
 	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
 	full_quad.upload(sh_gbuffer->id());
 	m_fboInit = m_gbuffer.Init(windowWidth, windowHeight);
@@ -256,7 +279,7 @@ void OpenGLContext::reshapeWindow(int w, int h){
 void OpenGLContext::processScene(void){
 	static float last_time = 0.0;
 	float this_time = glutGet(GLUT_ELAPSED_TIME)/1000.0f;
-	if(this_time-last_time > 1.0f/61.0f){
+	// if(this_time-last_time > 1.0f/61.0f){
 		if(m_rotating){
 			glm::mat4 rLocalMatrix = glm::rotate(
 				glm::mat4(1.0),
@@ -268,10 +291,10 @@ void OpenGLContext::processScene(void){
 		redisplay = true;
 		last_time = this_time;
 		projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
-	}
+	// }
 }
 
-void OpenGLContext::drawConfigurationBox(void){
+void OpenGLContext::initConfigurationBox(void){
 	GLfloat vertices[]={
 		0.0f,0.0f,0.0f,
 		coordparser.boxMatrix[0][0], coordparser.boxMatrix[1][0], coordparser.boxMatrix[2][0],
@@ -292,12 +315,6 @@ void OpenGLContext::drawConfigurationBox(void){
 		3,0,2,6,4,7,1,5
 	};
 	
-	GLuint vaoBox;
-	GLuint vboBox;
-	GLuint iboBox;
-	
-	glUniform3f(diffColorLocation, 0.1f, 0.1f, 0.1f);
-	
 	glGenVertexArrays(1, &vaoBox);
 	glBindVertexArray(vaoBox);
 	
@@ -311,26 +328,18 @@ void OpenGLContext::drawConfigurationBox(void){
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW); 
 	
-	glLineWidth(4);
-	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, 0);
-	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, (GLvoid*)(4*sizeof(GLushort)));
-	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
-	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER,0);
-	glDeleteBuffers(1, &vaoBox);
-	glDeleteBuffers(1, &vboBox);
-	glDeleteBuffers(1, &iboBox);
 }
 
-void OpenGLContext::drawConfiguration(void){
+void OpenGLContext::drawConfigurationBox(void)const{
 	
 	glm::mat4 vMatrix;
     glm::mat4 pMatrix;
 	
 	vMatrix = viewMatrix;
 	pMatrix = projectionMatrix;
-		
+	
 	glm::mat4 tMatrix = glm::translate(
 		modelMatrix,
 		glm::vec3(
@@ -344,11 +353,40 @@ void OpenGLContext::drawConfiguration(void){
 	
 	glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
 	
-	if(drawBox) drawConfigurationBox();
+	glBindVertexArray(vaoBox);
 	
-	glUniform3fv(diffColorLocation, 1, &diffcolor[0]);
+	glLineWidth(fabs(-0.067f * zoom + 4.0f));
 	
-	for(int i = 0; i < coordparser.npart; i++){
+	glUniform3f(diffColorLocation, 0.01f, 0.01f, 0.01f);
+	glUniform1f(scaleLocation, 1.0f);
+	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, 0);
+	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, (GLvoid*)(4*sizeof(GLushort)));
+	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
+	
+	glBindVertexArray(0);
+}
+
+void OpenGLContext::drawConfiguration(void)const{
+	
+	glm::mat4 vMatrix;
+    glm::mat4 pMatrix;
+	
+	vMatrix = viewMatrix;
+	pMatrix = projectionMatrix;
+	
+	glm::mat4 tMatrix = glm::translate(
+		modelMatrix,
+		glm::vec3(
+			-(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
+			-(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
+			-coordparser.boxMatrix[2][2]/2.0
+		)
+	);
+	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
+	
+	glUniform3fv(diffColorInstancedLocation, 1, &diffcolor[0]);
+	
+	for(unsigned int i = 0; i < mNInstances; i++){
 		glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
 		glm::mat4 rLocalMatrix = glm::rotate(
 			glm::mat4(1.0),
@@ -359,38 +397,47 @@ void OpenGLContext::drawConfiguration(void){
 		glm::mat4 tempModelViewMatrix = tLocalMatrix * rLocalMatrix ;
 		glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(tempModelViewMatrix)));
 		glm::mat4 tempMVPMatrix = pMatrix * tempModelViewMatrix;
+
+		MVPArray[i] = tempMVPMatrix;
+		NormalArray[i] = tempNormalMatrix;
 		
-		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &tempNormalMatrix[0][0]);
-		glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &tempMVPMatrix[0][0]);
-		
-		mesh.draw();
 	}
+	mesh.drawInstanced(mNInstances, MVPArray, NormalArray);
 }
 
 
-void OpenGLContext::fboPass(void){
+void OpenGLContext::fboPass(void)const{
 
 	glDisable(GL_BLEND);
 	
 	m_gbuffer.BindForWriting();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	sh_gbuffer->bind();
+	sh_gbuffer_instanced->bind();
 	{	
-		glm::mat4 ModelViewMatrix = viewMatrix * modelMatrix;
-		glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(ModelViewMatrix)));
-		glm::mat4 MVPMatrix = projectionMatrix * ModelViewMatrix;
-
-		glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
-		glUniformMatrix3fv(NormalMatrixLocation, 1, GL_FALSE, &NormalMatrix[0][0]);
-
-		if(use_dat)	drawConfiguration();
+		if(use_dat) drawConfiguration();
 		else{
-			glUniform3fv(diffColorLocation, 1, &diffcolor[0]);
-			mesh.draw();
+			glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix)));
+			glm::mat4 tempMVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+
+			MVPArray[0] = tempMVPMatrix;
+			NormalArray[0] = tempNormalMatrix;
+			
+			glUniform3fv(diffColorInstancedLocation, 1, &diffcolor[0]);
+			
+			mesh.drawInstanced(mNInstances, MVPArray, NormalArray);
 		}
 	}
-	sh_gbuffer->unbind();
+	sh_gbuffer_instanced->unbind();
+	
+	if(!use_dat || drawBox){
+		sh_gbuffer->bind();
+		{	
+			if(!use_dat) mesh.draw();
+			else drawConfigurationBox();
+		}
+		sh_gbuffer->unbind();
+	}
 	
 	glEnable(GL_BLEND);
 }
@@ -421,11 +468,12 @@ void OpenGLContext::ssaoPass(void){
 	}
 	sh_blur->unbind();
 	
+	
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
 }
 
-void OpenGLContext::drawPass(void){
+void OpenGLContext::drawPass(void)const{
 	
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
@@ -454,11 +502,10 @@ void OpenGLContext::renderScene(void){
 	drawPass();
 	glEnable(GL_CULL_FACE);
 	TwDraw();
-	
 	glutSwapBuffers();
 }
 
-float OpenGLContext::getZoom(void){
+float OpenGLContext::getZoom(void)const{
 	return zoom;
 }
 
@@ -467,7 +514,7 @@ void OpenGLContext::setZoom(float zoom){
 }
 
 
-glm::ivec2 OpenGLContext::getScreen(void){
+glm::ivec2 OpenGLContext::getScreen(void)const{
 	glm::ivec2 screen = glm::ivec2(windowWidth, windowHeight);
 	return screen;
 }

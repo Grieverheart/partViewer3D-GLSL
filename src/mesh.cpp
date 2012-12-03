@@ -7,7 +7,7 @@ CMesh::CMesh(GLfloat scale){
 
 CMesh::~CMesh(void){
 	if(vaoID != 0) glDeleteBuffers(1, &vaoID);
-	if(vboID != 0) glDeleteBuffers(1, &vboID);
+	if(vboID != 0) glDeleteBuffers(3, &vboID[0]);
 }
 
 void CMesh::data(std::vector<Vertex> vertices){
@@ -19,15 +19,16 @@ void CMesh::upload(GLuint shaderID){
 	glGenVertexArrays(1,&vaoID);
 	glBindVertexArray(vaoID);
 	
-	glGenBuffers(1,&vboID);
-	glBindBuffer(GL_ARRAY_BUFFER, vboID);
+	glGenBuffers(3,&vboID[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
-	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
-	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
+	
 	glEnableVertexAttribArray((GLuint)0);
+	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
 	glEnableVertexAttribArray((GLuint)1);
+	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
 	glEnableVertexAttribArray((GLuint)2);
+	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -39,11 +40,66 @@ void CMesh::upload(GLuint shaderID){
 	// }
 }
 
-void CMesh::draw(void){
+void CMesh::draw(void)const{
 	glUniform1fv(scaleLocation, 1, &scale);
 	glGetError();
 	
 	glBindVertexArray(vaoID); 
 	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+	glBindVertexArray(0);
+}
+
+void CMesh::uploadInstanced(GLuint shaderID){
+	
+	glGenVertexArrays(1,&vaoID);
+	glBindVertexArray(vaoID);
+	
+	glGenBuffers(3,&vboID[0]);
+	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
+	
+	glEnableVertexAttribArray((GLuint)0);
+	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
+	glEnableVertexAttribArray((GLuint)1);
+	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
+	glEnableVertexAttribArray((GLuint)2);
+	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
+	
+	glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
+	for(int i = 0; i < 4; i++){ //MVP Matrices
+		glEnableVertexAttribArray(3 + i);
+		glVertexAttribPointer(3 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+		glVertexAttribDivisor(3 + i, 1);
+	}
+	
+	glBindBuffer(GL_ARRAY_BUFFER, vboID[2]);
+	for(int i = 0; i < 3; i++){ //Normal Matrices
+		glEnableVertexAttribArray(7 + i);
+		glVertexAttribPointer(7 + i, 3, GL_FLOAT, GL_FALSE, sizeof(glm::mat3), (const GLvoid*)(sizeof(float) * i * 3));
+		glVertexAttribDivisor(7 + i, 1);
+	}
+	
+	
+	glBindVertexArray(0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+	
+	scaleLocation = glGetUniformLocation(shaderID, "scale");
+	
+	// if(scaleLocation == -1){
+		// std::cout << "Unable to bind uniform" << std::endl;
+	// }
+}
+
+void CMesh::drawInstanced(unsigned int nInstances, const glm::mat4* MVPs, const glm::mat3 *NMs)const{
+	glUniform1fv(scaleLocation, 1, &scale);
+	glGetError();
+	
+	glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * nInstances, MVPs, GL_DYNAMIC_DRAW);
+	glBindBuffer(GL_ARRAY_BUFFER, vboID[2]);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat3) * nInstances, NMs, GL_DYNAMIC_DRAW);
+	
+	glBindVertexArray(vaoID); 
+	glDrawArraysInstanced(GL_TRIANGLES, 0, vertices.size(), nInstances);
 	glBindVertexArray(0);
 }
