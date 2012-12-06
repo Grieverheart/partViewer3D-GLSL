@@ -19,7 +19,7 @@ void CMesh::upload(GLuint shaderID){
 	glGenVertexArrays(1,&vaoID);
 	glBindVertexArray(vaoID);
 	
-	glGenBuffers(3,&vboID[0]);
+	glGenBuffers(1,&vboID[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
 	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
 	

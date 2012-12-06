@@ -3,14 +3,14 @@
 OpenGLContext::OpenGLContext(void):
 	m_fboInit(false),
 	mesh(1.0f),
-	full_quad(1.0)
+	full_quad(1.0f)
 {
 	/////////////////////////////////////////////////
 	// Default Constructor for OpenGLContext class //
 	/////////////////////////////////////////////////
 	zoom = 0.0f;
 	fov = 60.0f;
-	znear = 1.0f;
+	znear = 1.0f; //In the Future, calculate the optimal znear and zfar
 	zfar = 100.0f;
 	m_bgColor = glm::vec3(0.4, 0.6, 0.9);
 	redisplay = false;
@@ -133,6 +133,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+	glDisable(GL_MULTISAMPLE);
 	
 	initConfigurationBox();
 	

@@ -25,8 +25,7 @@ out vec4 out_Color;
 
 vec3 CalcPosition(float depth){
 	float linearDepth = projAB.y / (depth - projAB.x);
-	vec3 ray = normalize(viewRay);
-	ray = ray / ray.z;
+	vec3 ray = viewRay / viewRay.z;
 	return linearDepth * ray;
 }
 
