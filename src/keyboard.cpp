@@ -26,7 +26,7 @@ void CKeyboard::keySpIsUp(int key){
 }
 
 void CKeyboard::keyOps(void){
-	if(keyMap[27])exit(0);//exit when escape
+	if(keyMap[27])glutLeaveMainLoop();//exit when escape
 	
 	if(keyMap[13]){ //Enter
 		int mod=glutGetModifiers();

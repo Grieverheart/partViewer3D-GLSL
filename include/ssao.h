@@ -2,6 +2,7 @@
 #define __SSAO_H
 
 #include "main.h"
+#include "shader.h"
 #include <AntTweakBar.h>
 
 class Cssao{
@@ -9,13 +10,13 @@ public:
 	Cssao(void);
 	~Cssao(void);
 	
-	bool Init(unsigned int WindowWidth, unsigned int WindowHeight, unsigned int shader_id);
+	bool Init(unsigned int WindowWidth, unsigned int WindowHeight);
 	void BindNoise(void)const;
-	void UploadUniforms(void)const;
-	void UpdateUniforms(void);
+	void UploadUniforms(Shader const *shader)const;
+	void UpdateUniforms(Shader const *shader);
 	void BindForWriting(void)const;
 	void BindForReading(void)const;
-	void Resize(unsigned int WindowWidth, unsigned int WindowHeight);
+	void Resize(unsigned int WindowWidth, unsigned int WindowHeight, Shader const *shader);
 	
 	float getRadius(void)const;
 	void setRadius(float radius);
@@ -46,19 +47,12 @@ private:
 	unsigned int m_kernel_size;
 	unsigned int m_noise_size;
 	unsigned int m_noise_scale;
-	unsigned int m_shader_id;
 	GLuint m_noise_texture;
 	GLuint m_ssaoTexture;
 	GLuint m_fbo;
 	float m_RADIUS;
 	bool m_update;
 	bool m_update_kernel;
-	
-	int m_noiseSamplerLocation;
-	int m_kernLocation;
-	int m_noiseScaleLocation;
-	int m_kernelSizeLocation;
-	int m_RADIUSLocation;
 	
 	glm::ivec2 m_noiseScale;
 	glm::vec3 *m_kernel;

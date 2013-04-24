@@ -21,7 +21,7 @@ uniform vec3 bgColor;
 noperspective in vec2 pass_TexCoord;
 smooth in vec3 viewRay;
 
-out vec4 out_Color;
+layout(location = 0) out vec4 out_Color;
 
 vec3 CalcPosition(float depth){
 	float linearDepth = projAB.y / (depth - projAB.x);

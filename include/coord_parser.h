@@ -9,7 +9,7 @@ public:
 	CCoordParser(void);
 	~CCoordParser(void);
 	
-	void parse(const char *filename);
+	void parse(std::istream &in);
 	
 	std::vector<glm::vec4> rotations;
 	std::vector<glm::vec3> centers;

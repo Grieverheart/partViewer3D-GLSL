@@ -53,7 +53,7 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	
-	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2};
+	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1};
 	glDrawBuffers(GBUFF_NUM_TEXTURES, DrawBuffers);
 	
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);

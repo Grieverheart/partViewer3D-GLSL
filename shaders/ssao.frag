@@ -19,7 +19,6 @@ layout(location = 0) out float out_AO;
 vec3 CalcPosition(void){
 	float depth = texture(DepthMap, pass_TexCoord).r;
 	float linearDepth = projAB.y / (depth - projAB.x);
-	// vec3 ray = normalize(viewRay);
 	vec3 ray = viewRay / viewRay.z;
 	return linearDepth * ray;
 }
@@ -31,6 +30,7 @@ mat3 CalcRMatrix(vec3 normal, vec2 texcoord){
 	
 	return mat3(tangent, bitangent, normal);
 }
+
 
 void main(void){
 

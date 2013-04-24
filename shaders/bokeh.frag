@@ -5,6 +5,10 @@ uniform sampler2D bgl_DepthTexture;
 uniform float bgl_RenderedTextureWidth;
 uniform float bgl_RenderedTextureHeight;
 
+noperspective in vec2 pass_TexCoord;
+
+out vec4 out_Color;
+
 #define PI  3.14159265
 
 float width = bgl_RenderedTextureWidth; //texture width
@@ -14,16 +18,16 @@ vec2 texel = vec2(1.0/width,1.0/height);
 
 //uniform variables from external script
 
-uniform float focalDepth;  //focal distance value in meters, but you may use autofocus option below
-uniform float focalLength; //focal length in mm
-uniform float fstop; //f-stop value
-uniform bool showFocus; //show debug focus point and focal range (red = focal point, green = focal range)
+float focalDepth = 25.0;  //focal distance value in meters, but you may use autofocus option below
+float focalLength = 70.01; //focal length in mm
+float fstop = 11.0; //f-stop value
+bool showFocus = false; //show debug focus point and focal range (red = focal point, green = focal range)
 
 /* 
 make sure that these two values are the same for your camera, otherwise distances will be wrong.
 */
 
-float znear = 0.1; //camera clipping start
+float znear = 1.0; //camera clipping start
 float zfar = 100.0; //camera clipping end
 
 //------------------------------------------
@@ -45,7 +49,7 @@ float vignout = 1.3; //vignetting outer border
 float vignin = 0.0; //vignetting inner border
 float vignfade = 22.0; //f-stops till vignete fades
 
-bool autofocus = false; //use autofocus in shader? disable if you use external focalDepth value
+bool autofocus = true; //use autofocus in shader? disable if you use external focalDepth value
 vec2 focus = vec2(0.5,0.5); // autofocus point on screen (0.0,0.0 - left lower corner, 1.0,1.0 - upper right)
 float maxblur = 1.0; //clamp value of max blur (0.0 = no blur,1.0 default)
 
@@ -135,7 +139,7 @@ float bdepth(vec2 coords) //blurring depth
 	
 	for( int i=0; i<9; i++ )
 	{
-		float tmp = texture2D(bgl_DepthTexture, coords + offset[i]).r;
+		float tmp = texture(bgl_DepthTexture, coords + offset[i]).r;
 		d += tmp * kernel[i];
 	}
 	
@@ -147,9 +151,9 @@ vec3 color(vec2 coords,float blur) //processing the sample
 {
 	vec3 col = vec3(0.0);
 	
-	col.r = texture2D(bgl_RenderedTexture,coords + vec2(0.0,1.0)*texel*fringe*blur).r;
-	col.g = texture2D(bgl_RenderedTexture,coords + vec2(-0.866,-0.5)*texel*fringe*blur).g;
-	col.b = texture2D(bgl_RenderedTexture,coords + vec2(0.866,-0.5)*texel*fringe*blur).b;
+	col.r = texture(bgl_RenderedTexture,coords + vec2(0.0,1.0)*texel*fringe*blur).r;
+	col.g = texture(bgl_RenderedTexture,coords + vec2(-0.866,-0.5)*texel*fringe*blur).g;
+	col.b = texture(bgl_RenderedTexture,coords + vec2(0.866,-0.5)*texel*fringe*blur).b;
 	
 	vec3 lumcoeff = vec3(0.299,0.587,0.114);
 	float lum = dot(col.rgb, lumcoeff);
@@ -189,7 +193,7 @@ float linearize(float depth)
 
 float vignette()
 {
-	float dist = distance(gl_TexCoord[3].xy, vec2(0.5,0.5));
+	float dist = distance(pass_TexCoord.xy, vec2(0.5,0.5));
 	dist = smoothstep(vignout+(fstop/vignfade), vignin+(fstop/vignfade), dist);
 	return clamp(dist,0.0,1.0);
 }
@@ -198,11 +202,11 @@ void main()
 {
 	//scene depth calculation
 	
-	float depth = linearize(texture2D(bgl_DepthTexture,gl_TexCoord[0].xy).x);
+	float depth = linearize(texture(bgl_DepthTexture,pass_TexCoord.xy).x);
 	
 	if (depthblur)
 	{
-		depth = linearize(bdepth(gl_TexCoord[0].xy));
+		depth = linearize(bdepth(pass_TexCoord.xy));
 	}
 	
 	//focal plane calculation
@@ -211,7 +215,7 @@ void main()
 	
 	if (autofocus)
 	{
-		fDepth = linearize(texture2D(bgl_DepthTexture,focus).x);
+		fDepth = linearize(texture(bgl_DepthTexture,focus).x);
 	}
 	
 	//dof blur factor calculation
@@ -243,7 +247,7 @@ void main()
 	
 	// calculation of pattern for ditering
 	
-	vec2 noise = rand(gl_TexCoord[0].xy)*namount*blur;
+	vec2 noise = rand(pass_TexCoord.xy)*namount*blur;
 	
 	// getting blur x and y step factor
 	
@@ -256,12 +260,12 @@ void main()
 	
 	if(blur < 0.05) //some optimization thingy
 	{
-		col = texture2D(bgl_RenderedTexture, gl_TexCoord[0].xy).rgb;
+		col = texture(bgl_RenderedTexture, pass_TexCoord.xy).rgb;
 	}
 	
 	else
 	{
-		col = texture2D(bgl_RenderedTexture, gl_TexCoord[0].xy).rgb;
+		col = texture(bgl_RenderedTexture, pass_TexCoord.xy).rgb;
 		float s = 1.0;
 		int ringsamples;
 		
@@ -279,7 +283,7 @@ void main()
 				{ 
 					p = penta(vec2(pw,ph));
 				}
-				col += color(gl_TexCoord[0].xy + vec2(pw*w,ph*h),blur)*mix(1.0,(float(i))/(float(rings)),bias)*p;  
+				col += color(pass_TexCoord.xy + vec2(pw*w,ph*h),blur)*mix(1.0,(float(i))/(float(rings)),bias)*p;  
 				s += 1.0*mix(1.0,(float(i))/(float(rings)),bias)*p;   
 			}
 		}
@@ -296,6 +300,6 @@ void main()
 		col *= vignette();
 	}
 	
-	gl_FragColor.rgb = col;
-	gl_FragColor.a = 1.0;
+	out_Color.rgb = col;
+	out_Color.a = 1.0;
 }

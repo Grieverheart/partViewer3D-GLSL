@@ -1,4 +1,5 @@
 #include "../include/opengl_3.h"
+#include <fstream>
 
 OpenGLContext::OpenGLContext(void):
 	m_fboInit(false),
@@ -31,9 +32,9 @@ OpenGLContext::~OpenGLContext(void) {
 	if(iboBox != 0) glDeleteBuffers(1, &iboBox);
 	if(sh_gbuffer) delete sh_gbuffer; // GLSL Shader
 	if(sh_gbuffer_instanced) delete sh_gbuffer_instanced; // GLSL Shader
-	if(sh_ssao) delete sh_gbuffer;
-	if(sh_blur) delete sh_gbuffer;
-	if(sh_accumulator) delete sh_gbuffer;
+	if(sh_ssao) delete sh_ssao;
+	if(sh_blur) delete sh_blur;
+	if(sh_accumulator) delete sh_accumulator;
 	if(MVPArray) delete[] MVPArray;
 	if(NormalArray) delete[] NormalArray;
 	TwTerminate();
@@ -112,8 +113,18 @@ void OpenGLContext::createGui(void){
 void OpenGLContext::setupScene(int argc, char *argv[]){
 	float init_zoom = -4.0f;
 	if(argc>1){
+	
 		use_dat = true;
-		coordparser.parse(argv[1]);
+		std::ifstream file(argv[1], std::ios::in);
+		if(!file){
+			std::cout << "Cannot open " << argv[1] << "." << std::endl;
+			exit(1);
+		}
+		std::cout << "Parsing " << argv[1] << std::endl;
+		coordparser.parse(file);
+		std::cout << "Done Parsing " << argv[1] << std::endl;
+		std::cout << "Found " << coordparser.npart << " particles" << std::endl;
+		
 		for(int i=0;i<3;i++){
 			GLfloat max_zoom = -3.5f*glm::length(glm::transpose(coordparser.boxMatrix)[i]);
 			if(max_zoom < init_zoom) init_zoom = max_zoom;
@@ -133,7 +144,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
-	glDisable(GL_MULTISAMPLE);
 	
 	initConfigurationBox();
 	
@@ -143,56 +153,8 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
 	sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
 	
-	// Gbuffer Uniform Locations
-	MVPMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"MVPMatrix");
-	NormalMatrixLocation = glGetUniformLocation(sh_gbuffer->id(),"NormalMatrix");
-	diffColorLocation = glGetUniformLocation(sh_gbuffer->id(),"diffColor");
-	scaleLocation = glGetUniformLocation(sh_gbuffer->id(),"scale");
-	diffColorInstancedLocation = glGetUniformLocation(sh_gbuffer_instanced->id(),"diffColor");
-	
-	if(
-		MVPMatrixLocation == -1	||	NormalMatrixLocation == -1
-	) std::cout<<"Unable to bind GBuffer uniforms"<<std::endl;
-	
-	// SSAO Uniform Locations
-	ssaoProjMatrixLocation = glGetUniformLocation(sh_ssao->id(), "projectionMatrix");
-	ssaoDepthMapLocation = glGetUniformLocation(sh_ssao->id(), "DepthMap");
-	ssaoNormalMapLocation = glGetUniformLocation(sh_ssao->id(), "NormalMap");
-	ssaoprojABLocation = glGetUniformLocation(sh_ssao->id(), "projAB");
-	ssaoinvProjMatrixLocation = glGetUniformLocation(sh_ssao->id(), "invProjMatrix");
-	if(!m_ssao.Init(windowWidth, windowHeight, sh_ssao->id())) std::cout << "Couldn't initialize SSAO!" << std::endl;
-	
-	if(
-		ssaoProjMatrixLocation == -1	||	ssaoDepthMapLocation == -1	||
-		ssaoNormalMapLocation == -1		||	ssaoprojABLocation == -1	||
-		ssaoinvProjMatrixLocation == -1
-	){ std::cout << "Unable to bind SSAO main uniforms" << std::endl; }
-	
-	// Blur Uniform Locations
-	aoSamplerLocation = glGetUniformLocation(sh_blur->id(), "aoSampler");
-	texelSizeLocation = glGetUniformLocation(sh_blur->id(), "TEXEL_SIZE");
-	m_blurLocation = glGetUniformLocation(sh_blur->id(), "use_blur");
-	
-	if(
-		aoSamplerLocation == -1	||	texelSizeLocation == -1
-	){ std::cout << "Unable to bind blur uniforms" << std::endl; }
-	
-	// Accumulator Uniform Locations
-	DepthMapLocation = glGetUniformLocation(sh_accumulator->id(), "DepthMap");
-	NormalMapLocation = glGetUniformLocation(sh_accumulator->id(), "NormalMap");
-	ColorMapLocation = glGetUniformLocation(sh_accumulator->id(), "ColorMap");
-	// IDMapLocation = glGetUniformLocation(sh_accumulator->id(), "IDMap");
+	if(!m_ssao.Init(windowWidth, windowHeight)) std::cout << "Couldn't initialize SSAO!" << std::endl;
 	if(!light.Init(sh_accumulator->id())) std::cout << "Cannot bind light uniform" << std::endl;
-	projABLocation = glGetUniformLocation(sh_accumulator->id(), "projAB");
-	invProjMatrixLocation = glGetUniformLocation(sh_accumulator->id(), "invProjMatrix");
-	bgColorLocation = glGetUniformLocation(sh_accumulator->id(), "bgColor");
-	
-	if(
-		invProjMatrixLocation == -1	||	DepthMapLocation == -1	||
-		NormalMapLocation == -1		||	projABLocation == -1	||
-		ColorMapLocation == -1		||	bgColorLocation == -1
-	){ std::cout << "Unable to bind Accumulator uniforms" << std::endl; }
-	
 	
 	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
 	viewMatrix = glm::lookAt(glm::vec3(0.0, 2.0, 0.0), glm::vec3(0.0, 0.0, init_zoom), glm::vec3(0.0, 1.0, 0.0));
@@ -208,12 +170,12 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		float projB = zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		invProjMatrix = glm::inverse(projectionMatrix);
-		m_ssao.UploadUniforms();
-		glUniform1i(ssaoNormalMapLocation, 0);
-		glUniform1i(ssaoDepthMapLocation, 1);
-		glUniform2fv(ssaoprojABLocation, 1, &projAB[0]);
-		glUniformMatrix4fv(ssaoProjMatrixLocation, 1, GL_FALSE, &projectionMatrix[0][0]);
-		glUniformMatrix4fv(ssaoinvProjMatrixLocation, 1, GL_FALSE, &invProjMatrix[0][0]);
+		m_ssao.UploadUniforms(sh_ssao);
+		sh_ssao->setUniform("NormalMap", 0);
+		sh_ssao->setUniform("DepthMap", 1);
+		sh_ssao->setUniform("projAB", 1, projAB);
+		sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
+		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
 		
 	}
 	sh_ssao->unbind();
@@ -222,9 +184,9 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_blur->bind();
 	{
 		glm::vec2 texel_size = glm::vec2(1.0 / windowWidth, 1.0 / windowHeight);
-		glUniform2fv(texelSizeLocation, 1, &texel_size[0]);
-		glUniform1i(aoSamplerLocation, 0);
-		glUniform1i(m_blurLocation, int(m_blur));
+		sh_blur->setUniform("TEXEL_SIZE", 1, texel_size);
+		sh_blur->setUniform("aoSampler", 0);
+		sh_blur->setUniform("use_blur", int(m_blur));
 	}
 	sh_blur->unbind();
 	
@@ -232,17 +194,18 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	
 	sh_accumulator->bind();
 	{
-		glUniform1i(ColorMapLocation, 0);
-		glUniform1i(NormalMapLocation, 1);
-		// glUniform1i(IDMapLocation, 2);
-		glUniform1i(DepthMapLocation, 2);
+		sh_accumulator->setUniform("ColorMap", 0);
+		sh_accumulator->setUniform("NormalMap", 1);
+		sh_accumulator->setUniform("DepthMap", 2);
+		// sh_accumulator->setUniform("IDMap", 2);
+		
 		float projA = (zfar + znear)/ (zfar - znear);
 		float projB = 2.0 * zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
-		glUniform2fv(projABLocation, 1, &projAB[0]);
-		glUniform3fv(bgColorLocation, 1, &m_bgColor[0]);
+		sh_accumulator->setUniform("projAB", 1, projAB);
+		sh_accumulator->setUniform("bgColor", 1, m_bgColor);
 		invProjMatrix = glm::inverse(projectionMatrix);
-		glUniformMatrix4fv(invProjMatrixLocation, 1, GL_FALSE, &invProjMatrix[0][0]);
+		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
 	sh_accumulator->unbind();
 	
@@ -265,13 +228,13 @@ void OpenGLContext::reshapeWindow(int w, int h){
 		m_gbuffer.Resize(windowWidth, windowHeight);
 		sh_ssao->bind();
 		{
-			m_ssao.Resize(windowWidth, windowHeight);
+			m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
 		}
 		sh_ssao->unbind();
 		sh_blur->bind();
 		{
 			glm::vec2 texel_size = glm::vec2(1.0 / windowWidth, 1.0 / windowHeight);
-			glUniform2fv(texelSizeLocation, 1, &texel_size[0]);
+			sh_blur->setUniform("TEXEL_SIZE", 1, texel_size);
 		}
 		sh_blur->unbind();
 	}
@@ -352,14 +315,14 @@ void OpenGLContext::drawConfigurationBox(void)const{
 	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
 	glm::mat4 MVPMatrix = pMatrix * ModelViewMatrix;
 	
-	glUniformMatrix4fv(MVPMatrixLocation, 1, GL_FALSE, &MVPMatrix[0][0]);
+	sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
 	
 	glBindVertexArray(vaoBox);
 	
 	glLineWidth(fabs(-0.067f * zoom + 4.0f));
 	
-	glUniform3f(diffColorLocation, 0.01f, 0.01f, 0.01f);
-	glUniform1f(scaleLocation, 1.0f);
+	sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
+	sh_gbuffer->setUniform("scale", 1.0f);
 	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, 0);
 	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, (GLvoid*)(4*sizeof(GLushort)));
 	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
@@ -385,7 +348,8 @@ void OpenGLContext::drawConfiguration(void)const{
 	);
 	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
 	
-	glUniform3fv(diffColorInstancedLocation, 1, &diffcolor[0]);
+	
+	sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
 	
 	for(unsigned int i = 0; i < mNInstances; i++){
 		glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
@@ -424,7 +388,7 @@ void OpenGLContext::fboPass(void)const{
 			MVPArray[0] = tempMVPMatrix;
 			NormalArray[0] = tempNormalMatrix;
 			
-			glUniform3fv(diffColorInstancedLocation, 1, &diffcolor[0]);
+			sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
 			
 			mesh.drawInstanced(mNInstances, MVPArray, NormalArray);
 		}
@@ -454,7 +418,7 @@ void OpenGLContext::ssaoPass(void){
 	
 	sh_ssao->bind();
 	{
-		m_ssao.UpdateUniforms();
+		m_ssao.UpdateUniforms(sh_ssao);
 		full_quad.draw();
 	}
 	sh_ssao->unbind();
@@ -464,7 +428,7 @@ void OpenGLContext::ssaoPass(void){
 	
 	sh_blur->bind();
 	{
-		glUniform1i(m_blurLocation, int(m_blur));
+		sh_blur->setUniform("use_blur", int(m_blur));
 		full_quad.draw();
 	}
 	sh_blur->unbind();
@@ -483,7 +447,7 @@ void OpenGLContext::drawPass(void)const{
 	
 	sh_accumulator->bind();
 	{
-		glUniform3fv(bgColorLocation, 1, &m_bgColor[0]);
+		sh_accumulator->setUniform("bgColor", 1, m_bgColor);
 		light.uploadDirection(viewMatrix);
 		full_quad.draw();
 	}
@@ -513,7 +477,6 @@ float OpenGLContext::getZoom(void)const{
 void OpenGLContext::setZoom(float zoom){
 	this->zoom = zoom;
 }
-
 
 glm::ivec2 OpenGLContext::getScreen(void)const{
 	glm::ivec2 screen = glm::ivec2(windowWidth, windowHeight);

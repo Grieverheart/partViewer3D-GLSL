@@ -48,27 +48,6 @@ private:
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
 	
-	int MVPMatrixLocation;
-	int ModelViewMatrixLocation;
-	int NormalMatrixLocation;
-	int DepthMapLocation;
-	int NormalMapLocation;
-	int ColorMapLocation;
-	// int IDMapLocation;
-	int projABLocation;	// projA and projB are two uniforms needed to convert the post projective depth to the linear depth
-	int invProjMatrixLocation;
-	int ssaoProjMatrixLocation;
-	int ssaoDepthMapLocation;
-	int ssaoNormalMapLocation;
-	int ssaoprojABLocation;
-	int ssaoinvProjMatrixLocation;
-	int aoSamplerLocation;
-	int texelSizeLocation;
-	int bgColorLocation;
-	int diffColorLocation;
-	int scaleLocation;
-	int diffColorInstancedLocation;
-	int m_blurLocation;
 	unsigned int mNInstances;
 	
 	GLuint vaoBox;
