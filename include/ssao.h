@@ -7,15 +7,20 @@
 
 class Cssao{
 public:
+    enum SSAO_TEXTURE_TYPE{
+        TEXTURE_TYPE_SSAO,
+        TEXTURE_TYPE_NOISE,
+        NUM_TEXTURES
+    };
 	Cssao(void);
 	~Cssao(void);
 	
 	bool Init(unsigned int WindowWidth, unsigned int WindowHeight);
-	void BindNoise(void)const;
-	void UploadUniforms(Shader const *shader)const;
-	void UpdateUniforms(Shader const *shader);
-	void BindForWriting(void)const;
-	void BindForReading(void)const;
+	void UploadUniforms(const Shader& shader)const;
+	void UpdateUniforms(const Shader& shader);
+	void Bind(void)const;
+	void UnBind(void)const;
+	void BindTexture(SSAO_TEXTURE_TYPE type, int attachment_point)const;
 	void Resize(unsigned int WindowWidth, unsigned int WindowHeight, Shader const *shader);
 	
 	float getRadius(void)const;
@@ -47,10 +52,13 @@ private:
 	unsigned int m_kernel_size;
 	unsigned int m_noise_size;
 	unsigned int m_noise_scale;
+
 	GLuint m_noise_texture;
 	GLuint m_ssaoTexture;
 	GLuint m_fbo;
+
 	float m_RADIUS;
+
 	bool m_update;
 	bool m_update_kernel;
 	

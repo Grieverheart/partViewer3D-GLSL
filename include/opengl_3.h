@@ -10,6 +10,7 @@
 #include "light.h"
 #include "g-buffer.h"
 #include "ssao.h"
+#include "shadowmap.h"
 
 class OpenGLContext{
 public:
@@ -34,19 +35,22 @@ private:
 	int windowHeight;	//Store the height of the window
 	float fov, zoom;
 	float znear,zfar;
+    float out_radius;
 	
 	glm::mat4 projectionMatrix;
+	glm::mat4 invProjMatrix;
 	glm::mat4 viewMatrix;
+    glm::mat4 invViewMatrix;
 	glm::mat4 modelMatrix;
-	glm::mat4 lightViewMatrix;
-	glm::mat4 IdentityMatrix;
-	glm::mat4 lightProjectionMatrix;
+    glm::mat4 lightProjectionMatrix;
+    glm::mat4 lightViewMatrix;
 	
 	glm::mat4 *MVPArray;
 	glm::mat3 *NormalArray;
 	
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
+	glm::vec3 skycolor;
 	
 	unsigned int mNInstances;
 	
@@ -66,10 +70,12 @@ private:
 	CMesh full_quad;
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;
+    CShadowmap m_shadowmap;
 	
 	Shader *sh_gbuffer; // GLSL Shader
 	Shader *sh_gbuffer_instanced; // GLSL Shader
 	Shader *sh_ssao;
+	Shader *sh_shadowmap_instanced;
 	Shader *sh_blur;
 	Shader *sh_accumulator;
 	
@@ -78,8 +84,9 @@ private:
 	void drawPass(void)const;
 	void fboPass(void)const;
 	void ssaoPass(void);
+	void shadowPass(void);
 	
-	void drawConfiguration(void)const;
+	void drawConfiguration(const glm::mat4& vMatrix, const glm::mat4& pMatrix)const;
 	void drawConfigurationBox(void)const;
 	void initConfigurationBox(void);
 	

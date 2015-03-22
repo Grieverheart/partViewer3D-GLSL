@@ -12,13 +12,12 @@ static inline float lerp(float start, float end, float perc){
 	return start + perc * (end - start);
 }
 
-Cssao::Cssao(void){
+Cssao::Cssao(void):
+	m_kernel_size(16), m_noise_size(3), m_RADIUS(3.4f),
+	m_update(false), m_update_kernel(false),
+    m_kernel(NULL), m_noise(NULL)
+{
 	srand(2);
-	m_kernel_size = 16;
-	m_noise_size = 3;
-	m_RADIUS = 3.4f;
-	m_update = false;
-	m_update_kernel = false;
 }
 
 Cssao::~Cssao(void){
@@ -97,37 +96,36 @@ bool Cssao::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	return true;
 }
 
-void Cssao::BindForWriting(void)const{
+void Cssao::Bind(void)const{
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
 }
 
-void Cssao::BindForReading(void)const{
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glActiveTexture(GL_TEXTURE0 + 0);
-	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
+void Cssao::UnBind(void)const{
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
-void Cssao::UploadUniforms(Shader const *shader)const{
-	shader->setUniform("noise", 2);
-	shader->setUniform("kernelSize", (int)m_kernel_size);
-	shader->setUniform("noiseScale", 1, m_noiseScale);
-	shader->setUniform("kernel[0]", m_kernel_size, m_kernel[0]);
-	shader->setUniform("RADIUS", m_RADIUS);
+void Cssao::BindTexture(SSAO_TEXTURE_TYPE type, int attachment_point)const{
+	glActiveTexture(GL_TEXTURE0 + attachment_point);
+	if(type == TEXTURE_TYPE_SSAO) glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
+    else glBindTexture(GL_TEXTURE_2D, m_noise_texture);
 }
 
-void Cssao::UpdateUniforms(Shader const *shader){
+void Cssao::UploadUniforms(const Shader& shader)const{
+	shader.setUniform("noise", 2);
+	shader.setUniform("kernelSize", (int)m_kernel_size);
+	shader.setUniform("noiseScale", 1, m_noiseScale);
+	shader.setUniform("kernel[0]", m_kernel_size, m_kernel[0]);
+	shader.setUniform("RADIUS", m_RADIUS);
+}
+
+void Cssao::UpdateUniforms(const Shader& shader){
 	if(m_update_kernel){	
-		shader->setUniform("kernelSize", (int)m_kernel_size);
-		shader->setUniform("kernel[0]", m_kernel_size, m_kernel[0]);
+		shader.setUniform("kernelSize", (int)m_kernel_size);
+		shader.setUniform("kernel[0]", m_kernel_size, m_kernel[0]);
 	}
-	if(m_update)shader->setUniform("RADIUS", m_RADIUS);
+	if(m_update)shader.setUniform("RADIUS", m_RADIUS);
 	m_update_kernel = false;
 	m_update = false;
-}
-
-void Cssao::BindNoise(void)const{
-	glActiveTexture(GL_TEXTURE0 + 2); // Set to apropriate texture unit
-	glBindTexture(GL_TEXTURE_2D, m_noise_texture);
 }
 
 void Cssao::Resize(unsigned int WindowWidth, unsigned int WindowHeight, Shader const *shader){

@@ -7,6 +7,8 @@ CFLAGS=-Wall -g -O3
 LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lglu32 -lAntTweakBar
 RM=del /q
 
+SHELL=cmd.exe
+
 vpath %.o bin/
 
 bin/%.o: src/%.cpp

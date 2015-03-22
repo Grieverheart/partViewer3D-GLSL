@@ -7,14 +7,14 @@
 class CLight{
 public:
 	CLight(void);
-	CLight(glm::vec3 position, glm::vec3 direction);
+	CLight(glm::vec3 direction);
 	~CLight(void);
 	
 	bool Init(GLuint shade_id);
 	void uploadDirection(glm::mat4 ViewMatrix)const;
 	
-	glm::vec3 getPosition(void)const;
-	glm::vec3 getDirection(void)const;
+	const glm::vec3& getDirection(void)const;
+	void setDirection(const glm::vec3&);
 	
 	float getSpecInt(void)const;
 	void setSpecInt(float value);
@@ -27,6 +27,14 @@ public:
 	
 	float getInt(void)const;
 	void setInt(float value);
+	
+	static void TW_CALL SetDirCallback(const void *value, void *clientData){
+		static_cast<CLight*>(clientData)->setDirection(*static_cast<const glm::vec3*>(value));
+	}
+	
+	static void TW_CALL GetDirCallback(void *value, void *clientData){
+		*static_cast<glm::vec3*>(value) = static_cast<const CLight*>(clientData)->getDirection();
+	}
 	
 	static void TW_CALL SetSpecIntCallback(const void *value, void *clientData){
 		static_cast<CLight *>(clientData)->setSpecInt(*static_cast<const float *>(value));
@@ -61,7 +69,6 @@ public:
 	}
 	
 private:
-	glm::vec3 m_position;
 	glm::vec3 m_direction;
 	int m_DirectionLocation;
 	int m_SpecularIntensityLocation;

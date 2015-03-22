@@ -8,7 +8,7 @@
 class Shader{
 public:
 	Shader(void);
-	Shader(const char *vsFile, const char *fsFile, const char *gsFile = NULL);
+	Shader(const char *vsFile, const char *fsFile = NULL, const char *gsFile = NULL);
 	~Shader(void);
 	
 	void bind(void);

@@ -14,7 +14,7 @@ void main(void){
 		for(int i = -1; i < 2; i++){
 			for(int j = -1; j < 2; j++){
 				vec2 offset = vec2(TEXEL_SIZE.x * i, TEXEL_SIZE.y * j);
-				result += texture(aoSampler, TexCoord + offset).r; // -0.004 because the texture seems to be a bit displaced
+				result += texture(aoSampler, TexCoord + offset).r;
 			}
 		}
 		

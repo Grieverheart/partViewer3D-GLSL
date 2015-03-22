@@ -2,6 +2,10 @@
 #include "../include/main.h"
 #include <AntTweakBar.h>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 CMouse::CMouse(OpenGLContext *context){
 	this->context = context;
 	last_mx=last_my=cur_mx=cur_my=0;

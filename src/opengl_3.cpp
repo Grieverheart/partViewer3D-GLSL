@@ -1,6 +1,13 @@
 #include "../include/opengl_3.h"
 #include <fstream>
 
+static const glm::mat4 biasMatrix(
+    0.5, 0.0, 0.0, 0.0,
+    0.0, 0.5, 0.0, 0.0,
+    0.0, 0.0, 0.5, 0.0,
+    0.5, 0.5, 0.5, 1.0
+);
+
 OpenGLContext::OpenGLContext(void):
 	m_fboInit(false),
 	mesh(1.0f),
@@ -13,16 +20,16 @@ OpenGLContext::OpenGLContext(void):
 	fov = 60.0f;
 	znear = 1.0f; //In the Future, calculate the optimal znear and zfar
 	zfar = 100.0f;
-	m_bgColor = glm::vec3(0.4, 0.6, 0.9);
+	m_bgColor = glm::vec3(44, 114, 220) / 255.0f;
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
 	use_dat = false;
 	drawBox = false;
 	m_blur = true;
 	m_rotating = false;
-	light = CLight(glm::vec3(-10.0, 10.0, 10.0), glm::vec3(1.0, -1.0, -1.0));
-	IdentityMatrix = glm::mat4(1.0);
-	diffcolor = glm::vec3(0.282, 0.239, 0.545);
+	light = CLight(glm::vec3(-0.27, -0.91, -0.33));
+	diffcolor = glm::vec3(77, 27, 147) / 255.0f;
+	skycolor  = glm::vec3(0.529, 0.808, 0.921);
 	
 }
 
@@ -33,6 +40,7 @@ OpenGLContext::~OpenGLContext(void) {
 	if(sh_gbuffer) delete sh_gbuffer; // GLSL Shader
 	if(sh_gbuffer_instanced) delete sh_gbuffer_instanced; // GLSL Shader
 	if(sh_ssao) delete sh_ssao;
+	if(sh_shadowmap_instanced) delete sh_shadowmap_instanced;
 	if(sh_blur) delete sh_blur;
 	if(sh_accumulator) delete sh_accumulator;
 	if(MVPArray) delete[] MVPArray;
@@ -49,7 +57,7 @@ bool OpenGLContext::create30Context(void){
 	glutInitContextVersion(3, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
 	glutInitWindowSize(600,600);
 	windowWidth=windowHeight = 600;
 	// glutInitWindowPosition(100,100);
@@ -83,6 +91,9 @@ void OpenGLContext::createGui(void){
 	
 	TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &m_rotating, "");	
 	
+	TwAddVarCB(bar, "Direction", TW_TYPE_DIR3F, CLight::SetDirCallback, CLight::GetDirCallback, &light,"\
+		group=Light");
+	
 	TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
 		min=0.0 max=2.0	step=0.01 group=Light");
 	
@@ -105,7 +116,8 @@ void OpenGLContext::createGui(void){
 	TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
 		help='Number of samples for ambient occlusion. Increase for higher quality.'\
 		min=4 max=256 step=2 group=AO");
-	// float color[3] = {1.0, 1.0, 1.0};
+
+	TwAddVarRW(bar, "Sky Color", TW_TYPE_COLOR3F, &skycolor," colormode=hls ");
 	TwAddVarRW(bar, "Particle Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
 	TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
 }
@@ -150,27 +162,40 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
 	sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
 	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
+	sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
 	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
 	sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
 	
 	if(!m_ssao.Init(windowWidth, windowHeight)) std::cout << "Couldn't initialize SSAO!" << std::endl;
+	if(!m_shadowmap.Init(windowWidth, windowHeight)) std::cout << "Couldn't initialize Shadowmap!" << std::endl;
 	if(!light.Init(sh_accumulator->id())) std::cout << "Cannot bind light uniform" << std::endl;
+
+    out_radius = glm::length(glm::vec3(
+        (coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
+        (coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
+        coordparser.boxMatrix[2][2]/2.0
+    )) + 1.0;
+
+    znear = -init_zoom - out_radius;
+    zfar  = -init_zoom + 2.0 * out_radius;
+
 	
 	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
-	viewMatrix = glm::lookAt(glm::vec3(0.0, 2.0, 0.0), glm::vec3(0.0, 0.0, init_zoom), glm::vec3(0.0, 1.0, 0.0));
-	viewMatrix = glm::translate(viewMatrix, glm::vec3(0.0, 0.0, init_zoom));
+    invProjMatrix = glm::inverse(projectionMatrix);
+    lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
+	viewMatrix = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    invViewMatrix = glm::inverse(viewMatrix);
+    lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	modelMatrix = glm::mat4(1.0);
-	
+
 	// SSAO Uniforms
 	glm::vec2 projAB;
-	glm::mat4 invProjMatrix;
 	sh_ssao->bind();
 	{
 		float projA = zfar / (zfar - znear);
 		float projB = zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
-		invProjMatrix = glm::inverse(projectionMatrix);
-		m_ssao.UploadUniforms(sh_ssao);
+		m_ssao.UploadUniforms(*sh_ssao);
 		sh_ssao->setUniform("NormalMap", 0);
 		sh_ssao->setUniform("DepthMap", 1);
 		sh_ssao->setUniform("projAB", 1, projAB);
@@ -197,18 +222,17 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		sh_accumulator->setUniform("ColorMap", 0);
 		sh_accumulator->setUniform("NormalMap", 1);
 		sh_accumulator->setUniform("DepthMap", 2);
-		// sh_accumulator->setUniform("IDMap", 2);
+		sh_accumulator->setUniform("LightDepthMap", 3);
 		
-		float projA = (zfar + znear)/ (zfar - znear);
+		float projA = (zfar + znear) / (zfar - znear);
 		float projB = 2.0 * zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		sh_accumulator->setUniform("projAB", 1, projAB);
 		sh_accumulator->setUniform("bgColor", 1, m_bgColor);
-		invProjMatrix = glm::inverse(projectionMatrix);
+		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
 	sh_accumulator->unbind();
-	
 	
 	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
 	mesh.uploadInstanced(sh_gbuffer_instanced->id());
@@ -224,8 +248,10 @@ void OpenGLContext::reshapeWindow(int w, int h){
 	TwWindowSize(w, h);
 	glViewport(0, 0, windowWidth, windowHeight);
 	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
+    invProjMatrix = glm::inverse(projectionMatrix);
 	if(m_fboInit){
 		m_gbuffer.Resize(windowWidth, windowHeight);
+		m_shadowmap.Resize(windowWidth, windowHeight);
 		sh_ssao->bind();
 		{
 			m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
@@ -255,6 +281,9 @@ void OpenGLContext::processScene(void){
 		redisplay = true;
 		last_time = this_time;
 		projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
+		invProjMatrix = glm::inverse(projectionMatrix);
+        lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
 	// }
 }
 
@@ -330,14 +359,7 @@ void OpenGLContext::drawConfigurationBox(void)const{
 	glBindVertexArray(0);
 }
 
-void OpenGLContext::drawConfiguration(void)const{
-	
-	glm::mat4 vMatrix;
-    glm::mat4 pMatrix;
-	
-	vMatrix = viewMatrix;
-	pMatrix = projectionMatrix;
-	
+void OpenGLContext::drawConfiguration(const glm::mat4& vMatrix, const glm::mat4& pMatrix)const{
 	glm::mat4 tMatrix = glm::translate(
 		modelMatrix,
 		glm::vec3(
@@ -348,8 +370,6 @@ void OpenGLContext::drawConfiguration(void)const{
 	);
 	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
 	
-	
-	sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
 	
 	for(unsigned int i = 0; i < mNInstances; i++){
 		glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
@@ -375,12 +395,14 @@ void OpenGLContext::fboPass(void)const{
 
 	glDisable(GL_BLEND);
 	
-	m_gbuffer.BindForWriting();
+	m_gbuffer.Bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	sh_gbuffer_instanced->bind();
 	{	
-		if(use_dat) drawConfiguration();
+        sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
+
+		if(use_dat) drawConfiguration(viewMatrix, projectionMatrix);
 		else{
 			glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix)));
 			glm::mat4 tempMVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
@@ -398,11 +420,13 @@ void OpenGLContext::fboPass(void)const{
 	if(!use_dat || drawBox){
 		sh_gbuffer->bind();
 		{	
+            sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
 			if(!use_dat) mesh.draw();
 			else drawConfigurationBox();
 		}
 		sh_gbuffer->unbind();
 	}
+
 	
 	glEnable(GL_BLEND);
 }
@@ -411,20 +435,21 @@ void OpenGLContext::ssaoPass(void){
 	
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
-	m_gbuffer.BindForSSAO();
-	m_ssao.BindNoise();
-	m_ssao.BindForWriting();
+	m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 0);
+	m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 1);
+	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_NOISE, 2);
+	m_ssao.Bind();
 	glClear(GL_COLOR_BUFFER_BIT);
 	
 	sh_ssao->bind();
 	{
-		m_ssao.UpdateUniforms(sh_ssao);
+		m_ssao.UpdateUniforms(*sh_ssao);
 		full_quad.draw();
 	}
 	sh_ssao->unbind();
 	
-	m_ssao.BindForReading();
-	m_gbuffer.BindForWriting();
+	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
+	m_gbuffer.Bind();
 	
 	sh_blur->bind();
 	{
@@ -438,21 +463,89 @@ void OpenGLContext::ssaoPass(void){
 	glEnable(GL_DEPTH_TEST);
 }
 
+void OpenGLContext::shadowPass(void){
+	glDisable(GL_BLEND);
+	
+	m_shadowmap.Bind();
+	glClear(GL_DEPTH_BUFFER_BIT);
+	
+	sh_shadowmap_instanced->bind();
+	{	
+        glm::mat4 vMatrix = lightViewMatrix;
+        glm::mat4 pMatrix = lightProjectionMatrix;
+
+		if(use_dat){
+            glm::mat4 tMatrix = glm::translate(
+                modelMatrix,
+                glm::vec3(
+                    -(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
+                    -(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
+                    -coordparser.boxMatrix[2][2]/2.0
+                )
+            );
+            glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
+            
+            
+            for(unsigned int i = 0; i < mNInstances; i++){
+                glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
+                glm::mat4 rLocalMatrix = glm::rotate(
+                    glm::mat4(1.0),
+                    coordparser.rotations[i].x,
+                    glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w)
+                );
+                
+                glm::mat4 tempModelViewMatrix = tLocalMatrix * rLocalMatrix ;
+                glm::mat4 tempMVPMatrix = pMatrix * tempModelViewMatrix;
+
+                MVPArray[i] = tempMVPMatrix;
+            }
+            mesh.drawInstanced(mNInstances, MVPArray);
+        }
+		else{
+			glm::mat4 tempMVPMatrix = pMatrix * vMatrix * modelMatrix;
+
+			MVPArray[0] = tempMVPMatrix;
+			
+			sh_shadowmap_instanced->setUniform("diffColor", 1, diffcolor);
+			
+			mesh.drawInstanced(mNInstances, MVPArray);
+		}
+	}
+	sh_shadowmap_instanced->unbind();
+	
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	glEnable(GL_BLEND);
+}
+
 void OpenGLContext::drawPass(void)const{
 	
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
 	glDisable(GL_BLEND);
-	m_gbuffer.BindForReading();
+
+	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    glEnable(GL_FRAMEBUFFER_SRGB);
+
+    m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
+    m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 1);
+    m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 2);
+    m_shadowmap.BindTexture(3);
 	
 	sh_accumulator->bind();
 	{
+		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 		sh_accumulator->setUniform("bgColor", 1, m_bgColor);
+        sh_accumulator->setUniform("skyColor", 1, skycolor);
+
+        glm::mat4 depth_matrix = biasMatrix * lightProjectionMatrix * lightViewMatrix * invViewMatrix;
+        sh_accumulator->setUniform("depth_matrix", 1, depth_matrix);
+
 		light.uploadDirection(viewMatrix);
 		full_quad.draw();
 	}
 	sh_accumulator->unbind();
 	
+    glDisable(GL_FRAMEBUFFER_SRGB);
 	glDepthMask(GL_TRUE);
 	glEnable(GL_BLEND);
 	glEnable(GL_DEPTH_TEST);
@@ -461,6 +554,7 @@ void OpenGLContext::drawPass(void)const{
 void OpenGLContext::renderScene(void){	
 	modelMatrix = trackballMatrix;
 	
+    shadowPass();
 	fboPass();
 	glDisable(GL_CULL_FACE);
 	ssaoPass();

@@ -26,7 +26,7 @@ public:
 	void upload(GLuint shaderID);
 	void draw(void)const;
 	void uploadInstanced(GLuint shaderID);
-	void drawInstanced(unsigned int nInstances, const glm::mat4* MVPs, const glm::mat3 *NMs)const;
+	void drawInstanced(unsigned int nInstances, const glm::mat4* MVPs, const glm::mat3 *NMs = NULL)const;
 	void data(std::vector<Vertex> vertices);
 	
 private:

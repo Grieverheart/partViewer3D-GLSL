@@ -7,13 +7,13 @@ CLight::CLight(void){
 CLight::~CLight(void){
 }
 
-CLight::CLight(glm::vec3 position, glm::vec3 direction){
-	m_position = position;
-	m_direction = direction;
-	m_SpecularIntensity = 0.5f;
-	m_DiffuseIntensity = 0.5f;
-	m_AmbientIntensity = 1.2f;
-	m_Intensity = 0.6f;
+CLight::CLight(glm::vec3 direction):
+	m_direction(glm::normalize(direction))
+{
+	m_SpecularIntensity = 1.0f;
+	m_DiffuseIntensity = 1.0f;
+	m_AmbientIntensity = 0.6f;
+	m_Intensity = 1.0f;
 }
 
 bool CLight::Init(GLuint shader_id){
@@ -27,12 +27,12 @@ bool CLight::Init(GLuint shader_id){
 	return true;
 }
 
-glm::vec3 CLight::getPosition(void)const{
-	return m_position;
+const glm::vec3& CLight::getDirection(void)const{
+	return m_direction;
 }
 
-glm::vec3 CLight::getDirection(void)const{
-	return m_direction;
+void CLight::setDirection(const glm::vec3& dir){
+	m_direction = dir;
 }
 
 void CLight::uploadDirection(glm::mat4 ViewMatrix)const{

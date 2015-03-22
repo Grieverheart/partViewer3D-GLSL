@@ -59,13 +59,16 @@ Shader::Shader(void){
 
 Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile){
 	bool isGS = false;
+	bool isFS = false;
 	if(gsFile) isGS = true;
+	if(fsFile) isFS = true;
 	shader_vp = glCreateShader(GL_VERTEX_SHADER);
-	shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
+	if(isFS) shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
 	if(isGS) shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
 	
 	std::string vsText = textFileRead(vsFile);
-	std::string fsText = textFileRead(fsFile);
+	std::string fsText = "";
+	if(isFS) fsText = textFileRead(fsFile);
 	std::string gsText = "";
 	if(isGS) gsText = textFileRead(gsFile);
     
@@ -73,7 +76,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile){
 	const char *fragmentText = fsText.c_str();
 	const char *geometryText = gsText.c_str();
 	
-	if(vertexText == NULL || fragmentText == NULL || (isGS && geometryText == NULL)){
+	if(vertexText == NULL || (isFS && fragmentText == NULL) || (isGS && geometryText == NULL)){
 		std::cout << "Either vertex shader or fragment shader file not found" << std::endl;
 		return;
 	}
@@ -88,13 +91,15 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile){
 		validateShader(shader_gp, gsFile);
 	}
 	
-	glShaderSource(shader_fp, 1, &fragmentText, 0);
-	glCompileShader(shader_fp);
-	validateShader(shader_fp, fsFile);
+    if(isFS){
+        glShaderSource(shader_fp, 1, &fragmentText, 0);
+        glCompileShader(shader_fp);
+        validateShader(shader_fp, fsFile);
+    }
 	
 	shader_id = glCreateProgram();
 	
-	glAttachShader(shader_id, shader_fp);
+	if(isFS) glAttachShader(shader_id, shader_fp);
 	if(isGS) glAttachShader(shader_id, shader_gp);
 	glAttachShader(shader_id, shader_vp);
 	
@@ -106,14 +111,17 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile){
 
 Shader::~Shader(void){
 	glDetachShader(shader_id, shader_fp);
-	glDetachShader(shader_id, shader_vp);
+	glDeleteShader(shader_vp);
+
+	if(shader_fp){
+		glDetachShader(shader_id, shader_fp);
+		glDeleteShader(shader_fp);
+	}
 	if(shader_gp){
 		glDetachShader(shader_id, shader_gp);
 		glDeleteShader(shader_gp);
 	}
 	
-	glDeleteShader(shader_fp);
-	glDeleteShader(shader_vp);
 	glDeleteShader(shader_id);
 }
 
