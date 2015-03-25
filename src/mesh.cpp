@@ -92,13 +92,12 @@ void CMesh::uploadInstanced(GLuint shaderID){
 
 void CMesh::drawInstanced(unsigned int nInstances, const glm::mat4* MVPs, const glm::mat3 *NMs)const{
 	glUniform1fv(scaleLocation, 1, &scale);
-	glGetError();
 	
-	glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * nInstances, MVPs, GL_DYNAMIC_DRAW);
+	//glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
+	glNamedBufferDataEXT(vboID[1], sizeof(glm::mat4) * nInstances, MVPs, GL_DYNAMIC_DRAW);
     if(NMs){
-        glBindBuffer(GL_ARRAY_BUFFER, vboID[2]);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat3) * nInstances, NMs, GL_DYNAMIC_DRAW);
+        //glBindBuffer(GL_ARRAY_BUFFER, vboID[2]);
+        glNamedBufferDataEXT(vboID[2], sizeof(glm::mat3) * nInstances, NMs, GL_DYNAMIC_DRAW);
     }
 	
 	glBindVertexArray(vaoID); 

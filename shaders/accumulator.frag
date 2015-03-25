@@ -16,7 +16,6 @@ uniform sampler2D ColorMap;
 uniform sampler2D NormalMap;
 
 uniform vec2 projAB;
-uniform vec3 bgColor;
 uniform vec3 skyColor;
 uniform mat4 depth_matrix;
 
@@ -79,17 +78,17 @@ bool isEdge(vec3 normal){
 void main(void){
 
 	vec2 TexCoord = pass_TexCoord;
-	float Depth = texture(DepthMap, pass_TexCoord).r;
-	vec3 Position = CalcPosition(Depth);
+    vec4 NormalAO = texture(NormalMap, TexCoord); //Assume normalized
+    if(NormalAO.xyz != 0.0){
+        float Depth = texture(DepthMap, pass_TexCoord).r;
+        vec3 Position = CalcPosition(Depth);
 
-	vec3 Color = texture(ColorMap, TexCoord).rgb;
-	if(Color == 0) out_Color = vec4(bgColor, 0.0);
-	else {
-		vec4 NormalAO = texture(NormalMap, TexCoord); //Assume normalized
-		vec3 Normal = NormalAO.xyz;
-		float AO = NormalAO.a;
-	
-		out_Color = vec4(Color * CalcLight(Position, Normal, AO), 1.0);
-		//if(isEdge(Normal)) out_Color = out_Color * 0.7;
-	}
+        vec3 Color = texture(ColorMap, TexCoord).rgb;
+        vec3 Normal = NormalAO.xyz;
+        float AO = NormalAO.a;
+
+        out_Color = vec4(Color * CalcLight(Position, Normal, AO), 1.0);
+        if(isEdge(Normal)) out_Color = out_Color * 0.6;
+    }
+    else discard;
 }

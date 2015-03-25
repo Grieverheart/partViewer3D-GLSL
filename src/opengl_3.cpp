@@ -57,7 +57,7 @@ bool OpenGLContext::create30Context(void){
 	glutInitContextVersion(3, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);
 	
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB | GLUT_RGBA | GLUT_DEPTH | GLUT_ALPHA);
+	glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB | GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH);
 	glutInitWindowSize(600,600);
 	windowWidth=windowHeight = 600;
 	// glutInitWindowPosition(100,100);
@@ -148,12 +148,10 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	MVPArray = new glm::mat4[mNInstances];
 	NormalArray = new glm::mat3[mNInstances];
 	
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	
-	glEnable(GL_BLEND);
-	glBlendEquation(GL_FUNC_ADD);
-	glBlendFunc(GL_ONE, GL_ONE);
-	glEnable(GL_DEPTH_TEST);
+	glDisable(GL_BLEND);
+	//glBlendEquation(GL_FUNC_ADD);
+	//glBlendFunc(GL_ONE, GL_ONE);
+	//glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
@@ -208,8 +206,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	// Blur Uniforms
 	sh_blur->bind();
 	{
-		glm::vec2 texel_size = glm::vec2(1.0 / windowWidth, 1.0 / windowHeight);
-		sh_blur->setUniform("TEXEL_SIZE", 1, texel_size);
 		sh_blur->setUniform("aoSampler", 0);
 		sh_blur->setUniform("use_blur", int(m_blur));
 	}
@@ -228,7 +224,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		float projB = 2.0 * zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		sh_accumulator->setUniform("projAB", 1, projAB);
-		sh_accumulator->setUniform("bgColor", 1, m_bgColor);
 		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
@@ -257,12 +252,6 @@ void OpenGLContext::reshapeWindow(int w, int h){
 			m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
 		}
 		sh_ssao->unbind();
-		sh_blur->bind();
-		{
-			glm::vec2 texel_size = glm::vec2(1.0 / windowWidth, 1.0 / windowHeight);
-			sh_blur->setUniform("TEXEL_SIZE", 1, texel_size);
-		}
-		sh_blur->unbind();
 	}
 }
 
@@ -393,8 +382,6 @@ void OpenGLContext::drawConfiguration(const glm::mat4& vMatrix, const glm::mat4&
 
 void OpenGLContext::fboPass(void)const{
 
-	glDisable(GL_BLEND);
-	
 	m_gbuffer.Bind();
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
@@ -426,20 +413,16 @@ void OpenGLContext::fboPass(void)const{
 		}
 		sh_gbuffer->unbind();
 	}
-
-	
-	glEnable(GL_BLEND);
 }
 
 void OpenGLContext::ssaoPass(void){
-	
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
+
+	m_ssao.Bind();
+	glClear(GL_COLOR_BUFFER_BIT);
+
 	m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 0);
 	m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 1);
 	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_NOISE, 2);
-	m_ssao.Bind();
-	glClear(GL_COLOR_BUFFER_BIT);
 	
 	sh_ssao->bind();
 	{
@@ -448,8 +431,9 @@ void OpenGLContext::ssaoPass(void){
 	}
 	sh_ssao->unbind();
 	
-	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
+    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 	m_gbuffer.Bind();
+	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
 	
 	sh_blur->bind();
 	{
@@ -457,15 +441,10 @@ void OpenGLContext::ssaoPass(void){
 		full_quad.draw();
 	}
 	sh_blur->unbind();
-	
-	
-	glDepthMask(GL_TRUE);
-	glEnable(GL_DEPTH_TEST);
+    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 }
 
 void OpenGLContext::shadowPass(void){
-	glDisable(GL_BLEND);
-	
 	m_shadowmap.Bind();
 	glClear(GL_DEPTH_BUFFER_BIT);
 	
@@ -514,17 +493,16 @@ void OpenGLContext::shadowPass(void){
 	sh_shadowmap_instanced->unbind();
 	
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	glEnable(GL_BLEND);
 }
 
 void OpenGLContext::drawPass(void)const{
-	
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	glDisable(GL_BLEND);
 
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+	
     glEnable(GL_FRAMEBUFFER_SRGB);
+	glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(0.0, 0.0, 0.0, 1.0);
 
     m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
     m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 1);
@@ -534,7 +512,6 @@ void OpenGLContext::drawPass(void)const{
 	sh_accumulator->bind();
 	{
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
-		sh_accumulator->setUniform("bgColor", 1, m_bgColor);
         sh_accumulator->setUniform("skyColor", 1, skycolor);
 
         glm::mat4 depth_matrix = biasMatrix * lightProjectionMatrix * lightViewMatrix * invViewMatrix;
@@ -546,17 +523,18 @@ void OpenGLContext::drawPass(void)const{
 	sh_accumulator->unbind();
 	
     glDisable(GL_FRAMEBUFFER_SRGB);
-	glDepthMask(GL_TRUE);
-	glEnable(GL_BLEND);
-	glEnable(GL_DEPTH_TEST);
 }
 
 void OpenGLContext::renderScene(void){	
 	modelMatrix = trackballMatrix;
 	
+	glDepthMask(GL_TRUE);
+	glEnable(GL_DEPTH_TEST);
     shadowPass();
 	fboPass();
 	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDepthMask(GL_FALSE);
 	ssaoPass();
 	drawPass();
 	glEnable(GL_CULL_FACE);
