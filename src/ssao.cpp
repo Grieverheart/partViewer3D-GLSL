@@ -13,7 +13,7 @@ static inline float lerp(float start, float end, float perc){
 }
 
 Cssao::Cssao(void):
-	m_kernel_size(16), m_noise_size(3), m_RADIUS(3.4f),
+	m_kernel_size(16), m_noise_size(3), m_RADIUS(5.0f),
 	m_update(false), m_update_kernel(false),
     m_kernel(NULL), m_noise(NULL)
 {

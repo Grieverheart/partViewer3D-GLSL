@@ -4,7 +4,7 @@ EXE=partViewer.exe
 
 CC=g++
 CFLAGS=-Wall -g -O3
-LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lglu32 -lAntTweakBar
+LDFLAGS= -lglew32 -lfreeglut -lopengl32 -lAntTweakBar
 RM=del /q
 
 SHELL=cmd.exe

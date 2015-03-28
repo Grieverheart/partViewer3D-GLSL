@@ -18,7 +18,7 @@ layout(location = 0) out float out_AO;
 
 vec3 CalcPosition(void){
 	float depth = texture(DepthMap, pass_TexCoord).r;
-	float linearDepth = projAB.y / (depth - projAB.x);
+	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
 	vec3 ray = viewRay / viewRay.z;
 	return linearDepth * ray;
 }
@@ -53,7 +53,7 @@ void main(void){
 			offset.xy = offset.xy * 0.5 + 0.5;
 			// Get sample depth
 			float sample_depth = texture(DepthMap, offset.xy).r;
-			sample_depth = projAB.y / (sample_depth - projAB.x);
+			sample_depth = projAB.y / (2.0 * sample_depth - 1.0 - projAB.x);
 			if(abs(Position.z - sample_depth) < RADIUS){
 				occlusion += (sample_depth > sample.z) ? 1.0:0.0;
 			}

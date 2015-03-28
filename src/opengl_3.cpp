@@ -111,7 +111,7 @@ void OpenGLContext::createGui(void){
 	
 	TwAddVarCB(bar, "Radius", TW_TYPE_FLOAT, Cssao::SetRadiusCallback, Cssao::GetRadiusCallback, &m_ssao,"\
 		help='The radius of the ambient occlusion sampling kernel.'\
-		min=0.1 max=10.0 step=0.1 group=AO");
+		min=0.1 max=30.0 step=0.1 group=AO");
 	
 	TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
 		help='Number of samples for ambient occlusion. Increase for higher quality.'\
@@ -178,7 +178,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
     zfar  = -init_zoom + 2.0 * out_radius;
 
 	
-	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
+	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
 	viewMatrix = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
@@ -191,7 +191,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_ssao->bind();
 	{
 		float projA = zfar / (zfar - znear);
-		float projB = zfar * znear / (zfar - znear);
+		float projB = 2.0 * zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		m_ssao.UploadUniforms(*sh_ssao);
 		sh_ssao->setUniform("NormalMap", 0);
@@ -242,7 +242,7 @@ void OpenGLContext::reshapeWindow(int w, int h){
 	windowHeight = h;
 	TwWindowSize(w, h);
 	glViewport(0, 0, windowWidth, windowHeight);
-	projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
+	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
 	if(m_fboInit){
 		m_gbuffer.Resize(windowWidth, windowHeight);
@@ -262,14 +262,14 @@ void OpenGLContext::processScene(void){
 		if(m_rotating){
 			glm::mat4 rLocalMatrix = glm::rotate(
 				glm::mat4(1.0),
-				(this_time-last_time) * 30.0f,
+				glm::radians((this_time-last_time) * 30.0f),
 				glm::vec3(0.0, 1.0, 0.0)
 			);
 			trackballMatrix = rLocalMatrix * trackballMatrix;
 		}
 		redisplay = true;
 		last_time = this_time;
-		projectionMatrix = glm::perspective(fov+zoom, (float)windowWidth/(float)windowHeight, znear, zfar);
+		projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
 		invProjMatrix = glm::inverse(projectionMatrix);
         lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 

@@ -21,8 +21,9 @@ void CCoordParser::parse(std::istream &in){
 		else{
 			glm::vec3 v;
 			glm::vec4 r;
-			for(int i = 0; i < 3; i++)s >> v[i];
-			for(int i = 0; i < 4; i++)s >> r[i];
+			for(int i = 0; i < 3; i++) s >> v[i];
+			for(int i = 0; i < 4; i++) s >> r[i];
+            r.x = glm::radians(r.x);
 			rotations.push_back(r);
 			centers.push_back(v);
 		}

@@ -2,10 +2,6 @@
 #include "../include/main.h"
 #include <AntTweakBar.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-
 CMouse::CMouse(OpenGLContext *context){
 	this->context = context;
 	last_mx=last_my=cur_mx=cur_my=0;
@@ -49,7 +45,7 @@ void CMouse::idleArcball(void){
 		
 		if(dot>1.0f)dot=1.0f;
 		else if(dot<-1.0f)dot=-1.0f;
-		float angle = (180.0f/M_PI)*acos(dot);
+		float angle = acos(dot);
 		
 		context->trackballMatrix = glm::rotate(glm::mat4(1.0),angle,axis);
 		context->trackballMatrix = context->trackballMatrix * LastRotMatrix;

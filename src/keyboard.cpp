@@ -1,4 +1,5 @@
 #include "../include/keyboard.h"
+#include <cstdio>
 
 CKeyboard::CKeyboard(OpenGLContext *context){
 	keyRepeat = false;
