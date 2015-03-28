@@ -1,9 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 
 project(partviewer3D-GLSL)
 
-include_directories(.)
-set(CMAKE_CXX_FLAGS "-Wall -O3 -g -march=native")
 
 set(SOURCE_FILES
     src/main.cpp
@@ -19,15 +18,18 @@ set(SOURCE_FILES
     src/shader.cpp
     src/ssao.cpp)
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+add_executable(main ${SOURCE_FILES})
+
+set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native")
+
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
 find_package(GLUT REQUIRED)
-find_package(AntTweakBar REQUIRED)
 find_package(GLM REQUIRED)
+find_package(AntTweakBar REQUIRED)
 
-include_directories(${GLM_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR} ${GLM_INCLUDE_DIRS} ${ANT_TWEAK_BAR_INCLUDE_PATH})
 
 set(LIBS
     ${OPENGL_LIBRARIES}
@@ -36,6 +38,6 @@ set(LIBS
     ${ANT_TWEAK_BAR_LIBRARY}
     )
 
-add_executable(main ${SOURCE_FILES})
 target_link_libraries(main ${LIBS})
 
+install(TARGETS main DESTINATION ${CMAKE_SOURCE_DIR})
