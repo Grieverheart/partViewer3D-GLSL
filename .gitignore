@@ -2,3 +2,5 @@
 *.dat
 *.exe
 *.swp
+main
+build/

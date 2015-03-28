@@ -1,5 +1,6 @@
 #include "../include/shader.h"
 #include <fstream>
+#include <cstring>
 
 static inline void validateShader(GLuint shader, const char *file = 0){
 	const unsigned int BUFFER_SIZE = 512;

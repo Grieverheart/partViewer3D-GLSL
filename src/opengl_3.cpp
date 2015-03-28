@@ -229,7 +229,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	}
 	sh_accumulator->unbind();
 	
-	objparser.parse("obj/Octahedron.obj",&mesh, "flat");
+	objparser.parse("obj/octahedron.obj",&mesh, "flat");
 	mesh.uploadInstanced(sh_gbuffer_instanced->id());
 	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
 	full_quad.upload(sh_gbuffer->id());
