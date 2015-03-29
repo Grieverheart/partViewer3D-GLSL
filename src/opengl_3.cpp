@@ -1,5 +1,12 @@
 #include "include/opengl_3.h"
 #include <GL/glew.h>
+
+#ifdef _WIN32
+#include <GL/wglew.h>
+#elif __linux
+#include <GL/glxew.h>
+#endif
+
 #include <GL/freeglut.h>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
@@ -35,7 +42,6 @@ OpenGLContext::OpenGLContext(void):
 	light = CLight(glm::vec3(-0.27, -0.91, -0.33));
 	diffcolor = glm::vec3(77, 27, 147) / 255.0f;
 	skycolor  = glm::vec3(0.529, 0.808, 0.921);
-	
 }
 
 OpenGLContext::~OpenGLContext(void) { 
@@ -128,6 +134,18 @@ void OpenGLContext::createGui(void){
 }
 
 void OpenGLContext::setupScene(int argc, char *argv[]){
+#ifdef _WIN32
+    wglSwapIntervalEXT(0);
+#elif __linux
+    Display *dpy = glXGetCurrentDisplay();
+    GLXDrawable drawable = glXGetCurrentDrawable();
+    const int interval = 0;
+
+    if (drawable) {
+        glXSwapIntervalEXT(dpy, drawable, interval);
+    }
+#endif
+    
 	float init_zoom = -4.0f;
 	if(argc>1){
 	
@@ -531,6 +549,11 @@ void OpenGLContext::drawPass(void)const{
 }
 
 void OpenGLContext::renderScene(void){	
+    static int times = 0;
+    static double avg = 0.0;
+    ++times;
+    perf_mon.push_query();
+
 	modelMatrix = trackballMatrix;
 	
 	glDepthMask(GL_TRUE);
@@ -544,7 +567,16 @@ void OpenGLContext::renderScene(void){
 	drawPass();
 	glEnable(GL_CULL_FACE);
 	TwDraw();
+
 	glutSwapBuffers();
+
+    double dt = perf_mon.pop_query();
+    avg += dt;
+    if((times + 1) % 60 == 0){
+        printf("%fms\n", avg / times);
+        avg = 0.0;
+        times = 0;
+    }
 }
 
 float OpenGLContext::getZoom(void)const{

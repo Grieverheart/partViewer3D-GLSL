@@ -8,6 +8,7 @@
 #include "g-buffer.h"
 #include "ssao.h"
 #include "shadowmap.h"
+#include "perfmon.h"
 
 class Shader;
 
@@ -77,6 +78,8 @@ private:
 	Shader *sh_shadowmap_instanced;
 	Shader *sh_blur;
 	Shader *sh_accumulator;
+
+    PerfMon perf_mon;
 	
 	TwBar *bar;
 	

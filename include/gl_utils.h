@@ -18,7 +18,7 @@ inline void glError(const char *file, int line) {
             default:                                strncpy(error, "UNKNOWN_ERROR", sizeof(error));                  break;
 		}
 
-        fprintf(stderr, "GL%s - %s: %d", error, file, line);
+        fprintf(stderr, "GL%s - %s: %d\n", error, file, line);
 	}
 }
 

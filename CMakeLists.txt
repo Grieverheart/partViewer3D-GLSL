@@ -6,6 +6,7 @@ project(partviewer3D-GLSL)
 
 set(SOURCE_FILES
     src/main.cpp
+    src/perfmon.cpp
     src/coord_parser.cpp
     src/keyboard.cpp
     src/mouse.cpp
@@ -20,7 +21,7 @@ set(SOURCE_FILES
 
 add_executable(main ${SOURCE_FILES})
 
-set(CMAKE_CXX_FLAGS "-Wall -O3 -g -march=native")
+set(CMAKE_CXX_FLAGS "-Wall -O3 -std=c++11 -g -march=native")
 
 
 find_package(OpenGL REQUIRED)
