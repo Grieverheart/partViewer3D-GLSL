@@ -1,6 +1,9 @@
-#include "../include/ssao.h"
+#include "include/ssao.h"
+#include <GL/glew.h>
+#include <cstdio>
 #include <cstdlib>
-#include <time.h>
+#include <ctime>
+#include "include/shader.h"
 
 static inline float random(float x, float y){
 	float one = (float)rand() / RAND_MAX;
@@ -86,7 +89,7 @@ bool Cssao::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	
 	if(Status != GL_FRAMEBUFFER_COMPLETE){
-		std::cout << "FB error, status 0x" << std::hex << Status << std::endl;
+		printf("FB error, status 0x%04x", Status);
 		return false;
 	}
 	

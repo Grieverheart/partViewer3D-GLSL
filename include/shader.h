@@ -1,9 +1,9 @@
 #ifndef __SHADER_H
 #define __SHADER_H
 
-#include "main.h"
 #include <map>
 #include <string>
+#include <glm/fwd.hpp>
 
 class Shader{
 public:
@@ -35,7 +35,7 @@ private:
 	unsigned int shader_gp;
 	unsigned int shader_fp;
 	
-	std::map<std::string, GLint> mUniformLocations;
+	std::map<std::string, int> mUniformLocations;
 };
 
 #endif

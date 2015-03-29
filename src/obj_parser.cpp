@@ -1,7 +1,10 @@
+#include "include/obj_parser.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
-#include "../include/obj_parser.h"
+#include <vector>
+#include <glm/glm.hpp>
+#include <include/mesh.h>
 
 CObjParser::CObjParser(void){
 }
@@ -16,15 +19,15 @@ void CObjParser::parse(const char *filename, CMesh *mesh, std::string shading_mo
 	std::vector<glm::vec3> temp_vertices;
 	std::vector<glm::vec3> temp_vnormals;
 	std::vector<glm::vec2> temp_vt;
-	std::vector<GLushort> normal_elements;
-	std::vector<GLushort> vertex_elements;
-	std::vector<GLushort> vt_elements;
+	std::vector<unsigned short> normal_elements;
+	std::vector<unsigned short> vertex_elements;
+	std::vector<unsigned short> vt_elements;
 	
 	std::vector<Vertex> vertices;
 	
 	std::ifstream file(filename, std::ios::in);
 	if(!file){
-		std::cout << "Cannot open " << filename << "." << std::endl;
+		printf("Cannot open %s.\n", filename);
 		exit(1);
 	}
 	std::string line;
@@ -51,7 +54,7 @@ void CObjParser::parse(const char *filename, CMesh *mesh, std::string shading_mo
 		else if(flag == "f"){
 			std::string tempstring[3];
 			s >> tempstring[0] >> tempstring[1] >> tempstring[2];
-			GLushort f,fn;
+			unsigned short f,fn;
 			if(!has_texture){
 				for(int i = 0; i < 3; i++){
 					tempstring[i].replace(tempstring[i].find("//"),2," ");
@@ -64,7 +67,7 @@ void CObjParser::parse(const char *filename, CMesh *mesh, std::string shading_mo
 				}
 			}
 			else{
-				GLushort vt;
+				unsigned short vt;
 				for(int i = 0; i < 3; i++){
 					replace(tempstring[i].begin(), tempstring[i].end(), '/', ' ');
 					std::istringstream ss(tempstring[i]);

@@ -1,4 +1,6 @@
-#include "../include/shader.h"
+#include "include/shader.h"
+#include <GL/glew.h>
+#include <glm/glm.hpp>
 #include <fstream>
 #include <cstring>
 
@@ -11,7 +13,7 @@ static inline void validateShader(GLuint shader, const char *file = 0){
 	glGetShaderInfoLog(shader, BUFFER_SIZE, &length, buffer);
 	
 	if(length>0){
-		std::cout << "Shader" << shader << "(" << (file?file:"") << ") compile errr:" << buffer << std::endl;
+		printf("Shader %d(%s) compile error: %s\n", shader, (file?file:""), buffer);
 	}
 }
 
@@ -24,7 +26,7 @@ static inline bool validateProgram(GLuint program){
 	glGetProgramInfoLog(program, BUFFER_SIZE, &length, buffer);
 	
 	if(length>0){
-		std::cout << "Program " << program << " link error: " << buffer << std::endl;
+		printf("Program %d link error: %s\n", program, buffer);
 	}
 	
 	glValidateProgram(program);
@@ -32,7 +34,7 @@ static inline bool validateProgram(GLuint program){
 	glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
 	
 	if(status == GL_FALSE){
-		std::cout << "Error validating program " << program << std::endl;
+		printf("Error validating program %d.\n", program);
 		return false;
 	}
 	return true;
@@ -78,7 +80,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile){
 	const char *geometryText = gsText.c_str();
 	
 	if(vertexText == NULL || (isFS && fragmentText == NULL) || (isGS && geometryText == NULL)){
-		std::cout << "Either vertex shader or fragment shader file not found" << std::endl;
+		printf("Either vertex shader or fragment shader file not found");
 		return;
 	}
 	
@@ -136,7 +138,7 @@ void Shader::init(void){
 		glGetActiveUniform(shader_id, i, 64, NULL, &size, &type, name);
 		GLint location = glGetUniformLocation(shader_id, name);
 		mUniformLocations[std::string(name)] = location;
-		if(location == -1) std::cout << "Couldn't bind uniform " << name << " in program " << shader_id << std::endl;
+		if(location == -1) printf("Couldn't bind uniform %s in program %d.\n", name, shader_id);
 	}
 }
 

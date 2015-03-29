@@ -1,6 +1,7 @@
-#include "../include/mesh.h"
+#include "include/mesh.h"
+#include <GL/glew.h>
 
-CMesh::CMesh(GLfloat scale){
+CMesh::CMesh(float scale){
 	// diffcolor = glm::vec3(0.1334, 0.545, 0.1334);
 	this->scale = scale;
 }
@@ -14,7 +15,7 @@ void CMesh::data(std::vector<Vertex> vertices){
 	this->vertices = vertices;
 }
 
-void CMesh::upload(GLuint shaderID){
+void CMesh::upload(unsigned int shaderID){
 	
 	glGenVertexArrays(1,&vaoID);
 	glBindVertexArray(vaoID);

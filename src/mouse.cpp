@@ -1,6 +1,9 @@
 #include "../include/mouse.h"
-#include "../include/main.h"
+#include <GL/freeglut.h>
 #include <AntTweakBar.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include "include/opengl_3.h"
 
 CMouse::CMouse(OpenGLContext *context){
 	this->context = context;

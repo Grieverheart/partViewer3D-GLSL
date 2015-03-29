@@ -1,8 +1,8 @@
-#include "../include/main.h"
-#include "../include/opengl_3.h"
-#include "../include/keyboard.h"
-#include "../include/mouse.h"
+#include "include/opengl_3.h"
+#include "include/keyboard.h"
+#include "include/mouse.h"
 #include <AntTweakBar.h>
+#include <GL/freeglut.h>
 
 OpenGLContext openglContext; // Our OpenGL Context Object
 CKeyboard keyboard(&openglContext);

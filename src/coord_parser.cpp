@@ -1,6 +1,7 @@
 #include <string>
 #include <sstream>
-#include "../include/coord_parser.h"
+#include <glm/glm.hpp>
+#include "include/coord_parser.h"
 
 CCoordParser::CCoordParser(void){
 }

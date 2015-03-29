@@ -1,9 +1,6 @@
 #ifndef __OPENGL_3_H
 #define __OPENGL_3_H
 
-#include <AntTweakBar.h>
-#include "main.h"
-#include "shader.h"
 #include "obj_parser.h"
 #include "coord_parser.h"
 #include "mesh.h"
@@ -11,6 +8,8 @@
 #include "g-buffer.h"
 #include "ssao.h"
 #include "shadowmap.h"
+
+class Shader;
 
 class OpenGLContext{
 public:
@@ -54,9 +53,9 @@ private:
 	
 	unsigned int mNInstances;
 	
-	GLuint vaoBox;
-	GLuint vboBox;
-	GLuint iboBox;
+	unsigned int vaoBox;
+	unsigned int vboBox;
+	unsigned int iboBox;
 	
 	bool use_dat;
 	bool m_fboInit;

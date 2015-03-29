@@ -1,8 +1,6 @@
 #ifndef __SHADOWMAP_H
 #define __SHADOWMAP_H
 
-#include "main.h"
-
 class CShadowmap{
 public:
 	CShadowmap(void);
@@ -12,8 +10,8 @@ public:
     void BindTexture(int attachment_point)const;
 	void Resize(unsigned int WindowWidth, unsigned int WindowHeight)const;
 private:
-	GLuint m_fbo;
-	GLuint m_texture;
+	unsigned int m_fbo;
+	unsigned int m_texture;
 };
 
 #endif

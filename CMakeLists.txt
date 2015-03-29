@@ -20,7 +20,7 @@ set(SOURCE_FILES
 
 add_executable(main ${SOURCE_FILES})
 
-set(CMAKE_CXX_FLAGS "-Wall -O3 -march=native")
+set(CMAKE_CXX_FLAGS "-Wall -O3 -g -march=native")
 
 
 find_package(OpenGL REQUIRED)

@@ -1,9 +1,10 @@
 #ifndef __SSAO_H
 #define __SSAO_H
 
-#include "main.h"
-#include "shader.h"
 #include <AntTweakBar.h>
+#include <glm/glm.hpp>
+
+class Shader;
 
 class Cssao{
 public:
@@ -53,9 +54,9 @@ private:
 	unsigned int m_noise_size;
 	unsigned int m_noise_scale;
 
-	GLuint m_noise_texture;
-	GLuint m_ssaoTexture;
-	GLuint m_fbo;
+	unsigned int m_noise_texture;
+	unsigned int m_ssaoTexture;
+	unsigned int m_fbo;
 
 	float m_RADIUS;
 

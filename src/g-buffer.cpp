@@ -1,5 +1,6 @@
-#include "../include/g-buffer.h"
-#include <iomanip>
+#include "include/g-buffer.h"
+#include <GL/glew.h>
+#include <cstdio>
 
 CGBuffer::CGBuffer(void):
     m_fbo(0)
@@ -51,7 +52,7 @@ bool CGBuffer::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	
 	if(Status != GL_FRAMEBUFFER_COMPLETE){
-		std::cout << "FB error, status 0x" << std::hex << Status << std::endl;
+		printf("FB error, status 0x%04x", Status);
 		return false;
 	}
 	

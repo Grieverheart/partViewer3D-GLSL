@@ -1,5 +1,6 @@
-#include "../include/shadowmap.h"
-#include <iomanip>
+#include "include/shadowmap.h"
+#include <GL/glew.h>
+#include <cstdio>
 
 CShadowmap::CShadowmap(void):
     m_fbo(0)
@@ -32,7 +33,7 @@ bool CShadowmap::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	
 	if(Status != GL_FRAMEBUFFER_COMPLETE){
-		std::cout << "FB error, status 0x" << std::hex << Status << std::endl;
+		printf("FB error, status 0x%04x", Status);
 		return false;
 	}
 	

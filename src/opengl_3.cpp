@@ -1,5 +1,10 @@
-#include "../include/opengl_3.h"
+#include "include/opengl_3.h"
+#include <GL/glew.h>
+#include <GL/freeglut.h>
 #include <fstream>
+#include <glm/gtc/matrix_transform.hpp>
+#include "include/gl_utils.h"
+#include "include/shader.h"
 
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
@@ -72,9 +77,9 @@ bool OpenGLContext::create30Context(void){
 	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
 	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
 	
-	std::cout << "Using OpenGL: " << glVersion[0] << "." << glVersion[1] << std::endl;
-	std::cout << "Renderer used: " << glGetString(GL_RENDERER) << std::endl;
-	std::cout << "Shading Language: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+	printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
+	printf("Renderer used: %s\n", glGetString(GL_RENDERER));
+	printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 	
 	createGui();
 	
@@ -129,13 +134,13 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		use_dat = true;
 		std::ifstream file(argv[1], std::ios::in);
 		if(!file){
-			std::cout << "Cannot open " << argv[1] << "." << std::endl;
+			printf("Cannot open %s.\n", argv[1]);
 			exit(1);
 		}
-		std::cout << "Parsing " << argv[1] << std::endl;
+		printf("Parsing %s ...\n", argv[1]);
 		coordparser.parse(file);
-		std::cout << "Done Parsing " << argv[1] << std::endl;
-		std::cout << "Found " << coordparser.npart << " particles" << std::endl;
+		printf("Done Parsing %s.\n", argv[1]);
+		printf("Found %d particles.\n", coordparser.npart);
 		
 		for(int i=0;i<3;i++){
 			GLfloat max_zoom = -3.5f*glm::length(glm::transpose(coordparser.boxMatrix)[i]);
@@ -164,9 +169,9 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
 	sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
 	
-	if(!m_ssao.Init(windowWidth, windowHeight)) std::cout << "Couldn't initialize SSAO!" << std::endl;
-	if(!m_shadowmap.Init(windowWidth, windowHeight)) std::cout << "Couldn't initialize Shadowmap!" << std::endl;
-	if(!light.Init(sh_accumulator->id())) std::cout << "Cannot bind light uniform" << std::endl;
+	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
+	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
+	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
 
     out_radius = glm::length(glm::vec3(
         (coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
@@ -234,7 +239,7 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
 	full_quad.upload(sh_gbuffer->id());
 	m_fboInit = m_gbuffer.Init(windowWidth, windowHeight);
-	if(!m_fboInit) std::cout << "Couldn't initialize FBO!" << std::endl;
+	if(!m_fboInit) printf("Couldn't initialize FBO!");
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){

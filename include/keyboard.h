@@ -1,7 +1,7 @@
 #ifndef KEYBOARD_H
 #define KEYBOARD_H
-#include "main.h"
-#include "opengl_3.h"
+
+class OpenGLContext;
 
 class CKeyboard{
 public:

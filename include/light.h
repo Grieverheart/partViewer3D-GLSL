@@ -2,7 +2,7 @@
 #define __LIGHT_H
 
 #include <AntTweakBar.h>
-#include "main.h"
+#include <glm/glm.hpp>
 
 class CLight{
 public:
@@ -10,7 +10,7 @@ public:
 	CLight(glm::vec3 direction);
 	~CLight(void);
 	
-	bool Init(GLuint shade_id);
+	bool Init(unsigned int shade_id);
 	void uploadDirection(glm::mat4 ViewMatrix)const;
 	
 	const glm::vec3& getDirection(void)const;

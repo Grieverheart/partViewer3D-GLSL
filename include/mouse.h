@@ -1,6 +1,10 @@
 #ifndef __CMOUSE_H
 #define __CMOUSE_H
-#include "opengl_3.h"
+
+#include <glm/glm.hpp>
+
+class OpenGLContext;
+
 class CMouse{
 public:
 	CMouse(OpenGLContext *context);

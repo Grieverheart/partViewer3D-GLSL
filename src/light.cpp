@@ -1,4 +1,5 @@
-#include "../include/light.h"
+#include "include/light.h"
+#include <GL/glew.h>
 
 CLight::CLight(void){
 	m_DirectionLocation = -1;

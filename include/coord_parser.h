@@ -1,8 +1,8 @@
 #ifndef __COORD_PARSER_H
 #define __COORD_PARSER_H
 
-#include "main.h"
 #include <vector>
+#include <glm/glm.hpp>
 
 class CCoordParser{
 public:

@@ -1,8 +1,6 @@
 #ifndef __GBUFF_H
 #define __GBUFF_H
 
-#include "main.h"
-
 class CGBuffer{
 public:
 	enum GBUFF_TEXTURE_TYPE{
@@ -19,8 +17,8 @@ public:
     void BindTexture(GBUFF_TEXTURE_TYPE tex_type, int attachment_point)const;
 	void Resize(unsigned int WindowWidth, unsigned int WindowHeight)const;
 private:
-	GLuint m_fbo;
-	GLuint m_textures[GBUFF_NUM_TEXTURES];
+	unsigned int m_fbo;
+	unsigned int m_textures[GBUFF_NUM_TEXTURES];
 };
 
 #endif
