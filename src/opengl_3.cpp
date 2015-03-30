@@ -440,6 +440,7 @@ void OpenGLContext::fboPass(void)const{
 
 void OpenGLContext::ssaoPass(void){
 
+    perf_mon.push_query("SSAO Calc Pass");
 	m_ssao.Bind();
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -453,7 +454,11 @@ void OpenGLContext::ssaoPass(void){
 		full_quad.draw();
 	}
 	sh_ssao->unbind();
+
+    perf_mon.pop_query();
 	
+    perf_mon.push_query("SSAO Blur Pass");
+
     glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
 	m_gbuffer.Bind();
 	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
@@ -465,6 +470,7 @@ void OpenGLContext::ssaoPass(void){
 	}
 	sh_blur->unbind();
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+    perf_mon.pop_query();
 }
 
 void OpenGLContext::shadowPass(void){
@@ -549,34 +555,31 @@ void OpenGLContext::drawPass(void)const{
 }
 
 void OpenGLContext::renderScene(void){	
-    static int times = 0;
-    static double avg = 0.0;
-    ++times;
-    perf_mon.push_query();
+    perf_mon.sync();
 
 	modelMatrix = trackballMatrix;
 	
 	glDepthMask(GL_TRUE);
 	glEnable(GL_DEPTH_TEST);
+    perf_mon.push_query("Shadow Pass");
     shadowPass();
+    perf_mon.pop_query();
+    perf_mon.push_query("FBO Pass");
 	fboPass();
+    perf_mon.pop_query();
+    perf_mon.push_query("SSAO Pass");
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glDepthMask(GL_FALSE);
 	ssaoPass();
+    perf_mon.pop_query();
+    perf_mon.push_query("Final Pass");
 	drawPass();
+    perf_mon.pop_query();
 	glEnable(GL_CULL_FACE);
 	TwDraw();
 
 	glutSwapBuffers();
-
-    double dt = perf_mon.pop_query();
-    avg += dt;
-    if((times + 1) % 60 == 0){
-        printf("%fms\n", avg / times);
-        avg = 0.0;
-        times = 0;
-    }
 }
 
 float OpenGLContext::getZoom(void)const{
