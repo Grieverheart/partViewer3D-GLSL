@@ -1,6 +1,5 @@
 #include "include/keyboard.h"
 #include <cstdio>
-#include <GL/freeglut.h>
 #include "include/opengl_3.h"
 
 CKeyboard::CKeyboard(OpenGLContext *context){

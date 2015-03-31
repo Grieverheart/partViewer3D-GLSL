@@ -7,7 +7,6 @@
 #include <GL/glxew.h>
 #endif
 
-#include <GL/freeglut.h>
 #include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "include/gl_utils.h"
@@ -65,14 +64,8 @@ bool OpenGLContext::create30Context(void){
 	// OpenGL 2.1 Context if it fails.				  //
 	////////////////////////////////////////////////////
 	
-	glutInitContextVersion(3, 3);
-	glutInitContextProfile(GLUT_CORE_PROFILE);
-	
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_SRGB | GLUT_RGBA | GLUT_ALPHA | GLUT_DEPTH);
-	glutInitWindowSize(600,600);
-	windowWidth=windowHeight = 600;
-	// glutInitWindowPosition(100,100);
-	glutCreateWindow("partViewer GLSL");
+    windowWidth = 600;
+    windowHeight = 600;
 	
 	glewExperimental = GL_TRUE;
 	GLenum error = glewInit(); //Enable GLEW
@@ -279,13 +272,13 @@ void OpenGLContext::reshapeWindow(int w, int h){
 }
 
 void OpenGLContext::processScene(void){
-	static float last_time = 0.0;
-	float this_time = glutGet(GLUT_ELAPSED_TIME)/1000.0f;
+	static uint64_t last_time = 0;
+	uint64_t this_time = perf_mon.get_time_ns();
 	// if(this_time-last_time > 1.0f/61.0f){
 		if(m_rotating){
 			glm::mat4 rLocalMatrix = glm::rotate(
 				glm::mat4(1.0),
-				glm::radians((this_time-last_time) * 30.0f),
+				glm::radians(float(((this_time-last_time) / 1000000000.0) * 30.0)),
 				glm::vec3(0.0, 1.0, 0.0)
 			);
 			trackballMatrix = rLocalMatrix * trackballMatrix;
@@ -578,8 +571,6 @@ void OpenGLContext::renderScene(void){
     perf_mon.pop_query();
 	glEnable(GL_CULL_FACE);
 	TwDraw();
-
-	glutSwapBuffers();
 }
 
 float OpenGLContext::getZoom(void)const{

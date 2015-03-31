@@ -8,8 +8,8 @@ set(SOURCE_FILES
     src/main.cpp
     src/perfmon.cpp
     src/coord_parser.cpp
-    src/keyboard.cpp
-    src/mouse.cpp
+    #src/keyboard.cpp
+    #src/mouse.cpp
     src/opengl_3.cpp
     src/shadowmap.cpp
     src/g-buffer.cpp
@@ -26,16 +26,16 @@ set(CMAKE_CXX_FLAGS "-Wall -O3 -std=c++11 -g -march=native")
 
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
-find_package(GLUT REQUIRED)
+find_package(GLFW REQUIRED)
 find_package(GLM REQUIRED)
 find_package(AntTweakBar REQUIRED)
 
-include_directories(${CMAKE_SOURCE_DIR} ${GLM_INCLUDE_DIRS} ${ANT_TWEAK_BAR_INCLUDE_PATH})
+include_directories(${CMAKE_SOURCE_DIR} ${GLM_INCLUDE_DIRS} ${ANT_TWEAK_BAR_INCLUDE_PATH} ${GLFW_INCLUDE_DIRS})
 
 set(LIBS
     ${OPENGL_LIBRARIES}
     ${GLEW_LIBRARIES}
-    ${GLUT_LIBRARIES}
+    ${GLFW_LIBRARIES}
     ${ANT_TWEAK_BAR_LIBRARY}
     )
 

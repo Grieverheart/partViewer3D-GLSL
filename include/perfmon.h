@@ -21,6 +21,8 @@ public:
     void pop_query(void);
     void sync(void);
 
+    uint64_t get_time_ns(void)const;
+
 private:
     struct PerfBlock{
         PerfBlock(uint64_t start_time, const char* name, unsigned char depth):
@@ -36,8 +38,6 @@ private:
         uint64_t end_time_;
         unsigned char depth_;
     };
-
-    uint64_t get_time_ns(void)const;
 #ifdef _WIN32
     uint64_t cpu_freq;
 #endif

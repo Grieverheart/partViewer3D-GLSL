@@ -1,5 +1,4 @@
 #include "../include/mouse.h"
-#include <GL/freeglut.h>
 #include <AntTweakBar.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
