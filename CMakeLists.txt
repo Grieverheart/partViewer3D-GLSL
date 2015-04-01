@@ -8,8 +8,7 @@ set(SOURCE_FILES
     src/main.cpp
     src/perfmon.cpp
     src/coord_parser.cpp
-    #src/keyboard.cpp
-    #src/mouse.cpp
+    src/mouse.cpp
     src/opengl_3.cpp
     src/shadowmap.cpp
     src/g-buffer.cpp

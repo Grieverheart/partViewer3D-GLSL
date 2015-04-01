@@ -1,5 +1,5 @@
 #include "../include/mouse.h"
-#include <AntTweakBar.h>
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "include/opengl_3.h"
@@ -30,7 +30,6 @@ glm::vec3 CMouse::getArcballVec3(int x, int y){
 }
 
 void CMouse::idleArcball(void){
-
 	glm::ivec2 screen = context->getScreen();
 	windowWidth = screen.x;
 	windowHeight = screen.y;
@@ -54,46 +53,38 @@ void CMouse::idleArcball(void){
 	}
 }
 
-void CMouse::onMouse(int button, int state, int x, int y){
-	if(!TwEventMouseButtonGLUT(button, state, x, y)){
-		if(button==GLUT_LEFT_BUTTON){
-			if(state==GLUT_DOWN){
-				dragging=true;
-				cur_mx=x;
-				last_mx=cur_mx;
-				cur_my=y;
-				last_my=cur_my;
-				LastRotMatrix = context->trackballMatrix;
-			}
-			else if(dragging){
-				dragging=false;
-				if(last_mx==x&&last_my==y){
-				//Regular Clicking goes here//
-				}
-				last_mx=cur_mx;
-				last_my=cur_my;
-			}
-		}
-		if(button==3||button==4){
-			float zoom = context->getZoom();
-			zoom=zoom+(button*2-7)*1.5f; // put wheel up and down in one
-			if(zoom<-58)zoom=-58.0f;
-			else if(zoom>90)zoom=90.0f;
-			context->setZoom(zoom);
-		}
-	}
+void CMouse::onButton(int button, int state, int x, int y){
+    if(button == GLFW_MOUSE_BUTTON_LEFT){
+        if(state == GLFW_PRESS){
+            dragging=true;
+            cur_mx=x;
+            last_mx=cur_mx;
+            cur_my=y;
+            last_my=cur_my;
+            LastRotMatrix = context->trackballMatrix;
+        }
+        else if(dragging){
+            dragging=false;
+            if(last_mx==x&&last_my==y){
+            //Regular Clicking goes here//
+            }
+            last_mx=cur_mx;
+            last_my=cur_my;
+        }
+    }
+}
+
+void CMouse::onScroll(double yoffset){
+    float zoom = context->getZoom();
+    zoom=zoom-yoffset*2.0f; // put wheel up and down in one
+    if(zoom<-58)zoom=-58.0f;
+    else if(zoom>90)zoom=90.0f;
+    context->setZoom(zoom);
 }
 
 void CMouse::onMotion(int x, int y){
-	if(!TwEventMouseMotionGLUT(x, y)){
-		if(dragging){
-			cur_mx=x;
-			cur_my=y;
-		}
-	}
-}
-
-void CMouse::onPassiveMotion(int x, int y){
-	if(!TwEventMouseMotionGLUT(x, y)){
-	}
+    if(dragging){
+        cur_mx=x;
+        cur_my=y;
+    }
 }

@@ -10,9 +10,9 @@ public:
 	CMouse(OpenGLContext *context);
 	~CMouse(void);
 	
-	void onMouse(int button, int state, int x, int y);
+	void onButton(int button, int state, int x, int y);
 	void onMotion(int x, int y);
-	void onPassiveMotion(int x, int y);
+	void onScroll(double y);
 	void idleArcball(void);
 private:
 	OpenGLContext *context;
