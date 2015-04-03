@@ -53,8 +53,6 @@ OpenGLContext::~OpenGLContext(void) {
 	if(sh_shadowmap_instanced) delete sh_shadowmap_instanced;
 	if(sh_blur) delete sh_blur;
 	if(sh_accumulator) delete sh_accumulator;
-	if(MVPArray) delete[] MVPArray;
-	if(NormalArray) delete[] NormalArray;
 	TwTerminate();
 }  
 
@@ -161,9 +159,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	}
 	else mNInstances = 1;
 	
-	MVPArray = new glm::mat4[mNInstances];
-	NormalArray = new glm::mat3[mNInstances];
-	
 	glDisable(GL_BLEND);
 	//glBlendEquation(GL_FUNC_ADD);
 	//glBlendFunc(GL_ONE, GL_ONE);
@@ -246,7 +241,33 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	sh_accumulator->unbind();
 	
 	objparser.parse("obj/octahedron.obj",&mesh, "flat");
-	mesh.uploadInstanced(sh_gbuffer_instanced->id());
+    {
+        glm::mat4* ModelArray = new glm::mat4[mNInstances];
+
+        glm::mat4 tMatrix = glm::translate(
+            glm::mat4(1.0),
+            glm::vec3(
+                -(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
+                -(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
+                -coordparser.boxMatrix[2][2]/2.0
+            )
+        );
+        
+        
+        for(unsigned int i = 0; i < mNInstances; i++){
+            glm::mat4 tLocalMatrix = glm::translate(tMatrix, coordparser.centers[i]);
+            glm::mat4 rLocalMatrix = glm::rotate(
+                glm::mat4(1.0),
+                coordparser.rotations[i].x,
+                glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w)
+            );
+            
+            ModelArray[i] = tLocalMatrix * rLocalMatrix ;
+        }
+        mesh.uploadInstanced(sh_gbuffer_instanced->id(), mNInstances, ModelArray);
+        delete[] ModelArray;
+    }
+
 	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
 	full_quad.upload(sh_gbuffer->id());
 	m_fboInit = m_gbuffer.Init(windowWidth, windowHeight);
@@ -364,38 +385,6 @@ void OpenGLContext::drawConfigurationBox(void)const{
 	glBindVertexArray(0);
 }
 
-void OpenGLContext::drawConfiguration(const glm::mat4& vMatrix, const glm::mat4& pMatrix)const{
-	glm::mat4 tMatrix = glm::translate(
-		modelMatrix,
-		glm::vec3(
-			-(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
-			-(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
-			-coordparser.boxMatrix[2][2]/2.0
-		)
-	);
-	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
-	
-	
-	for(unsigned int i = 0; i < mNInstances; i++){
-		glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
-		glm::mat4 rLocalMatrix = glm::rotate(
-			glm::mat4(1.0),
-			coordparser.rotations[i].x,
-			glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w)
-		);
-		
-		glm::mat4 tempModelViewMatrix = tLocalMatrix * rLocalMatrix ;
-		glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(tempModelViewMatrix)));
-		glm::mat4 tempMVPMatrix = pMatrix * tempModelViewMatrix;
-
-		MVPArray[i] = tempMVPMatrix;
-		NormalArray[i] = tempNormalMatrix;
-		
-	}
-	mesh.drawInstanced(mNInstances, MVPArray, NormalArray);
-}
-
-
 void OpenGLContext::fboPass(void)const{
 
 	m_gbuffer.Bind();
@@ -404,28 +393,16 @@ void OpenGLContext::fboPass(void)const{
 	sh_gbuffer_instanced->bind();
 	{	
         sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
-
-		if(use_dat) drawConfiguration(viewMatrix, projectionMatrix);
-		else{
-			glm::mat3 tempNormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix)));
-			glm::mat4 tempMVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
-
-			MVPArray[0] = tempMVPMatrix;
-			NormalArray[0] = tempNormalMatrix;
-			
-			sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
-			
-			mesh.drawInstanced(mNInstances, MVPArray, NormalArray);
-		}
+        sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+        sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+		mesh.drawInstanced();
 	}
 	sh_gbuffer_instanced->unbind();
 	
-	if(!use_dat || drawBox){
+	if(drawBox){
 		sh_gbuffer->bind();
 		{	
-            sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
-			if(!use_dat) mesh.draw();
-			else drawConfigurationBox();
+			drawConfigurationBox();
 		}
 		sh_gbuffer->unbind();
 	}
@@ -475,46 +452,11 @@ void OpenGLContext::shadowPass(void){
         glm::mat4 vMatrix = lightViewMatrix;
         glm::mat4 pMatrix = lightProjectionMatrix;
 
-		if(use_dat){
-            glm::mat4 tMatrix = glm::translate(
-                modelMatrix,
-                glm::vec3(
-                    -(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
-                    -(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
-                    -coordparser.boxMatrix[2][2]/2.0
-                )
-            );
-            glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
-            
-            
-            for(unsigned int i = 0; i < mNInstances; i++){
-                glm::mat4 tLocalMatrix = glm::translate(ModelViewMatrix, coordparser.centers[i]);
-                glm::mat4 rLocalMatrix = glm::rotate(
-                    glm::mat4(1.0),
-                    coordparser.rotations[i].x,
-                    glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w)
-                );
-                
-                glm::mat4 tempModelViewMatrix = tLocalMatrix * rLocalMatrix ;
-                glm::mat4 tempMVPMatrix = pMatrix * tempModelViewMatrix;
+        sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
 
-                MVPArray[i] = tempMVPMatrix;
-            }
-            mesh.drawInstanced(mNInstances, MVPArray);
-        }
-		else{
-			glm::mat4 tempMVPMatrix = pMatrix * vMatrix * modelMatrix;
-
-			MVPArray[0] = tempMVPMatrix;
-			
-			sh_shadowmap_instanced->setUniform("diffColor", 1, diffcolor);
-			
-			mesh.drawInstanced(mNInstances, MVPArray);
-		}
+        mesh.drawInstanced();
 	}
 	sh_shadowmap_instanced->unbind();
-	
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
 }
 
 void OpenGLContext::drawPass(void)const{
@@ -553,12 +495,13 @@ void OpenGLContext::renderScene(void){
 	modelMatrix = trackballMatrix;
 	
 	glDepthMask(GL_TRUE);
+	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
-    perf_mon.push_query("Shadow Pass");
-    shadowPass();
-    perf_mon.pop_query();
     perf_mon.push_query("FBO Pass");
 	fboPass();
+    perf_mon.pop_query();
+    perf_mon.push_query("Shadow Pass");
+    shadowPass();
     perf_mon.pop_query();
     perf_mon.push_query("SSAO Pass");
 	glDisable(GL_CULL_FACE);
@@ -566,11 +509,12 @@ void OpenGLContext::renderScene(void){
 	glDepthMask(GL_FALSE);
 	ssaoPass();
     perf_mon.pop_query();
-    perf_mon.push_query("Final Pass");
+    perf_mon.push_query("Gather Pass");
 	drawPass();
     perf_mon.pop_query();
-	glEnable(GL_CULL_FACE);
+    perf_mon.push_query("TwDraw Pass");
 	TwDraw();
+    perf_mon.pop_query();
 }
 
 float OpenGLContext::getZoom(void)const{

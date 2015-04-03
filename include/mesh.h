@@ -23,8 +23,8 @@ public:
 	
 	void upload(unsigned int shaderID);
 	void draw(void)const;
-	void uploadInstanced(unsigned int shaderID);
-	void drawInstanced(unsigned int nInstances, const glm::mat4* MVPs, const glm::mat3 *NMs = NULL)const;
+	void uploadInstanced(unsigned int shaderID, int n_instances, const glm::mat4* model_array);
+	void drawInstanced(void)const;
 	void data(std::vector<Vertex> vertices);
 	
 private:
@@ -33,8 +33,9 @@ private:
 	
 	float scale;
 	int scaleLocation;
+    int nInstances;
 	
 	unsigned int vaoID;
-	unsigned int vboID[3];
+	unsigned int vboID[2];
 };
 #endif

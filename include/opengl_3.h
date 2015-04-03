@@ -45,9 +45,6 @@ private:
     glm::mat4 lightProjectionMatrix;
     glm::mat4 lightViewMatrix;
 	
-	glm::mat4 *MVPArray;
-	glm::mat3 *NormalArray;
-	
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
 	glm::vec3 skycolor;
