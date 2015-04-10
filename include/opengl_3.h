@@ -17,7 +17,7 @@ public:
 	OpenGLContext(void); 				// Default constructor  
 	~OpenGLContext(void); 				// Destructor for cleaning up our application  
 	bool create30Context(void); 	// Creation of our OpenGL 3.x context  
-	void setupScene(int argc, char *argv[]); 				// All scene information can be setup here  
+	void load_scene(const SimConfig& config);// All scene information can be setup here  
 	void reshapeWindow(int w, int h); 	// Method to get our window width and height on resize  
 	void renderScene(void); 			// Render scene (display method from previous OpenGL tutorials)
 	void processScene(void);
@@ -55,14 +55,13 @@ private:
 	unsigned int vboBox;
 	unsigned int iboBox;
 	
-	bool use_dat;
+	bool is_scene_loaded;
 	bool m_fboInit;
 	bool m_blur;
 	bool m_rotating;
 	
 	CLight light;
 	CObjParser objparser;
-	CCoordParser coordparser;
 	CMesh mesh;
 	CMesh full_quad;
 	CGBuffer m_gbuffer;
@@ -81,7 +80,6 @@ private:
 	TwBar *bar;
 	
 	void drawConfigurationBox(void)const;
-	void initConfigurationBox(void);
 	
 	void createGui(void);
 };

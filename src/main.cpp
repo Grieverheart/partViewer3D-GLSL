@@ -5,8 +5,8 @@
 #include <cstdio>
 
 bool running = true;
-OpenGLContext openglContext; // Our OpenGL Context Object
-CMouse mouse(&openglContext);
+OpenGLContext* openglContext; // Our OpenGL Context Object
+CMouse* mouse;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
 	if(!TwEventKeyGLFW(key, action)){
@@ -22,27 +22,22 @@ void on_mouse_button_callback(GLFWwindow* window, int button, int action, int mo
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 	if(!TwEventMouseButtonGLFW(button, action)){
-        mouse.onButton(button, action, x, y);
+        mouse->onButton(button, action, x, y);
     }
 }
 
 void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
-	if(!TwEventMousePosGLFW(x, y)) mouse.onMotion(x, y);
+	if(!TwEventMousePosGLFW(x, y)) mouse->onMotion(x, y);
 }
 
 void scroll_callback(GLFWwindow* window, double x, double y){
-	mouse.onScroll(y);
+	mouse->onScroll(y);
 }
 
 ////////////////////////////////////////////////////////
 
 void reshape(GLFWwindow* window, int width, int height){
-	openglContext.reshapeWindow(width,height);
-}
-
-void init(int argc, char *argv[]){
-	openglContext.create30Context();
-	openglContext.setupScene(argc,argv);
+	openglContext->reshapeWindow(width,height);
 }
 
 void glfw_error_callback(int error, const char* description){
@@ -72,16 +67,23 @@ int main(int argc,char *argv[] ){
 
     glfwMakeContextCurrent(window);
 	
-	init(argc,argv);
+    openglContext = new OpenGLContext();
+    mouse = new CMouse(openglContext);
+
+	openglContext->create30Context();
+	openglContext->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){
-        mouse.idleArcball();
-        openglContext.processScene();
-        openglContext.renderScene();
+        mouse->idleArcball();
+        openglContext->processScene();
+        openglContext->renderScene();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    delete mouse;
+    delete openglContext;
 
     glfwDestroyWindow(window);
 

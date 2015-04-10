@@ -47,7 +47,7 @@ void PerfMon::sync(void){
 
     if(curr_frame_ > 0){
         PerfBlock& block = blocks_[curr_rpos_];
-        printf("Frame %d time: %fms\n", curr_frame_, (get_time_ns() - block.start_time_) / 1.0e6);
+        //printf("Frame %d time: %fms\n", curr_frame_, (get_time_ns() - block.start_time_) / 1.0e6);
         curr_rpos_ = (curr_rpos_ + 1 == MAX_PERF_BLOCKS)? 0: curr_rpos_ + 1;
 
         for(;
@@ -55,7 +55,7 @@ void PerfMon::sync(void){
             curr_rpos_ = (curr_rpos_ + 1 == MAX_PERF_BLOCKS)? 0: curr_rpos_ + 1
         ){
             const PerfBlock& block = blocks_[curr_rpos_];
-            printf("%.*s Block %s. Time: %fms\n", 4 * block.depth_, "-------------------------", block.name_, (block.end_time_ - block.start_time_) / 1.0e6);
+            //printf("%.*s Block %s. Time: %fms\n", 4 * block.depth_, "-------------------------", block.name_, (block.end_time_ - block.start_time_) / 1.0e6);
         }
     }
 

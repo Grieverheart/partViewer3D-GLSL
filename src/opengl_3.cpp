@@ -34,7 +34,7 @@ OpenGLContext::OpenGLContext(void):
 	m_bgColor = glm::vec3(44, 114, 220) / 255.0f;
 	redisplay = false;
 	trackballMatrix = glm::mat4(1.0);
-	use_dat = false;
+	is_scene_loaded = false;
 	drawBox = false;
 	m_blur = true;
 	m_rotating = false;
@@ -124,7 +124,7 @@ void OpenGLContext::createGui(void){
 	TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
 }
 
-void OpenGLContext::setupScene(int argc, char *argv[]){
+void OpenGLContext::load_scene(const SimConfig& config){
 #ifdef _WIN32
     wglSwapIntervalEXT(0);
 #elif __linux
@@ -136,28 +136,8 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
         glXSwapIntervalEXT(dpy, drawable, interval);
     }
 #endif
-    
-	float init_zoom = -4.0f;
-	if(argc>1){
-	
-		use_dat = true;
-		std::ifstream file(argv[1], std::ios::in);
-		if(!file){
-			printf("Cannot open %s.\n", argv[1]);
-			exit(1);
-		}
-		printf("Parsing %s ...\n", argv[1]);
-		coordparser.parse(file);
-		printf("Done Parsing %s.\n", argv[1]);
-		printf("Found %d particles.\n", coordparser.npart);
-		
-		for(int i=0;i<3;i++){
-			GLfloat max_zoom = -3.5f*glm::length(glm::transpose(coordparser.boxMatrix)[i]);
-			if(max_zoom < init_zoom) init_zoom = max_zoom;
-		}
-		mNInstances = coordparser.npart;
-	}
-	else mNInstances = 1;
+    is_scene_loaded = true;
+	mNInstances = config.n_part;
 	
 	glDisable(GL_BLEND);
 	//glBlendEquation(GL_FUNC_ADD);
@@ -166,7 +146,43 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
 	
-	initConfigurationBox();
+    //Configuration box
+    {
+        GLfloat vertices[]={
+            0.0f,0.0f,0.0f,
+            config.box[0][0], config.box[1][0], config.box[2][0],
+            config.box[0][1], config.box[1][1], config.box[2][1],
+            config.box[0][2], config.box[1][2], config.box[2][2],
+            config.box[0][0] + config.box[0][1], config.box[1][0] + config.box[1][1], config.box[2][0] + config.box[2][1],
+            config.box[0][0] + config.box[0][2], config.box[1][0] + config.box[1][2], config.box[2][0] + config.box[2][2],
+            config.box[0][1] + config.box[0][2], config.box[1][1] + config.box[1][2], config.box[2][1] + config.box[2][2],
+            config.box[0][0] + config.box[0][1] + config.box[0][2],
+            config.box[1][0] + config.box[1][1] + config.box[1][2],
+            config.box[2][0] + config.box[2][1] + config.box[2][2]
+        };
+        
+        GLushort elements[]={
+            3,6,7,5,
+            0,2,4,1,
+            3,0,2,6,4,7,1,5
+        };
+        
+        glGenVertexArrays(1, &vaoBox);
+        glBindVertexArray(vaoBox);
+        
+        glGenBuffers(1, &vboBox);
+        glBindBuffer(GL_ARRAY_BUFFER, vboBox);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+        glVertexAttribPointer((GLuint)0, 3, GL_FLOAT,GL_FALSE, 0, 0);
+        glEnableVertexAttribArray((GLuint)0);
+        
+        glGenBuffers(1,&iboBox);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW); 
+        
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
 	
 	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
 	sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
@@ -180,10 +196,17 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
 
     out_radius = glm::length(glm::vec3(
-        (coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
-        (coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
-        coordparser.boxMatrix[2][2]/2.0
+        (config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
+        (config.box[1][1] + config.box[1][2]) / 2.0,
+        config.box[2][2] / 2.0
     )) + 1.0;
+
+    //TODO: Fix
+    float init_zoom = -4.0;
+    for(int i=0;i<3;i++){
+        GLfloat max_zoom = -3.5f*glm::length(glm::transpose(config.box)[i]);
+        if(max_zoom < init_zoom) init_zoom = max_zoom;
+    }
 
     znear = -init_zoom - out_radius;
     zfar  = -init_zoom + 2.0 * out_radius;
@@ -237,26 +260,26 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
 	
-	objparser.parse("obj/octahedron.obj",&mesh, "flat");
+	objparser.parse("obj/octahedron.obj", &mesh, "flat");
     {
         glm::mat4* ModelArray = new glm::mat4[mNInstances];
 
         glm::mat4 tMatrix = glm::translate(
             glm::mat4(1.0),
             glm::vec3(
-                -(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
-                -(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
-                -coordparser.boxMatrix[2][2]/2.0
+                -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
+                -(config.box[1][1] + config.box[1][2]) / 2.0,
+                -config.box[2][2] / 2.0
             )
         );
         
         
         for(unsigned int i = 0; i < mNInstances; i++){
-            glm::mat4 tLocalMatrix = glm::translate(tMatrix, coordparser.centers[i]);
+            glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.pos[i]);
             glm::mat4 rLocalMatrix = glm::rotate(
                 glm::mat4(1.0),
-                coordparser.rotations[i].x,
-                glm::vec3(coordparser.rotations[i].y, coordparser.rotations[i].z, coordparser.rotations[i].w)
+                config.rot[i].x,
+                glm::vec3(config.rot[i].y, config.rot[i].z, config.rot[i].w)
             );
             
             ModelArray[i] = tLocalMatrix * rLocalMatrix ;
@@ -306,44 +329,7 @@ void OpenGLContext::processScene(void){
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 }
 
-void OpenGLContext::initConfigurationBox(void){
-	GLfloat vertices[]={
-		0.0f,0.0f,0.0f,
-		coordparser.boxMatrix[0][0], coordparser.boxMatrix[1][0], coordparser.boxMatrix[2][0],
-		coordparser.boxMatrix[0][1], coordparser.boxMatrix[1][1], coordparser.boxMatrix[2][1],
-		coordparser.boxMatrix[0][2], coordparser.boxMatrix[1][2], coordparser.boxMatrix[2][2],
-		coordparser.boxMatrix[0][0] + coordparser.boxMatrix[0][1], coordparser.boxMatrix[1][0] + coordparser.boxMatrix[1][1], coordparser.boxMatrix[2][0] + coordparser.boxMatrix[2][1],
-		coordparser.boxMatrix[0][0] + coordparser.boxMatrix[0][2], coordparser.boxMatrix[1][0] + coordparser.boxMatrix[1][2], coordparser.boxMatrix[2][0] + coordparser.boxMatrix[2][2],
-		coordparser.boxMatrix[0][1] + coordparser.boxMatrix[0][2], coordparser.boxMatrix[1][1] + coordparser.boxMatrix[1][2], coordparser.boxMatrix[2][1] + coordparser.boxMatrix[2][2],
-		
-		coordparser.boxMatrix[0][0] + coordparser.boxMatrix[0][1] + coordparser.boxMatrix[0][2],
-		coordparser.boxMatrix[1][0] + coordparser.boxMatrix[1][1] + coordparser.boxMatrix[1][2],
-		coordparser.boxMatrix[2][0] + coordparser.boxMatrix[2][1] + coordparser.boxMatrix[2][2]
-	};
-	
-	GLushort elements[]={
-		3,6,7,5,
-		0,2,4,1,
-		3,0,2,6,4,7,1,5
-	};
-	
-	glGenVertexArrays(1, &vaoBox);
-	glBindVertexArray(vaoBox);
-	
-	glGenBuffers(1, &vboBox);
-	glBindBuffer(GL_ARRAY_BUFFER, vboBox);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-	glVertexAttribPointer((GLuint)0,3,GL_FLOAT,GL_FALSE,0,0);
-	glEnableVertexAttribArray((GLuint)0);
-	
-	glGenBuffers(1,&iboBox);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW); 
-	
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER,0);
-}
-
+//TODO: Fix
 void OpenGLContext::drawConfigurationBox(void)const{
 	
 	glm::mat4 vMatrix;
@@ -352,14 +338,7 @@ void OpenGLContext::drawConfigurationBox(void)const{
 	vMatrix = viewMatrix;
 	pMatrix = projectionMatrix;
 	
-	glm::mat4 tMatrix = glm::translate(
-		modelMatrix,
-		glm::vec3(
-			-(coordparser.boxMatrix[0][0]+coordparser.boxMatrix[0][1]+coordparser.boxMatrix[0][2])/2.0,
-			-(coordparser.boxMatrix[1][1]+coordparser.boxMatrix[1][2])/2.0,
-			-coordparser.boxMatrix[2][2]/2.0
-		)
-	);
+	glm::mat4 tMatrix = modelMatrix;
 	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
 	glm::mat4 MVPMatrix = pMatrix * ModelViewMatrix;
 	

@@ -1,7 +1,9 @@
 #include "include/mesh.h"
 #include <GL/glew.h>
 
-CMesh::CMesh(float scale){
+CMesh::CMesh(float scale):
+    vaoID(0), vboID{}
+{
 	// diffcolor = glm::vec3(0.1334, 0.545, 0.1334);
 	this->scale = scale;
 }

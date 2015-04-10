@@ -57,10 +57,13 @@ static std::string textFileRead(const char *fileName){
     return fileString; // Return our string
 }
 
-Shader::Shader(void){
-}
+Shader::Shader(void):
+    shader_id(0), shader_vp(0), shader_gp(0), shader_fp(0)
+{}
 
-Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile){
+Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
+    shader_id(0), shader_vp(0), shader_gp(0), shader_fp(0)
+{
 	bool isGS = false;
 	bool isFS = false;
 	if(gsFile) isGS = true;

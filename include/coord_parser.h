@@ -1,19 +1,20 @@
 #ifndef __COORD_PARSER_H
 #define __COORD_PARSER_H
 
-#include <vector>
 #include <glm/glm.hpp>
+#include "mesh.h"
 
-class CCoordParser{
-public:
-	CCoordParser(void);
-	~CCoordParser(void);
-	
-	void parse(std::istream &in);
-	
-	std::vector<glm::vec4> rotations;
-	std::vector<glm::vec3> centers;
-	glm::mat3 boxMatrix;
-	int npart;
+//TODO: Destructor/Constructor!!
+struct SimConfig{
+    glm::vec3* pos;
+    glm::vec4* rot;
+    glm::mat3  box;
+    int n_part;
+    int n_meshes;
+    int* mesh_id;
+    CMesh* meshes;
 };
+
+SimConfig parse_config(const char* file_path);
+
 #endif
