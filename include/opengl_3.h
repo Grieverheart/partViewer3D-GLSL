@@ -85,7 +85,6 @@ private:
 	void ssaoPass(void);
 	void shadowPass(void);
 	
-	void drawConfiguration(const glm::mat4& vMatrix, const glm::mat4& pMatrix)const;
 	void drawConfigurationBox(void)const;
 	void initConfigurationBox(void);
 	

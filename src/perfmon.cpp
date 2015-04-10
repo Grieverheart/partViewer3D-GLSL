@@ -10,7 +10,7 @@ PerfMon::PerfMon(void):
 {
 #ifdef _WIN32
     LARGE_INTEGER li;
-    QueryPerformanceFrequency(&li)
+    QueryPerformanceFrequency(&li);
     cpu_freq = li.QuadPart; //ns
 #endif
 }

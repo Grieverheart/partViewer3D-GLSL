@@ -19,8 +19,7 @@ layout(location = 0) out float out_AO;
 vec3 CalcPosition(void){
 	float depth = texture(DepthMap, pass_TexCoord).r;
 	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
-	vec3 ray = viewRay / viewRay.z;
-	return linearDepth * ray;
+	return linearDepth * (viewRay / viewRay.z);
 }
 
 mat3 CalcRMatrix(vec3 normal, vec2 texcoord){
@@ -39,24 +38,20 @@ void main(void){
 	if(Normal != 0.0){
 		vec3 Position = CalcPosition();
 		Normal = normalize(Normal);
-		mat3 RotationMatrix = CalcRMatrix(Normal, TexCoord);
+		mat3 RotationMatrix = RADIUS * CalcRMatrix(Normal, TexCoord);
 		
 		float occlusion = 0.0;
 		
 		for(int i = 0; i < kernelSize; i++){
 			// Get sample position
-			vec3 sample = RotationMatrix * kernel[i];
-			sample = sample * RADIUS + Position;
+			vec3 sample = RotationMatrix * kernel[i] + Position;
 			// Project and bias sample position to get its texture coordinates
 			vec4 offset = projectionMatrix * vec4(sample, 1.0);
-			offset.xy /= offset.w;
-			offset.xy = offset.xy * 0.5 + 0.5;
+			offset.xy = (offset.xy / offset.w) * 0.5 + 0.5;
 			// Get sample depth
-			float sample_depth = texture(DepthMap, offset.xy).r;
+			float sample_depth = texture(DepthMap, offset.xy);
 			sample_depth = projAB.y / (2.0 * sample_depth - 1.0 - projAB.x);
-			if(abs(Position.z - sample_depth) < RADIUS){
-				occlusion += (sample_depth > sample.z) ? 1.0:0.0;
-			}
+            occlusion += float(sample_depth > sample.z);
 		}
 		out_AO = 1.0 - occlusion / kernelSize;
 	}

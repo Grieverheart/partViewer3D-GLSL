@@ -212,7 +212,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
 		
 	}
-	sh_ssao->unbind();
 	
 	// Blur Uniforms
 	sh_blur->bind();
@@ -220,7 +219,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		sh_blur->setUniform("aoSampler", 0);
 		sh_blur->setUniform("use_blur", int(m_blur));
 	}
-	sh_blur->unbind();
 	
 	// Accumulator Uniforms
 	
@@ -238,7 +236,6 @@ void OpenGLContext::setupScene(int argc, char *argv[]){
 		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
-	sh_accumulator->unbind();
 	
 	objparser.parse("obj/octahedron.obj",&mesh, "flat");
     {
@@ -288,7 +285,6 @@ void OpenGLContext::reshapeWindow(int w, int h){
 		{
 			m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
 		}
-		sh_ssao->unbind();
 	}
 }
 
@@ -397,14 +393,12 @@ void OpenGLContext::fboPass(void)const{
         sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
 		mesh.drawInstanced();
 	}
-	sh_gbuffer_instanced->unbind();
 	
 	if(drawBox){
 		sh_gbuffer->bind();
 		{	
 			drawConfigurationBox();
 		}
-		sh_gbuffer->unbind();
 	}
 }
 
@@ -423,7 +417,6 @@ void OpenGLContext::ssaoPass(void){
 		m_ssao.UpdateUniforms(*sh_ssao);
 		full_quad.draw();
 	}
-	sh_ssao->unbind();
 
     perf_mon.pop_query();
 	
@@ -438,7 +431,6 @@ void OpenGLContext::ssaoPass(void){
 		sh_blur->setUniform("use_blur", int(m_blur));
 		full_quad.draw();
 	}
-	sh_blur->unbind();
     glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     perf_mon.pop_query();
 }
@@ -456,7 +448,6 @@ void OpenGLContext::shadowPass(void){
 
         mesh.drawInstanced();
 	}
-	sh_shadowmap_instanced->unbind();
 }
 
 void OpenGLContext::drawPass(void)const{
@@ -484,7 +475,6 @@ void OpenGLContext::drawPass(void)const{
 		light.uploadDirection(viewMatrix);
 		full_quad.draw();
 	}
-	sh_accumulator->unbind();
 	
     glDisable(GL_FRAMEBUFFER_SRGB);
 }

@@ -2,6 +2,7 @@
 #include "include/mouse.h"
 #include <GLFW/glfw3.h>
 #include <AntTweakBar.h>
+#include <cstdio>
 
 bool running = true;
 OpenGLContext openglContext; // Our OpenGL Context Object

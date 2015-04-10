@@ -42,7 +42,7 @@ void CMesh::upload(unsigned int shaderID){
 }
 
 void CMesh::draw(void)const{
-	glUniform1fv(scaleLocation, 1, &scale);
+	//glUniform1fv(scaleLocation, 1, &scale);
 	glGetError();
 	
 	glBindVertexArray(vaoID); 
