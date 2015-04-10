@@ -80,11 +80,6 @@ private:
 	
 	TwBar *bar;
 	
-	void drawPass(void)const;
-	void fboPass(void)const;
-	void ssaoPass(void);
-	void shadowPass(void);
-	
 	void drawConfigurationBox(void)const;
 	void initConfigurationBox(void);
 	

@@ -291,22 +291,19 @@ void OpenGLContext::reshapeWindow(int w, int h){
 void OpenGLContext::processScene(void){
 	static uint64_t last_time = 0;
 	uint64_t this_time = perf_mon.get_time_ns();
-	// if(this_time-last_time > 1.0f/61.0f){
-		if(m_rotating){
-			glm::mat4 rLocalMatrix = glm::rotate(
-				glm::mat4(1.0),
-				glm::radians(float(((this_time-last_time) / 1000000000.0) * 30.0)),
-				glm::vec3(0.0, 1.0, 0.0)
-			);
-			trackballMatrix = rLocalMatrix * trackballMatrix;
-		}
-		redisplay = true;
-		last_time = this_time;
-		projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
-		invProjMatrix = glm::inverse(projectionMatrix);
-        lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-
-	// }
+    if(m_rotating){
+        glm::mat4 rLocalMatrix = glm::rotate(
+            glm::mat4(1.0),
+            glm::radians(float(((this_time-last_time) / 1000000000.0) * 30.0)),
+            glm::vec3(0.0, 1.0, 0.0)
+        );
+        trackballMatrix = rLocalMatrix * trackballMatrix;
+    }
+    redisplay = true;
+    last_time = this_time;
+    projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+    invProjMatrix = glm::inverse(projectionMatrix);
+    lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 }
 
 void OpenGLContext::initConfigurationBox(void){
@@ -381,104 +378,6 @@ void OpenGLContext::drawConfigurationBox(void)const{
 	glBindVertexArray(0);
 }
 
-void OpenGLContext::fboPass(void)const{
-
-	m_gbuffer.Bind();
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
-	sh_gbuffer_instanced->bind();
-	{	
-        sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
-        sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
-        sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
-		mesh.drawInstanced();
-	}
-	
-	if(drawBox){
-		sh_gbuffer->bind();
-		{	
-			drawConfigurationBox();
-		}
-	}
-}
-
-void OpenGLContext::ssaoPass(void){
-
-    perf_mon.push_query("SSAO Calc Pass");
-	m_ssao.Bind();
-	glClear(GL_COLOR_BUFFER_BIT);
-
-	m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 0);
-	m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 1);
-	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_NOISE, 2);
-	
-	sh_ssao->bind();
-	{
-		m_ssao.UpdateUniforms(*sh_ssao);
-		full_quad.draw();
-	}
-
-    perf_mon.pop_query();
-	
-    perf_mon.push_query("SSAO Blur Pass");
-
-    glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-	m_gbuffer.Bind();
-	m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
-	
-	sh_blur->bind();
-	{
-		sh_blur->setUniform("use_blur", int(m_blur));
-		full_quad.draw();
-	}
-    glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-    perf_mon.pop_query();
-}
-
-void OpenGLContext::shadowPass(void){
-	m_shadowmap.Bind();
-	glClear(GL_DEPTH_BUFFER_BIT);
-	
-	sh_shadowmap_instanced->bind();
-	{	
-        glm::mat4 vMatrix = lightViewMatrix;
-        glm::mat4 pMatrix = lightProjectionMatrix;
-
-        sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
-
-        mesh.drawInstanced();
-	}
-}
-
-void OpenGLContext::drawPass(void)const{
-
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-	
-    glEnable(GL_FRAMEBUFFER_SRGB);
-	glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-	glClearColor(0.0, 0.0, 0.0, 1.0);
-
-    m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
-    m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 1);
-    m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 2);
-    m_shadowmap.BindTexture(3);
-	
-	sh_accumulator->bind();
-	{
-		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
-        sh_accumulator->setUniform("skyColor", 1, skycolor);
-
-        glm::mat4 depth_matrix = biasMatrix * lightProjectionMatrix * lightViewMatrix * invViewMatrix;
-        sh_accumulator->setUniform("depth_matrix", 1, depth_matrix);
-
-		light.uploadDirection(viewMatrix);
-		full_quad.draw();
-	}
-	
-    glDisable(GL_FRAMEBUFFER_SRGB);
-}
-
 void OpenGLContext::renderScene(void){	
     perf_mon.sync();
 
@@ -487,24 +386,117 @@ void OpenGLContext::renderScene(void){
 	glDepthMask(GL_TRUE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
+
     perf_mon.push_query("FBO Pass");
-	fboPass();
+    {
+        m_gbuffer.Bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        sh_gbuffer_instanced->bind();
+        {	
+            sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
+            sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+            sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+            mesh.drawInstanced();
+        }
+        
+        if(drawBox){
+            sh_gbuffer->bind();
+            {	
+                drawConfigurationBox();
+            }
+        }
+    }
     perf_mon.pop_query();
+
     perf_mon.push_query("Shadow Pass");
-    shadowPass();
+    {
+        m_shadowmap.Bind();
+        glClear(GL_DEPTH_BUFFER_BIT);
+        
+        sh_shadowmap_instanced->bind();
+        {	
+            glm::mat4 vMatrix = lightViewMatrix;
+            glm::mat4 pMatrix = lightProjectionMatrix;
+
+            sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
+
+            mesh.drawInstanced();
+        }
+    }
     perf_mon.pop_query();
+
     perf_mon.push_query("SSAO Pass");
-	glDisable(GL_CULL_FACE);
-	glDisable(GL_DEPTH_TEST);
-	glDepthMask(GL_FALSE);
-	ssaoPass();
+    {
+        glDisable(GL_CULL_FACE);
+        glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
+
+        perf_mon.push_query("SSAO Calc Pass");
+        m_ssao.Bind();
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 0);
+        m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 1);
+        m_ssao.BindTexture(Cssao::TEXTURE_TYPE_NOISE, 2);
+        
+        sh_ssao->bind();
+        {
+            m_ssao.UpdateUniforms(*sh_ssao);
+            full_quad.draw();
+        }
+
+        perf_mon.pop_query();
+        
+        perf_mon.push_query("SSAO Blur Pass");
+
+        glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+        m_gbuffer.Bind();
+        m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
+        
+        sh_blur->bind();
+        {
+            sh_blur->setUniform("use_blur", int(m_blur));
+            full_quad.draw();
+        }
+        glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+        perf_mon.pop_query();
+    }
     perf_mon.pop_query();
+
+    glEnable(GL_FRAMEBUFFER_SRGB);
     perf_mon.push_query("Gather Pass");
-	drawPass();
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        
+        glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
+        glClear(GL_COLOR_BUFFER_BIT);
+        glClearColor(0.0, 0.0, 0.0, 1.0);
+
+        m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
+        m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 1);
+        m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 2);
+        m_shadowmap.BindTexture(3);
+        
+        sh_accumulator->bind();
+        {
+            sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
+            sh_accumulator->setUniform("skyColor", 1, skycolor);
+
+            glm::mat4 depth_matrix = biasMatrix * lightProjectionMatrix * lightViewMatrix * invViewMatrix;
+            sh_accumulator->setUniform("depth_matrix", 1, depth_matrix);
+
+            light.uploadDirection(viewMatrix);
+            full_quad.draw();
+        }
+        
+    }
     perf_mon.pop_query();
+
     perf_mon.push_query("TwDraw Pass");
 	TwDraw();
     perf_mon.pop_query();
+    glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
 float OpenGLContext::getZoom(void)const{
