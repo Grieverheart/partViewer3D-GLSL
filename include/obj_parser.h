@@ -5,11 +5,6 @@
 
 class CMesh;
 
-class CObjParser{
-public:
-	CObjParser(void);
-	~CObjParser(void);
-	
-	void parse(const char *filename, CMesh *mesh, std::string shading_model);
-};
+void parse_obj(const char *filename, CMesh *mesh, std::string shading_model);
+
 #endif

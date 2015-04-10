@@ -1,12 +1,9 @@
 #include "include/mesh.h"
 #include <GL/glew.h>
 
-CMesh::CMesh(float scale):
+CMesh::CMesh(void):
     vaoID(0), vboID{}
-{
-	// diffcolor = glm::vec3(0.1334, 0.545, 0.1334);
-	this->scale = scale;
-}
+{}
 
 CMesh::~CMesh(void){
 	if(vaoID != 0) glDeleteBuffers(1, &vaoID);
@@ -35,16 +32,9 @@ void CMesh::upload(unsigned int shaderID){
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	scaleLocation = glGetUniformLocation(shaderID, "scale");
-	
-	// if(scaleLocation == -1){
-		// std::cout << "Unable to bind uniform" << std::endl;
-	// }
 }
 
 void CMesh::draw(void)const{
-	//glUniform1fv(scaleLocation, 1, &scale);
 	glGetError();
 	
 	glBindVertexArray(vaoID); 
@@ -79,16 +69,9 @@ void CMesh::uploadInstanced(GLuint shaderID, int n_instances, const glm::mat4* M
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	scaleLocation = glGetUniformLocation(shaderID, "scale");
-	
-	// if(scaleLocation == -1){
-		// std::cout << "Unable to bind uniform" << std::endl;
-	// }
 }
 
 void CMesh::drawInstanced(void)const{
-	glUniform1fv(scaleLocation, 1, &scale);
 	glBindVertexArray(vaoID); 
 	glDrawArraysInstanced(GL_TRIANGLES, 0, vertices.size(), nInstances);
 	glBindVertexArray(0);

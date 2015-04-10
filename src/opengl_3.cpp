@@ -20,9 +20,7 @@ static const glm::mat4 biasMatrix(
 );
 
 OpenGLContext::OpenGLContext(void):
-	m_fboInit(false),
-	mesh(1.0f),
-	full_quad(1.0f)
+	m_fboInit(false)
 {
 	/////////////////////////////////////////////////
 	// Default Constructor for OpenGLContext class //
@@ -260,7 +258,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
 	
-	objparser.parse("obj/octahedron.obj", &mesh, "flat");
+    mesh = config.meshes[0];
     {
         glm::mat4* ModelArray = new glm::mat4[mNInstances];
 
@@ -288,8 +286,8 @@ void OpenGLContext::load_scene(const SimConfig& config){
         delete[] ModelArray;
     }
 
-	objparser.parse("obj/full_quad.obj", &full_quad, "flat");
-	full_quad.upload(sh_gbuffer->id());
+    glGenVertexArrays(1, &fullscreen_triangle_vao);
+
 	m_fboInit = m_gbuffer.Init(windowWidth, windowHeight);
 	if(!m_fboInit) printf("Couldn't initialize FBO!");
 }
@@ -349,7 +347,6 @@ void OpenGLContext::drawConfigurationBox(void)const{
 	glLineWidth(fabs(-0.067f * zoom + 4.0f));
 	
 	sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
-	sh_gbuffer->setUniform("scale", 1.0f);
 	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, 0);
 	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, (GLvoid*)(4*sizeof(GLushort)));
 	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
@@ -405,6 +402,8 @@ void OpenGLContext::renderScene(void){
     }
     perf_mon.pop_query();
 
+    glBindVertexArray(fullscreen_triangle_vao);
+
     perf_mon.push_query("SSAO Pass");
     {
         glDisable(GL_CULL_FACE);
@@ -422,7 +421,8 @@ void OpenGLContext::renderScene(void){
         sh_ssao->bind();
         {
             m_ssao.UpdateUniforms(*sh_ssao);
-            full_quad.draw();
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
         perf_mon.pop_query();
@@ -436,7 +436,8 @@ void OpenGLContext::renderScene(void){
         sh_blur->bind();
         {
             sh_blur->setUniform("use_blur", int(m_blur));
-            full_quad.draw();
+
+            glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         perf_mon.pop_query();
@@ -466,7 +467,7 @@ void OpenGLContext::renderScene(void){
             sh_accumulator->setUniform("depth_matrix", 1, depth_matrix);
 
             light.uploadDirection(viewMatrix);
-            full_quad.draw();
+            glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         
     }

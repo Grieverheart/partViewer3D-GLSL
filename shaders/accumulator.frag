@@ -19,7 +19,7 @@ uniform vec2 projAB;
 uniform vec3 skyColor;
 uniform mat4 depth_matrix;
 
-noperspective in vec2 pass_TexCoord;
+noperspective in vec2 TexCoord;
 smooth in vec3 viewRay;
 
 layout(location = 0) out vec4 out_Color;
@@ -65,8 +65,8 @@ vec3 CalcLight(vec3 position, vec3 normal, float AO){
 }
 
 bool isEdge(vec3 normal){
-	vec3 normalRight = textureOffset(NormalMap, pass_TexCoord, ivec2(1, 0)).xyz; //Assume normalized
-	vec3 normalUp = textureOffset(NormalMap, pass_TexCoord, ivec2(0, 1)).xyz; //Assume normalized
+	vec3 normalRight = textureOffset(NormalMap, TexCoord, ivec2(1, 0)).xyz; //Assume normalized
+	vec3 normalUp = textureOffset(NormalMap, TexCoord, ivec2(0, 1)).xyz; //Assume normalized
 	
 	float amountX = dot(normalRight, normal);
 	float amountY = dot(normalUp, normal);
@@ -77,10 +77,9 @@ bool isEdge(vec3 normal){
 
 void main(void){
 
-	vec2 TexCoord = pass_TexCoord;
     vec4 NormalAO = texture(NormalMap, TexCoord); //Assume normalized
     if(NormalAO.xyz != 0.0){
-        float Depth = texture(DepthMap, pass_TexCoord).r;
+        float Depth = texture(DepthMap, TexCoord).r;
         vec3 Position = CalcPosition(Depth);
 
         vec3 Color = texture(ColorMap, TexCoord).rgb;

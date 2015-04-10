@@ -1,7 +1,6 @@
 #ifndef __OPENGL_3_H
 #define __OPENGL_3_H
 
-#include "obj_parser.h"
 #include "coord_parser.h"
 #include "mesh.h"
 #include "light.h"
@@ -54,6 +53,7 @@ private:
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
+	unsigned int fullscreen_triangle_vao;
 	
 	bool is_scene_loaded;
 	bool m_fboInit;
@@ -61,9 +61,8 @@ private:
 	bool m_rotating;
 	
 	CLight light;
-	CObjParser objparser;
 	CMesh mesh;
-	CMesh full_quad;
+
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;
     CShadowmap m_shadowmap;

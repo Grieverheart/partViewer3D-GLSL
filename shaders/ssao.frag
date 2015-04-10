@@ -11,13 +11,13 @@ uniform vec3 kernel[256];
 uniform float RADIUS;
 uniform mat4 projectionMatrix;
 
-noperspective in vec2 pass_TexCoord;
+noperspective in vec2 TexCoord;
 smooth in vec3 viewRay;
 
 layout(location = 0) out float out_AO;
 
 vec3 CalcPosition(void){
-	float depth = texture(DepthMap, pass_TexCoord).r;
+	float depth = texture(DepthMap, TexCoord).r;
 	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
 	return linearDepth * (viewRay / viewRay.z);
 }
@@ -33,7 +33,7 @@ mat3 CalcRMatrix(vec3 normal, vec2 texcoord){
 
 void main(void){
 
-	vec2 TexCoord = pass_TexCoord;
+	vec2 TexCoord = TexCoord;
 	vec3 Normal = texture(NormalMap, TexCoord).xyz;
 	if(Normal != 0.0){
 		vec3 Position = CalcPosition();

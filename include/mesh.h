@@ -18,7 +18,7 @@ struct Vertex{
 
 class CMesh{
 public:
-	CMesh(float scale);
+	CMesh(void);
 	~CMesh(void);
 	
 	void upload(unsigned int shaderID);
@@ -30,9 +30,7 @@ public:
 private:
 	
 	std::vector<Vertex> vertices;
-	
-	float scale;
-	int scaleLocation;
+
     int nInstances;
 	
 	unsigned int vaoID;

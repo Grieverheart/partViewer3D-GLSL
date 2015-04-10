@@ -6,13 +6,7 @@
 #include <glm/glm.hpp>
 #include <include/mesh.h>
 
-CObjParser::CObjParser(void){
-}
-
-CObjParser::~CObjParser(void){
-}
-
-void CObjParser::parse(const char *filename, CMesh *mesh, std::string shading_model){
+void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 	bool has_texture = false;
 	
 	// Hold the data from the object file

@@ -1,6 +1,5 @@
 #version 330 core
 
-uniform float scale;
 uniform mat4 ProjectionMatrix;
 uniform mat4 MVMatrix;
 
@@ -14,5 +13,5 @@ void main(void){
 
 	pass_Normal = mat3(transpose(inverse(MVMatrix * ModelMatrix))) * in_Normal; 
 	
-	gl_Position = ProjectionMatrix * MVMatrix * ModelMatrix * vec4(scale * in_Position, 1.0);
+	gl_Position = ProjectionMatrix * MVMatrix * ModelMatrix * vec4(in_Position, 1.0);
 }
