@@ -14,7 +14,7 @@ void CMesh::data(std::vector<Vertex> vertices){
 	this->vertices = vertices;
 }
 
-void CMesh::upload(unsigned int shaderID){
+void CMesh::upload(void){
 	
 	glGenVertexArrays(1,&vaoID);
 	glBindVertexArray(vaoID);
@@ -42,7 +42,7 @@ void CMesh::draw(void)const{
 	glBindVertexArray(0);
 }
 
-void CMesh::uploadInstanced(GLuint shaderID, int n_instances, const glm::mat4* ModelArray){
+void CMesh::uploadInstanced(int n_instances, const glm::mat4* ModelArray){
     nInstances = n_instances;
 	
 	glGenVertexArrays(1,&vaoID);

@@ -10,8 +10,15 @@ CMouse* mouse;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
 	if(!TwEventKeyGLFW(key, action)){
-        if((key == GLFW_KEY_ESCAPE) && (action == GLFW_PRESS)){
-            running = false;
+        switch(key){
+        case GLFW_KEY_ESCAPE:
+            if(action == GLFW_PRESS) running = false;
+            break;
+        case 'B':
+            if(action == GLFW_PRESS) openglContext->drawBox = !openglContext->drawBox;
+            break;
+        default:
+            break;
         }
 	}
 }
@@ -46,6 +53,9 @@ void glfw_error_callback(int error, const char* description){
 
 int main(int argc,char *argv[] ){
 
+    int width  = 600;
+    int height = 600;
+
     glfwSetErrorCallback(glfw_error_callback);
 
 	if(!glfwInit()) return 1;
@@ -53,7 +63,7 @@ int main(int argc,char *argv[] ){
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    GLFWwindow* window = glfwCreateWindow(600, 600, "partviewerGLSL", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(width, height, "partviewerGLSL", NULL, NULL);
     if(!window){
         glfwTerminate();
         return 1;
@@ -67,10 +77,10 @@ int main(int argc,char *argv[] ){
 
     glfwMakeContextCurrent(window);
 	
-    openglContext = new OpenGLContext();
+    //TODO: Add try catch for OpenGLContext construction
+    openglContext = new OpenGLContext(width, height);
     mouse = new CMouse(openglContext);
 
-	openglContext->create30Context();
 	openglContext->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){

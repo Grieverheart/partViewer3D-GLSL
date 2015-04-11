@@ -21,9 +21,9 @@ public:
 	CMesh(void);
 	~CMesh(void);
 	
-	void upload(unsigned int shaderID);
+	void upload(void);
 	void draw(void)const;
-	void uploadInstanced(unsigned int shaderID, int n_instances, const glm::mat4* model_array);
+	void uploadInstanced(int n_instances, const glm::mat4* model_array);
 	void drawInstanced(void)const;
 	void data(std::vector<Vertex> vertices);
 	

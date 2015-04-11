@@ -1,7 +1,7 @@
 #include "include/shader.h"
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include <fstream>
+#include <cstdio>
 #include <cstring>
 
 static inline void validateShader(GLuint shader, const char *file = 0){
@@ -40,23 +40,6 @@ static inline bool validateProgram(GLuint program){
 	return true;
 }
 
-static std::string textFileRead(const char *fileName){
-	std::string fileString = std::string(); // A string for storing the file contents
-	std::string line = std::string(); // A string for holding the current line
-
-	std::ifstream file(fileName); // Open an input stream with the selected file
-	if (file.is_open()) { // If the file opened successfully
-		while (!file.eof()) { // While we are not at the end of the file
-			getline(file, line); // Get the current line
-		  	fileString.append(line); // Append the line to our file string
-			fileString.append("\n"); // Appand a new line character
-		}
-		file.close(); // Close the file
-	}
-
-    return fileString; // Return our string
-}
-
 Shader::Shader(void):
     shader_id(0), shader_vp(0), shader_gp(0), shader_fp(0)
 {}
@@ -64,85 +47,112 @@ Shader::Shader(void):
 Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
     shader_id(0), shader_vp(0), shader_gp(0), shader_fp(0)
 {
-	bool isGS = false;
-	bool isFS = false;
-	if(gsFile) isGS = true;
-	if(fsFile) isFS = true;
-	shader_vp = glCreateShader(GL_VERTEX_SHADER);
-	if(isFS) shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
-	if(isGS) shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
-	
-	std::string vsText = textFileRead(vsFile);
-	std::string fsText = "";
-	if(isFS) fsText = textFileRead(fsFile);
-	std::string gsText = "";
-	if(isGS) gsText = textFileRead(gsFile);
-    
-	const char *vertexText = vsText.c_str();
-	const char *fragmentText = fsText.c_str();
-	const char *geometryText = gsText.c_str();
-	
-	if(vertexText == NULL || (isFS && fragmentText == NULL) || (isGS && geometryText == NULL)){
-		printf("Either vertex shader or fragment shader file not found");
-		return;
-	}
-	
-	glShaderSource(shader_vp, 1, &vertexText, 0);
-	glCompileShader(shader_vp);
-	validateShader(shader_vp, vsFile);
-	
-	if(isGS){
-		glShaderSource(shader_gp, 1, &geometryText, 0);
-		glCompileShader(shader_gp);
-		validateShader(shader_gp, gsFile);
-	}
-	
-    if(isFS){
-        glShaderSource(shader_fp, 1, &fragmentText, 0);
-        glCompileShader(shader_fp);
-        validateShader(shader_fp, fsFile);
-    }
+	bool isGS = (gsFile != NULL);
+	bool isFS = (fsFile != NULL);
 	
 	shader_id = glCreateProgram();
 	
-	if(isFS) glAttachShader(shader_id, shader_fp);
-	if(isGS) glAttachShader(shader_id, shader_gp);
-	glAttachShader(shader_id, shader_vp);
+    {
+        shader_vp = glCreateShader(GL_VERTEX_SHADER);
+        FILE* fp = fopen(vsFile, "rb");
+        if(!fp){
+            glDeleteShader(shader_vp);
+            glDeleteProgram(shader_id);
+            throw InitializationException("vertex", vsFile);
+        }
+
+        fseek(fp, 0, SEEK_END);
+        size_t file_size = ftell(fp);
+        char* vertexText = new char[file_size + 1];
+        fseek(fp, 0, SEEK_SET);
+        fread(vertexText, file_size, 1, fp);
+        vertexText[file_size] = 0;
+        fclose(fp);
+	
+        glShaderSource(shader_vp, 1, &vertexText, 0);
+        glCompileShader(shader_vp);
+        validateShader(shader_vp, vsFile);
+        glAttachShader(shader_id, shader_vp);
+
+        delete[] vertexText;
+    }
+
+	if(isFS){
+        shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
+        FILE* fp = fopen(fsFile, "rb");
+        if(!fp){
+            glDeleteShader(shader_vp);
+            glDeleteShader(shader_fp);
+            glDeleteProgram(shader_id);
+            throw InitializationException("fragment", fsFile);
+        }
+
+        fseek(fp, 0, SEEK_END);
+        size_t file_size = ftell(fp);
+        char* fragmentText = new char[file_size + 1];
+        fseek(fp, 0, SEEK_SET);
+        fread(fragmentText, file_size, 1, fp);
+        fragmentText[file_size] = 0;
+        fclose(fp);
+
+        glShaderSource(shader_fp, 1, &fragmentText, 0);
+        glCompileShader(shader_fp);
+        validateShader(shader_fp, fsFile);
+        glAttachShader(shader_id, shader_fp);
+
+        delete[] fragmentText;
+    }
+
+	if(isGS){
+        shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
+        FILE* fp = fopen(gsFile, "rb");
+        if(!fp){
+            glDeleteShader(shader_vp);
+            glDeleteShader(shader_fp);
+            glDeleteShader(shader_gp);
+            glDeleteProgram(shader_id);
+            throw InitializationException("fragment", fsFile);
+            throw InitializationException("geometry", gsFile);
+        }
+        fseek(fp, 0, SEEK_END);
+        size_t file_size = ftell(fp);
+        char* geometryText = new char[file_size + 1];
+        fseek(fp, 0, SEEK_SET);
+        fread(geometryText, file_size, 1, fp);
+        geometryText[file_size] = 0;
+        fclose(fp);
+
+		glShaderSource(shader_gp, 1, &geometryText, 0);
+		glCompileShader(shader_gp);
+		validateShader(shader_gp, gsFile);
+        glAttachShader(shader_id, shader_gp);
+
+        delete[] geometryText;
+    }
 	
 	glLinkProgram(shader_id);
+
+    //TODO: Add exception
 	if(validateProgram(shader_id)){
-		init();
-	}
+        GLint nUniforms;
+        glGetProgramiv(shader_id, GL_ACTIVE_UNIFORMS, &nUniforms);
+        for(GLint i = 0; i < nUniforms; i++){
+            GLchar name[64];
+            GLint size;
+            GLenum type;
+            glGetActiveUniform(shader_id, i, 64, NULL, &size, &type, name);
+            GLint location = glGetUniformLocation(shader_id, name);
+            mUniformLocations[std::string(name)] = location;
+            if(location == -1) printf("Couldn't bind uniform %s in program %d.\n", name, shader_id);
+        }
+    }
 }
 
 Shader::~Shader(void){
-	glDetachShader(shader_id, shader_fp);
 	glDeleteShader(shader_vp);
-
-	if(shader_fp){
-		glDetachShader(shader_id, shader_fp);
-		glDeleteShader(shader_fp);
-	}
-	if(shader_gp){
-		glDetachShader(shader_id, shader_gp);
-		glDeleteShader(shader_gp);
-	}
-	
+    glDeleteShader(shader_fp);
+    glDeleteShader(shader_gp);
 	glDeleteShader(shader_id);
-}
-
-void Shader::init(void){
-	GLint nUniforms;
-	glGetProgramiv(shader_id, GL_ACTIVE_UNIFORMS, &nUniforms);
-	for(GLint i = 0; i < nUniforms; i++){
-		GLchar name[64];
-		GLint size;
-		GLenum type;
-		glGetActiveUniform(shader_id, i, 64, NULL, &size, &type, name);
-		GLint location = glGetUniformLocation(shader_id, name);
-		mUniformLocations[std::string(name)] = location;
-		if(location == -1) printf("Couldn't bind uniform %s in program %d.\n", name, shader_id);
-	}
 }
 
 unsigned int Shader::id(void){

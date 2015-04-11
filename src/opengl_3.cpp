@@ -19,53 +19,24 @@ static const glm::mat4 biasMatrix(
     0.5, 0.5, 0.5, 1.0
 );
 
-OpenGLContext::OpenGLContext(void):
-	m_fboInit(false)
+OpenGLContext::OpenGLContext(int width, int height):
+    drawBox(false),
+	trackballMatrix(1.0),
+    windowWidth(width), windowHeight(height),
+    fov(60.0f), zoom(0.0f),
+	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
+	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
+	skycolor(0.529, 0.808, 0.921),
+    vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
+    is_scene_loaded(false), m_blur(true), m_rotating(false),
+	light(glm::vec3(-0.27, -0.91, -0.33)),
+    sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
+    sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr)
+
 {
-	/////////////////////////////////////////////////
-	// Default Constructor for OpenGLContext class //
-	/////////////////////////////////////////////////
-	zoom = 0.0f;
-	fov = 60.0f;
-	znear = 1.0f; //In the Future, calculate the optimal znear and zfar
-	zfar = 100.0f;
-	m_bgColor = glm::vec3(44, 114, 220) / 255.0f;
-	redisplay = false;
-	trackballMatrix = glm::mat4(1.0);
-	is_scene_loaded = false;
-	drawBox = false;
-	m_blur = true;
-	m_rotating = false;
-	light = CLight(glm::vec3(-0.27, -0.91, -0.33));
-	diffcolor = glm::vec3(77, 27, 147) / 255.0f;
-	skycolor  = glm::vec3(0.529, 0.808, 0.921);
-}
-
-OpenGLContext::~OpenGLContext(void) { 
-	if(vaoBox != 0) glDeleteBuffers(1, &vaoBox);
-	if(vboBox != 0) glDeleteBuffers(1, &vboBox);
-	if(iboBox != 0) glDeleteBuffers(1, &iboBox);
-	if(sh_gbuffer) delete sh_gbuffer; // GLSL Shader
-	if(sh_gbuffer_instanced) delete sh_gbuffer_instanced; // GLSL Shader
-	if(sh_ssao) delete sh_ssao;
-	if(sh_shadowmap_instanced) delete sh_shadowmap_instanced;
-	if(sh_blur) delete sh_blur;
-	if(sh_accumulator) delete sh_accumulator;
-	TwTerminate();
-}  
-
-bool OpenGLContext::create30Context(void){
-	////////////////////////////////////////////////////
-	// Create an OpenGL 3.2 context. Fall back to a   //
-	// OpenGL 2.1 Context if it fails.				  //
-	////////////////////////////////////////////////////
-	
-    windowWidth = 600;
-    windowHeight = 600;
-	
 	glewExperimental = GL_TRUE;
 	GLenum error = glewInit(); //Enable GLEW
-	if(error != GLEW_OK) return false; //Failure!
+	if(error != GLEW_OK) throw GlewInitializationException();
 	glError(__FILE__,__LINE__);
 	
 	int glVersion[2] = {-1,1};
@@ -75,11 +46,87 @@ bool OpenGLContext::create30Context(void){
 	printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
 	printf("Renderer used: %s\n", glGetString(GL_RENDERER));
 	printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+
+#ifdef _WIN32
+    wglSwapIntervalEXT(0);
+#elif __linux
+    Display *dpy = glXGetCurrentDisplay();
+    GLXDrawable drawable = glXGetCurrentDrawable();
+    const int interval = 0;
+
+    if (drawable) {
+        glXSwapIntervalEXT(dpy, drawable, interval);
+    }
+#endif
+	
+	glDisable(GL_BLEND);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+	
+    try{
+        sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
+        sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
+        sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
+        sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
+        sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
+        sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
+    }
+    catch(Shader::InitializationException){
+        delete sh_gbuffer;
+        delete sh_gbuffer_instanced;
+        delete sh_ssao;
+        delete sh_shadowmap_instanced;
+        delete sh_blur;
+        delete sh_accumulator;
+        throw;
+    }
+	
+    //TODO: Add exceptions
+	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
+	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
+	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
+	if(!m_gbuffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+
+    glGenVertexArrays(1, &fullscreen_triangle_vao);
+        
+    glGenVertexArrays(1, &vaoBox);
+    glBindVertexArray(vaoBox);
+    
+    glGenBuffers(1, &vboBox);
+    glBindBuffer(GL_ARRAY_BUFFER, vboBox);
+    glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray((GLuint)0);
+        
+    GLushort elements[] = {
+        3, 6, 7, 5,
+        1, 4, 2, 0,
+        7, 4, 2, 6, 1, 0, 3, 5
+    };
+    
+    glGenBuffers(1, &iboBox);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW); 
+    
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 	
 	createGui();
-	
-	return true; // Success, return true
 }
+
+OpenGLContext::~OpenGLContext(void) { 
+	glDeleteBuffers(1, &vboBox);
+	glDeleteBuffers(1, &iboBox);
+	glDeleteVertexArrays(1, &vaoBox);
+	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
+	delete sh_gbuffer; // GLSL Shader
+	delete sh_gbuffer_instanced; // GLSL Shader
+	delete sh_ssao;
+	delete sh_shadowmap_instanced;
+	delete sh_blur;
+	delete sh_accumulator;
+	TwTerminate();
+}  
 
 void OpenGLContext::createGui(void){
 	TwInit(TW_OPENGL_CORE, NULL);
@@ -123,75 +170,35 @@ void OpenGLContext::createGui(void){
 }
 
 void OpenGLContext::load_scene(const SimConfig& config){
-#ifdef _WIN32
-    wglSwapIntervalEXT(0);
-#elif __linux
-    Display *dpy = glXGetCurrentDisplay();
-    GLXDrawable drawable = glXGetCurrentDrawable();
-    const int interval = 0;
-
-    if (drawable) {
-        glXSwapIntervalEXT(dpy, drawable, interval);
-    }
-#endif
     is_scene_loaded = true;
 	mNInstances = config.n_part;
 	
-	glDisable(GL_BLEND);
-	//glBlendEquation(GL_FUNC_ADD);
-	//glBlendFunc(GL_ONE, GL_ONE);
-	//glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	
     //Configuration box
     {
-        GLfloat vertices[]={
-            0.0f,0.0f,0.0f,
-            config.box[0][0], config.box[1][0], config.box[2][0],
-            config.box[0][1], config.box[1][1], config.box[2][1],
-            config.box[0][2], config.box[1][2], config.box[2][2],
-            config.box[0][0] + config.box[0][1], config.box[1][0] + config.box[1][1], config.box[2][0] + config.box[2][1],
-            config.box[0][0] + config.box[0][2], config.box[1][0] + config.box[1][2], config.box[2][0] + config.box[2][2],
-            config.box[0][1] + config.box[0][2], config.box[1][1] + config.box[1][2], config.box[2][1] + config.box[2][2],
-            config.box[0][0] + config.box[0][1] + config.box[0][2],
-            config.box[1][0] + config.box[1][1] + config.box[1][2],
-            config.box[2][0] + config.box[2][1] + config.box[2][2]
+        glm::vec3 offset(
+            -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
+            -(config.box[1][1] + config.box[1][2]) / 2.0,
+            -config.box[2][2] / 2.0
+        );
+
+        glm::vec3 vertices[] = {
+            glm::vec3(0.0f, 0.0f, 0.0f),
+            glm::vec3(config.box[0][0], config.box[1][0], config.box[2][0]),
+            glm::vec3(config.box[0][1], config.box[1][1], config.box[2][1]),
+            glm::vec3(config.box[0][2], config.box[1][2], config.box[2][2]),
+            glm::vec3(config.box[0][0] + config.box[0][1], config.box[1][0] + config.box[1][1], config.box[2][0] + config.box[2][1]),
+            glm::vec3(config.box[0][0] + config.box[0][2], config.box[1][0] + config.box[1][2], config.box[2][0] + config.box[2][2]),
+            glm::vec3(config.box[0][1] + config.box[0][2], config.box[1][1] + config.box[1][2], config.box[2][1] + config.box[2][2]),
+            glm::vec3(config.box[0][0] + config.box[0][1] + config.box[0][2],
+                      config.box[1][0] + config.box[1][1] + config.box[1][2],
+                      config.box[2][0] + config.box[2][1] + config.box[2][2])
         };
+
+        for(size_t i = 0; i < 8; ++i) vertices[i] += offset;
         
-        GLushort elements[]={
-            3,6,7,5,
-            0,2,4,1,
-            3,0,2,6,4,7,1,5
-        };
-        
-        glGenVertexArrays(1, &vaoBox);
-        glBindVertexArray(vaoBox);
-        
-        glGenBuffers(1, &vboBox);
         glBindBuffer(GL_ARRAY_BUFFER, vboBox);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-        glVertexAttribPointer((GLuint)0, 3, GL_FLOAT,GL_FALSE, 0, 0);
-        glEnableVertexAttribArray((GLuint)0);
-        
-        glGenBuffers(1,&iboBox);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW); 
-        
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 8, vertices, GL_STATIC_DRAW);
     }
-	
-	sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
-	sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
-	sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
-	sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
-	sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
-	sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
-	
-	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
-	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
-	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
 
     out_radius = glm::length(glm::vec3(
         (config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
@@ -217,46 +224,6 @@ void OpenGLContext::load_scene(const SimConfig& config){
     invViewMatrix = glm::inverse(viewMatrix);
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	modelMatrix = glm::mat4(1.0);
-
-	// SSAO Uniforms
-	glm::vec2 projAB;
-	sh_ssao->bind();
-	{
-		float projA = zfar / (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
-		projAB = glm::vec2(projA, projB);
-		m_ssao.UploadUniforms(*sh_ssao);
-		sh_ssao->setUniform("NormalMap", 0);
-		sh_ssao->setUniform("DepthMap", 1);
-		sh_ssao->setUniform("projAB", 1, projAB);
-		sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
-		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
-		
-	}
-	
-	// Blur Uniforms
-	sh_blur->bind();
-	{
-		sh_blur->setUniform("aoSampler", 0);
-		sh_blur->setUniform("use_blur", int(m_blur));
-	}
-	
-	// Accumulator Uniforms
-	
-	sh_accumulator->bind();
-	{
-		sh_accumulator->setUniform("ColorMap", 0);
-		sh_accumulator->setUniform("NormalMap", 1);
-		sh_accumulator->setUniform("DepthMap", 2);
-		sh_accumulator->setUniform("LightDepthMap", 3);
-		
-		float projA = (zfar + znear) / (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
-		projAB = glm::vec2(projA, projB);
-		sh_accumulator->setUniform("projAB", 1, projAB);
-		sh_accumulator->setUniform("skyColor", 1, skycolor);
-		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
-	}
 	
     mesh = config.meshes[0];
     {
@@ -282,14 +249,50 @@ void OpenGLContext::load_scene(const SimConfig& config){
             
             ModelArray[i] = tLocalMatrix * rLocalMatrix ;
         }
-        mesh.uploadInstanced(sh_gbuffer_instanced->id(), mNInstances, ModelArray);
+        mesh.uploadInstanced(mNInstances, ModelArray);
         delete[] ModelArray;
     }
 
-    glGenVertexArrays(1, &fullscreen_triangle_vao);
+    //TODO: Move shader uniform initialization to constructor
 
-	m_fboInit = m_gbuffer.Init(windowWidth, windowHeight);
-	if(!m_fboInit) printf("Couldn't initialize FBO!");
+	// SSAO Uniforms
+	glm::vec2 projAB;
+	sh_ssao->bind();
+	{
+		float projA = zfar / (zfar - znear);
+		float projB = 2.0 * zfar * znear / (zfar - znear);
+		projAB = glm::vec2(projA, projB);
+		m_ssao.UploadUniforms(*sh_ssao);
+		sh_ssao->setUniform("NormalMap", 0);
+		sh_ssao->setUniform("DepthMap", 1);
+		sh_ssao->setUniform("projAB", 1, projAB);
+		sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
+		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
+		
+	}
+	
+	// Blur Uniforms
+	sh_blur->bind();
+	{
+		sh_blur->setUniform("aoSampler", 0);
+		sh_blur->setUniform("use_blur", int(m_blur));
+	}
+	
+	// Accumulator Uniforms
+	sh_accumulator->bind();
+	{
+		sh_accumulator->setUniform("ColorMap", 0);
+		sh_accumulator->setUniform("NormalMap", 1);
+		sh_accumulator->setUniform("DepthMap", 2);
+		sh_accumulator->setUniform("LightDepthMap", 3);
+		
+		float projA = (zfar + znear) / (zfar - znear);
+		float projB = 2.0 * zfar * znear / (zfar - znear);
+		projAB = glm::vec2(projA, projB);
+		sh_accumulator->setUniform("projAB", 1, projAB);
+		sh_accumulator->setUniform("skyColor", 1, skycolor);
+		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
+	}
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){
@@ -299,14 +302,12 @@ void OpenGLContext::reshapeWindow(int w, int h){
 	glViewport(0, 0, windowWidth, windowHeight);
 	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
-	if(m_fboInit){
-		m_gbuffer.Resize(windowWidth, windowHeight);
-		m_shadowmap.Resize(windowWidth, windowHeight);
-		sh_ssao->bind();
-		{
-			m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
-		}
-	}
+    m_gbuffer.Resize(windowWidth, windowHeight);
+    m_shadowmap.Resize(windowWidth, windowHeight);
+    sh_ssao->bind();
+    {
+        m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
+    }
 }
 
 void OpenGLContext::processScene(void){
@@ -320,35 +321,23 @@ void OpenGLContext::processScene(void){
         );
         trackballMatrix = rLocalMatrix * trackballMatrix;
     }
-    redisplay = true;
     last_time = this_time;
     projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 }
 
-//TODO: Fix
+//TODO: Improve line rendering!!!
 void OpenGLContext::drawConfigurationBox(void)const{
-	
-	glm::mat4 vMatrix;
-    glm::mat4 pMatrix;
-	
-	vMatrix = viewMatrix;
-	pMatrix = projectionMatrix;
-	
-	glm::mat4 tMatrix = modelMatrix;
-	glm::mat4 ModelViewMatrix = vMatrix * tMatrix;
-	glm::mat4 MVPMatrix = pMatrix * ModelViewMatrix;
-	
-	sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
-	
-	glBindVertexArray(vaoBox);
 	
 	glLineWidth(fabs(-0.067f * zoom + 4.0f));
 	
+	glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+	sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
 	sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
-	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, 0);
-	glDrawElements(GL_LINE_LOOP, 4, GL_UNSIGNED_SHORT, (GLvoid*)(4*sizeof(GLushort)));
+	
+	glBindVertexArray(vaoBox);
+	glDrawElements(GL_LINE_LOOP, 8, GL_UNSIGNED_SHORT, 0);
 	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
 	
 	glBindVertexArray(0);

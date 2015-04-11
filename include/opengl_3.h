@@ -8,30 +8,36 @@
 #include "ssao.h"
 #include "shadowmap.h"
 #include "perfmon.h"
+#include <exception>
 
 class Shader;
 
 class OpenGLContext{
 public:
-	OpenGLContext(void); 				// Default constructor  
-	~OpenGLContext(void); 				// Destructor for cleaning up our application  
-	bool create30Context(void); 	// Creation of our OpenGL 3.x context  
-	void load_scene(const SimConfig& config);// All scene information can be setup here  
-	void reshapeWindow(int w, int h); 	// Method to get our window width and height on resize  
-	void renderScene(void); 			// Render scene (display method from previous OpenGL tutorials)
+    class GlewInitializationException: public std::exception{
+    public:
+        virtual const char* what(void)const noexcept {
+            return "Error when initializating GLEW.";
+        }
+    };
+
+	OpenGLContext(int width, int height);
+	~OpenGLContext(void);
+	void load_scene(const SimConfig& config);
+	void reshapeWindow(int width, int height);
+	void renderScene(void);
 	void processScene(void);
 	
 	float getZoom(void)const;
 	void setZoom(float zoom);
 	glm::ivec2 getScreen(void)const;
 	
-	bool redisplay;
 	bool drawBox;
 	glm::mat4 trackballMatrix;
 	
 private:
-	int windowWidth;	//Store the width of the window
-	int windowHeight;	//Store the height of the window
+	int windowWidth;
+	int windowHeight;
 	float fov, zoom;
 	float znear,zfar;
     float out_radius;
@@ -56,7 +62,6 @@ private:
 	unsigned int fullscreen_triangle_vao;
 	
 	bool is_scene_loaded;
-	bool m_fboInit;
 	bool m_blur;
 	bool m_rotating;
 	
@@ -67,8 +72,8 @@ private:
 	Cssao m_ssao;
     CShadowmap m_shadowmap;
 	
-	Shader *sh_gbuffer; // GLSL Shader
-	Shader *sh_gbuffer_instanced; // GLSL Shader
+	Shader *sh_gbuffer;
+	Shader *sh_gbuffer_instanced;
 	Shader *sh_ssao;
 	Shader *sh_shadowmap_instanced;
 	Shader *sh_blur;

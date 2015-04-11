@@ -3,10 +3,24 @@
 
 #include <map>
 #include <string>
+#include <exception>
 #include <glm/fwd.hpp>
 
 class Shader{
 public:
+    class InitializationException: public std::exception {
+    public:
+        explicit InitializationException(const char* shader_type, const char* shader_file){
+            sprintf(buffer, "Error when reading %s shader: %s", shader_type, shader_file);
+        }
+
+        virtual const char* what(void)const noexcept {
+            return buffer;
+        }
+    private:
+        char buffer[256];
+    };
+
 	Shader(void);
 	Shader(const char *vsFile, const char *fsFile = NULL, const char *gsFile = NULL);
 	~Shader(void);
@@ -28,8 +42,6 @@ public:
 	void setUniform(const char * name, float value1, float value2, float value3)const;
 	
 private:
-	void init(void);
-	
 	unsigned int shader_id;
 	unsigned int shader_vp;
 	unsigned int shader_gp;
