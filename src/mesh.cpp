@@ -27,8 +27,6 @@ void CMesh::upload(void){
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
 	glEnableVertexAttribArray((GLuint)1);
 	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	glEnableVertexAttribArray((GLuint)2);
-	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
 	
 	glBindVertexArray(0);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -56,14 +54,12 @@ void CMesh::uploadInstanced(int n_instances, const glm::mat4* ModelArray){
 	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
 	glEnableVertexAttribArray((GLuint)1);
 	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	glEnableVertexAttribArray((GLuint)2);
-	glVertexAttribPointer((GLuint)2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)(2 * sizeof(glm::vec3)));
 	
 	glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
 	for(int i = 0; i < 4; i++){ //MVP Matrices
-		glEnableVertexAttribArray(3 + i);
-		glVertexAttribPointer(3 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-		glVertexAttribDivisor(3 + i, 1);
+		glEnableVertexAttribArray(2 + i);
+		glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+		glVertexAttribDivisor(2 + i, 1);
 	}
 	glBufferData(GL_ARRAY_BUFFER, nInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
 	

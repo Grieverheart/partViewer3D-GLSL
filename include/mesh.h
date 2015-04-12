@@ -1,20 +1,8 @@
-#ifndef __MESH_H
-#define __MESH_H
+#ifndef PV_MESH_H
+#define PV_MESH_H
 
+#include "vertex.h"
 #include <vector>
-#include <glm/glm.hpp>
-
-struct Vertex{
-	glm::vec3 _coord;
-	glm::vec3 _normal;
-	glm::vec2 _texCoord;
-	
-	Vertex(glm::vec3 coord, glm::vec3 normal, glm::vec2 texCoord = glm::vec2(0.0, 0.0)):
-		_coord(coord),
-		_normal(normal),
-		_texCoord(texCoord)
-	{}
-};
 
 class CMesh{
 public:

@@ -6,16 +6,15 @@
 #include <glm/glm.hpp>
 #include <include/mesh.h>
 
+//TODO: Use cstdio. We must have done this for the game engine code.
 void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 	bool has_texture = false;
 	
 	// Hold the data from the object file
 	std::vector<glm::vec3> temp_vertices;
 	std::vector<glm::vec3> temp_vnormals;
-	std::vector<glm::vec2> temp_vt;
 	std::vector<unsigned short> normal_elements;
 	std::vector<unsigned short> vertex_elements;
-	std::vector<unsigned short> vt_elements;
 	
 	std::vector<Vertex> vertices;
 	
@@ -39,12 +38,7 @@ void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 			s >> v.x >> v.y >> v.z;
 			temp_vnormals.push_back(v);
 		}
-		else if(flag == "vt"){
-			has_texture = true;
-			glm::vec2 vt;
-			s >> vt.x >> vt.y;
-			temp_vt.push_back(vt);
-		}
+		else if(flag == "vt") has_texture = true;
 		else if(flag == "f"){
 			std::string tempstring[3];
 			s >> tempstring[0] >> tempstring[1] >> tempstring[2];
@@ -68,10 +62,8 @@ void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 					ss >> f >> vt >> fn;
 					f--;
 					fn--;
-					vt--;
 					vertex_elements.push_back(f);
 					normal_elements.push_back(fn);
-					vt_elements.push_back(vt);
 				}
 			}
 		}
@@ -94,32 +86,16 @@ void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 			glm::normalize(normal);
 			vertexnormals.push_back(normal);
 		}
-		if(!has_texture){
-			for(int i = 0; i < f_size; i++){
-				Vertex vertex(temp_vertices[vertex_elements[i]], vertexnormals[vertex_elements[i]]);
-				vertices.push_back(vertex);
-			}
-		}
-		else{
-			for(int i = 0; i < f_size; i++){
-				Vertex vertex(temp_vertices[vertex_elements[i]], vertexnormals[vertex_elements[i]], temp_vt[vt_elements[i]]);
-				vertices.push_back(vertex);
-			}
-		}
+        for(int i = 0; i < f_size; i++){
+            Vertex vertex(temp_vertices[vertex_elements[i]], vertexnormals[vertex_elements[i]]);
+            vertices.push_back(vertex);
+        }
 	}
 	else{
-		if(!has_texture){
-			for(int i = 0; i < f_size; i++){
-				Vertex vertex(temp_vertices[vertex_elements[i]], temp_vnormals[normal_elements[i]]);
-				vertices.push_back(vertex);
-			}
-		}
-		else{
-			for(int i = 0; i < f_size; i++){
-				Vertex vertex(temp_vertices[vertex_elements[i]], temp_vnormals[normal_elements[i]], temp_vt[vt_elements[i]]);
-				vertices.push_back(vertex);
-			}
-		}
+        for(int i = 0; i < f_size; i++){
+            Vertex vertex(temp_vertices[vertex_elements[i]], temp_vnormals[normal_elements[i]]);
+            vertices.push_back(vertex);
+        }
 	}
 	mesh->data(vertices);
 }
