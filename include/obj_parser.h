@@ -1,10 +1,11 @@
-#ifndef __OBJ_PARSER_H
-#define __OBJ_PARSER_H
+#ifndef PV_OBJ_PARSER_H
+#define PV_OBJ_PARSER_H
 
+#include <vector>
 #include <string>
+#include "vertex.h"
 
-class CMesh;
-
-void parse_obj(const char *filename, CMesh *mesh, std::string shading_model);
+//TODO: Change shading model type
+void parse_obj(const char *filename, std::vector<Vertex>& mesh, std::string shading_model);
 
 #endif

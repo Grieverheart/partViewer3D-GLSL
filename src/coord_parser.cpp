@@ -47,7 +47,7 @@ SimConfig parse_config(const char* file_path){
     std::string mesh_type;
     std::string mesh_name;
     s >> mesh_id >> mesh_type >> mesh_name;
-    config.meshes = new CMesh[n_meshes];
-	parse_obj(("obj/" + mesh_name + ".obj").c_str(), &config.meshes[0], "flat");
+    config.meshes = new std::vector<Vertex>[n_meshes];
+	parse_obj(("obj/" + mesh_name + ".obj").c_str(), config.meshes[0], "flat");
     return config;
 }

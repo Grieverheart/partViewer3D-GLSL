@@ -4,10 +4,9 @@
 #include <algorithm>
 #include <vector>
 #include <glm/glm.hpp>
-#include <include/mesh.h>
 
 //TODO: Use cstdio. We must have done this for the game engine code.
-void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
+void parse_obj(const char *filename, std::vector<Vertex>& mesh, std::string shading_model){
 	bool has_texture = false;
 	
 	// Hold the data from the object file
@@ -15,8 +14,6 @@ void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 	std::vector<glm::vec3> temp_vnormals;
 	std::vector<unsigned short> normal_elements;
 	std::vector<unsigned short> vertex_elements;
-	
-	std::vector<Vertex> vertices;
 	
 	std::ifstream file(filename, std::ios::in);
 	if(!file){
@@ -88,14 +85,13 @@ void parse_obj(const char *filename, CMesh *mesh, std::string shading_model){
 		}
         for(int i = 0; i < f_size; i++){
             Vertex vertex(temp_vertices[vertex_elements[i]], vertexnormals[vertex_elements[i]]);
-            vertices.push_back(vertex);
+            mesh.push_back(vertex);
         }
 	}
 	else{
         for(int i = 0; i < f_size; i++){
             Vertex vertex(temp_vertices[vertex_elements[i]], temp_vnormals[normal_elements[i]]);
-            vertices.push_back(vertex);
+            mesh.push_back(vertex);
         }
 	}
-	mesh->data(vertices);
 }

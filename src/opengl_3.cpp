@@ -27,7 +27,7 @@ OpenGLContext::OpenGLContext(int width, int height):
 	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
-    vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
+    vao_instanced(0), vbo_instanced(0), vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), m_blur(true), m_rotating(false),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -115,16 +115,20 @@ OpenGLContext::OpenGLContext(int width, int height):
 }
 
 OpenGLContext::~OpenGLContext(void) { 
-	glDeleteBuffers(1, &vboBox);
-	glDeleteBuffers(1, &iboBox);
-	glDeleteVertexArrays(1, &vaoBox);
-	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 	delete sh_gbuffer; // GLSL Shader
 	delete sh_gbuffer_instanced; // GLSL Shader
 	delete sh_ssao;
 	delete sh_shadowmap_instanced;
 	delete sh_blur;
 	delete sh_accumulator;
+
+	glDeleteBuffers(1, &vbo_instanced);
+	glDeleteBuffers(1, &vboBox);
+	glDeleteBuffers(1, &iboBox);
+	glDeleteVertexArrays(1, &vao_instanced);
+	glDeleteVertexArrays(1, &vaoBox);
+	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
+
 	TwTerminate();
 }  
 
@@ -225,7 +229,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	modelMatrix = glm::mat4(1.0);
 	
-    mesh = config.meshes[0];
+    mesh.set(config.meshes[0]);
     {
         glm::mat4* ModelArray = new glm::mat4[mNInstances];
 
@@ -249,7 +253,35 @@ void OpenGLContext::load_scene(const SimConfig& config){
             
             ModelArray[i] = tLocalMatrix * rLocalMatrix ;
         }
-        mesh.uploadInstanced(mNInstances, ModelArray);
+
+        //TODO: This should be done for each mesh that was loaded. Additionally, we should
+        //only add vertex attributes to the vao and move the ModelArray to a separate vertex
+        //buffer bound at index 1.
+        
+        //Build instanced vao
+        glGenVertexArrays(1, &vao_instanced);
+        glGenBuffers(1, &vbo_instanced);
+
+        glBindVertexArray(vao_instanced);
+        
+        glEnableVertexAttribArray((GLuint)0);
+        glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
+        glVertexAttribBinding(0, 0);
+        glEnableVertexAttribArray((GLuint)1);
+        glVertexAttribFormat((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
+        glVertexAttribBinding(1, 0);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
+        for(int i = 0; i < 4; i++){ //MVP Matrices
+            glEnableVertexAttribArray(2 + i);
+            glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+            glVertexAttribDivisor(2 + i, 1);
+        }
+        glBufferData(GL_ARRAY_BUFFER, mNInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
+        
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
         delete[] ModelArray;
     }
 
@@ -352,27 +384,7 @@ void OpenGLContext::renderScene(void){
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-    perf_mon.push_query("FBO Pass");
-    {
-        m_gbuffer.Bind();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
-        sh_gbuffer_instanced->bind();
-        {	
-            sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
-            sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
-            sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
-            mesh.drawInstanced();
-        }
-        
-        if(drawBox){
-            sh_gbuffer->bind();
-            {	
-                drawConfigurationBox();
-            }
-        }
-    }
-    perf_mon.pop_query();
+    glBindVertexArray(vao_instanced);
 
     perf_mon.push_query("Shadow Pass");
     {
@@ -386,7 +398,29 @@ void OpenGLContext::renderScene(void){
 
             sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
 
-            mesh.drawInstanced();
+            mesh.draw_instanced(mNInstances);
+        }
+    }
+    perf_mon.pop_query();
+
+    perf_mon.push_query("FBO Pass");
+    {
+        m_gbuffer.Bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        sh_gbuffer_instanced->bind();
+        {	
+            sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
+            sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+            sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+            mesh.draw_instanced(mNInstances);
+        }
+        
+        if(drawBox){
+            sh_gbuffer->bind();
+            {	
+                drawConfigurationBox();
+            }
         }
     }
     perf_mon.pop_query();

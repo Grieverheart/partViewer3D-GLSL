@@ -1,8 +1,9 @@
-#ifndef __COORD_PARSER_H
-#define __COORD_PARSER_H
+#ifndef PV_COORD_PARSER_H
+#define PV_COORD_PARSER_H
 
 #include <glm/glm.hpp>
-#include "mesh.h"
+#include <vector>
+#include "vertex.h"
 
 //TODO: Destructor/Constructor!!
 struct SimConfig{
@@ -12,7 +13,7 @@ struct SimConfig{
     int n_part;
     int n_meshes;
     int* mesh_id;
-    CMesh* meshes;
+    std::vector<Vertex>* meshes;
 };
 
 SimConfig parse_config(const char* file_path);

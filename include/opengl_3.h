@@ -56,6 +56,8 @@ private:
 	
 	unsigned int mNInstances;
 	
+	unsigned int vao_instanced;
+	unsigned int vbo_instanced;
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
@@ -66,7 +68,7 @@ private:
 	bool m_rotating;
 	
 	CLight light;
-	CMesh mesh;
+	GLMesh mesh;
 
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;

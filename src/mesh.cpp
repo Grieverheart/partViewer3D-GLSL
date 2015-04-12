@@ -1,74 +1,41 @@
 #include "include/mesh.h"
+#include "include/vertex.h"
 #include <GL/glew.h>
 
-CMesh::CMesh(void):
-    vaoID(0), vboID{}
+GLMesh::GLMesh(void):
+    n_vertices_(0),
+    vbo_(0)
 {}
 
-CMesh::~CMesh(void){
-	if(vaoID != 0) glDeleteBuffers(1, &vaoID);
-	if(vboID != 0) glDeleteBuffers(2, &vboID[0]);
+GLMesh::GLMesh(const std::vector<Vertex>& vertices):
+    n_vertices_(vertices.size()),
+    vbo_(0)
+{
+	glGenBuffers(1, &vbo_);
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+	glBufferData(GL_ARRAY_BUFFER, n_vertices_ * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
 }
 
-void CMesh::data(std::vector<Vertex> vertices){
-	this->vertices = vertices;
+GLMesh::~GLMesh(void){
+	glDeleteBuffers(1, &vbo_);
 }
 
-void CMesh::upload(void){
-	
-	glGenVertexArrays(1,&vaoID);
-	glBindVertexArray(vaoID);
-	
-	glGenBuffers(1,&vboID[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
-	
-	glEnableVertexAttribArray((GLuint)0);
-	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
-	glEnableVertexAttribArray((GLuint)1);
-	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+void GLMesh::set(const std::vector<Vertex>& vertices){
+	if(n_vertices_ == 0){
+        glGenBuffers(1, &vbo_);
+        n_vertices_ = vertices.size();
+    }
+	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
+	glBufferData(GL_ARRAY_BUFFER, n_vertices_ * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
 }
 
-void CMesh::draw(void)const{
-	glGetError();
-	
-	glBindVertexArray(vaoID); 
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
-	glBindVertexArray(0);
+void GLMesh::draw(void)const{
+    glBindVertexBuffer(0, vbo_, 0, sizeof(Vertex));
+	glDrawArrays(GL_TRIANGLES, 0, n_vertices_);
 }
 
-void CMesh::uploadInstanced(int n_instances, const glm::mat4* ModelArray){
-    nInstances = n_instances;
-	
-	glGenVertexArrays(1,&vaoID);
-	glBindVertexArray(vaoID);
-	
-	glGenBuffers(2,&vboID[0]);
-	glBindBuffer(GL_ARRAY_BUFFER, vboID[0]);
-	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);
-	
-	glEnableVertexAttribArray((GLuint)0);
-	glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)0);
-	glEnableVertexAttribArray((GLuint)1);
-	glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)sizeof(glm::vec3));
-	
-	glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
-	for(int i = 0; i < 4; i++){ //MVP Matrices
-		glEnableVertexAttribArray(2 + i);
-		glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-		glVertexAttribDivisor(2 + i, 1);
-	}
-	glBufferData(GL_ARRAY_BUFFER, nInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
-	
-	glBindVertexArray(0);
-	glBindBuffer(GL_ARRAY_BUFFER, 0);
+void GLMesh::draw_instanced(int n_instances)const{
+    glBindVertexBuffer(0, vbo_, 0, sizeof(Vertex));
+	glDrawArraysInstanced(GL_TRIANGLES, 0, n_vertices_, n_instances);
 }
 
-void CMesh::drawInstanced(void)const{
-	glBindVertexArray(vaoID); 
-	glDrawArraysInstanced(GL_TRIANGLES, 0, vertices.size(), nInstances);
-	glBindVertexArray(0);
-}
