@@ -18,7 +18,7 @@ static inline void validateShader(GLuint shader, const char *file = 0){
 }
 
 static inline bool validateProgram(GLuint program){
-	GLsizei BUFFER_SIZE = 512;
+	const GLsizei BUFFER_SIZE = 512;
 	GLchar buffer[BUFFER_SIZE];
 	memset(buffer, 0, BUFFER_SIZE);
 	GLsizei length = 0;

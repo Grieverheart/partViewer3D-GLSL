@@ -1,8 +1,11 @@
 #ifndef GL_UTILS_H
 #define GL_UTILS_H
 
-#include <cstring>
 #include <cstdio>
+
+#ifdef _MSC_VER
+#define snprintf sprintf_s
+#endif
 
 inline void glError(const char *file, int line) {
 	GLenum err;
@@ -10,12 +13,12 @@ inline void glError(const char *file, int line) {
 		char error[128];
 
 		switch(err) {
-			case GL_INVALID_ENUM:                   strncpy(error, "INVALID_ENUM", sizeof(error));                   break;
-			case GL_INVALID_VALUE:                  strncpy(error, "INVALID_VALUE", sizeof(error));                  break;
-			case GL_INVALID_OPERATION:              strncpy(error, "INVALID_OPERATION", sizeof(error));              break;
-			case GL_OUT_OF_MEMORY:                  strncpy(error, "OUT_OF_MEMORY", sizeof(error));                  break;
-			case GL_INVALID_FRAMEBUFFER_OPERATION:  strncpy(error, "INVALID_FRAMEBUFFER_OPERATION", sizeof(error));  break;
-            default:                                strncpy(error, "UNKNOWN_ERROR", sizeof(error));                  break;
+			case GL_INVALID_ENUM:                   snprintf(error, sizeof(error), "%s", "INVALID_ENUM");                   break;
+			case GL_INVALID_VALUE:                  snprintf(error, sizeof(error), "%s", "INVALID_VALUE");                  break;
+			case GL_INVALID_OPERATION:              snprintf(error, sizeof(error), "%s", "INVALID_OPERATION");              break;
+			case GL_OUT_OF_MEMORY:                  snprintf(error, sizeof(error), "%s", "OUT_OF_MEMORY");                  break;
+			case GL_INVALID_FRAMEBUFFER_OPERATION:  snprintf(error, sizeof(error), "%s", "INVALID_FRAMEBUFFER_OPERATION");  break;
+            default:                                snprintf(error, sizeof(error), "%s", "UNKNOWN_ERROR");                  break;
 		}
 
         fprintf(stderr, "GL%s - %s: %d\n", error, file, line);

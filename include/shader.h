@@ -6,12 +6,17 @@
 #include <exception>
 #include <glm/fwd.hpp>
 
+#ifdef _MSC_VER
+#define noexcept
+#define snprintf sprintf_s
+#endif
+
 class Shader{
 public:
     class InitializationException: public std::exception {
     public:
         explicit InitializationException(const char* shader_type, const char* shader_file){
-            sprintf(buffer, "Error when reading %s shader: %s", shader_type, shader_file);
+            snprintf(buffer, 256, "Error when reading %s shader: %s", shader_type, shader_file);
         }
 
         virtual const char* what(void)const noexcept {

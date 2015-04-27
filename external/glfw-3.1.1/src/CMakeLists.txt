@@ -90,7 +90,9 @@ if (BUILD_SHARED_LIBS)
     target_link_libraries(glfw ${glfw_LIBRARIES})
 endif()
 
-if (GLFW_INSTALL)
-    install(TARGETS glfw EXPORT glfwTargets DESTINATION lib${LIB_SUFFIX})
-endif()
+#if (GLFW_INSTALL)
+#    install(TARGETS glfw EXPORT glfwTargets DESTINATION lib${LIB_SUFFIX})
+#endif()
+
+install(TARGETS glfw LIBRARY DESTINATION ${CMAKE_SOURCE_DIR} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
 

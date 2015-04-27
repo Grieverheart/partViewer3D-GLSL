@@ -10,6 +10,10 @@
 #include "perfmon.h"
 #include <exception>
 
+#ifdef _MSC_VER
+#define noexcept
+#endif
+
 class Shader;
 
 class OpenGLContext{

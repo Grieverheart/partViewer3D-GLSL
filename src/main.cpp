@@ -29,12 +29,12 @@ void on_mouse_button_callback(GLFWwindow* window, int button, int action, int mo
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 	if(!TwEventMouseButtonGLFW(button, action)){
-        mouse->onButton(button, action, x, y);
+        mouse->onButton(button, action, (int)x, (int)y);
     }
 }
 
 void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
-	if(!TwEventMousePosGLFW(x, y)) mouse->onMotion(x, y);
+	if(!TwEventMousePosGLFW(x, y)) mouse->onMotion((int)x, (int)y);
 }
 
 void scroll_callback(GLFWwindow* window, double x, double y){

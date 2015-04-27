@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+#set(CMAKE_SKIP_INSTALL_ALL_DEPENDENCY TRUE)
 
 project(partviewer3D-GLSL)
 
@@ -20,13 +21,20 @@ set(SOURCE_FILES
 
 add_executable(main ${SOURCE_FILES})
 
-set(CMAKE_CXX_FLAGS "-Wall -O3 -std=c++11 -g -march=native")
+if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
+    set(CMAKE_CXX_FLAGS "-Wall -O3 -std=c++11 -g -march=native")
+endif()
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/AntTweakBar" EXCLUDE_FROM_ALL)
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.12.0" EXCLUDE_FROM_ALL)
+if(UNIX)
+    set_target_properties(main PROPERTIES
+        INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/")
+endif()
+
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/AntTweakBar")
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.12.0")
 #set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
 set(BUILD_SHARED_LIBS ON)
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw-3.1.1" EXCLUDE_FROM_ALL)
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw-3.1.1")
 
 find_package(OpenGL REQUIRED)
 
@@ -34,16 +42,14 @@ include_directories(
     ${CMAKE_SOURCE_DIR}
     "${CMAKE_SOURCE_DIR}/external/AntTweakBar/include"
     "${CMAKE_SOURCE_DIR}/external/glfw-3.1.1/include"
-    "${CMAKE_SOURCE_DIR}/external/glm"
+    "${CMAKE_SOURCE_DIR}/external/glm-0.9.6.3"
     "${CMAKE_SOURCE_DIR}/external/glew-1.12.0/include")
 
-set(LIBS
-    ${OPENGL_LIBRARIES}
+set(EXTERNAL_LIBS
     AntTweakBar
     glfw
-    GLEW_shared
-    )
+    GLEW_shared)
 
-target_link_libraries(main ${LIBS})
+target_link_libraries(main ${OPENGL_gl_LIBRARY} ${EXTERNAL_LIBS})
 
 install(TARGETS main DESTINATION ${CMAKE_SOURCE_DIR})

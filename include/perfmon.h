@@ -9,8 +9,12 @@
 #include <ctime>
 #endif
 
+#ifdef _MSC_VER
+#define snprintf sprintf_s
+#endif
+
 #include <cstdint>
-#include <cstring>
+#include <cstdio>
 
 class PerfMon{
 public:
@@ -28,7 +32,7 @@ private:
         PerfBlock(uint64_t start_time, const char* name, unsigned char depth):
             start_time_(start_time), depth_(depth)
         {
-            strncpy(name_, name, sizeof(name_));
+            snprintf(name_, 128, "%s", name);
         }
 
         PerfBlock(void){}
