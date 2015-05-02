@@ -13,6 +13,7 @@ set(SOURCE_FILES
     src/opengl_3.cpp
     src/shadowmap.cpp
     src/g-buffer.cpp
+    src/accumulator.cpp
     src/light.cpp
     src/mesh.cpp
     src/obj_parser.cpp
@@ -22,7 +23,7 @@ set(SOURCE_FILES
 add_executable(main ${SOURCE_FILES})
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
-    set(CMAKE_CXX_FLAGS "-Wall -O3 -std=c++11 -g -march=native")
+    set(CMAKE_CXX_FLAGS "-Wall -Wno-comment -Wno-strict-aliasing -O3 -std=c++11 -g -march=native")
 endif()
 
 if(UNIX)

@@ -14,6 +14,7 @@ uniform sampler2D DepthMap;
 uniform sampler2DShadow LightDepthMap;
 uniform sampler2D ColorMap;
 uniform sampler2D NormalMap;
+uniform sampler2D previousFrame;
 
 uniform vec2 projAB;
 uniform vec3 skyColor;
@@ -87,7 +88,8 @@ void main(void){
         float AO = NormalAO.a;
 
         out_Color = vec4(Color * CalcLight(Position, Normal, AO), 1.0);
-        if(isEdge(Normal)) out_Color = out_Color * 0.6;
+        //if(isEdge(Normal)) out_Color = out_Color * 0.6;
+        out_Color = mix(out_Color, texture(previousFrame, TexCoord), 0.5);
     }
     else discard;
 }

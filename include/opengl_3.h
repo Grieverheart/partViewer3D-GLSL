@@ -5,6 +5,7 @@
 #include "mesh.h"
 #include "light.h"
 #include "g-buffer.h"
+#include "accumulator.h"
 #include "ssao.h"
 #include "shadowmap.h"
 #include "perfmon.h"
@@ -77,6 +78,7 @@ private:
 	CGBuffer m_gbuffer;
 	Cssao m_ssao;
     CShadowmap m_shadowmap;
+    Accumulator m_accum[2];
 	
 	Shader *sh_gbuffer;
 	Shader *sh_gbuffer_instanced;
@@ -84,6 +86,7 @@ private:
 	Shader *sh_shadowmap_instanced;
 	Shader *sh_blur;
 	Shader *sh_accumulator;
+	Shader *sh_pp;
 
     PerfMon perf_mon;
 	
