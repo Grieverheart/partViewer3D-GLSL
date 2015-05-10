@@ -1,6 +1,5 @@
 #version 330 core
 
-uniform sampler2D previousSampler;
 uniform sampler2D thisSampler;
 
 noperspective in vec2 TexCoord;

@@ -21,31 +21,31 @@ static const glm::mat4 biasMatrix(
 
 OpenGLContext::OpenGLContext(int width, int height):
     drawBox(false),
-	trackballMatrix(1.0),
+    trackballMatrix(1.0),
     windowWidth(width), windowHeight(height),
     fov(60.0f), zoom(0.0f),
-	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
-	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
-	skycolor(0.529, 0.808, 0.921),
+    m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
+    diffcolor(glm::vec3(77, 27, 147) / 255.0f),
+    skycolor(0.529, 0.808, 0.921),
     vao_instanced(0), vbo_instanced(0), vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), m_blur(true), m_rotating(false),
-	light(glm::vec3(-0.27, -0.91, -0.33)),
+    light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr), sh_pp(nullptr)
 
 {
-	glewExperimental = GL_TRUE;
-	GLenum error = glewInit(); //Enable GLEW
-	if(error != GLEW_OK) throw GlewInitializationException();
-	glError(__FILE__,__LINE__);
-	
-	int glVersion[2] = {-1,1};
-	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
-	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
-	
-	printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
-	printf("Renderer used: %s\n", glGetString(GL_RENDERER));
-	printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    glewExperimental = GL_TRUE;
+    GLenum error = glewInit(); //Enable GLEW
+    if(error != GLEW_OK) throw GlewInitializationException();
+    glError(__FILE__,__LINE__);
+    
+    int glVersion[2] = {-1,1};
+    glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
+    glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
+    
+    printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
+    printf("Renderer used: %s\n", glGetString(GL_RENDERER));
+    printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 #ifdef _WIN32
     wglSwapIntervalEXT(0);
@@ -58,12 +58,12 @@ OpenGLContext::OpenGLContext(int width, int height):
         glXSwapIntervalEXT(dpy, drawable, interval);
     }
 #endif
-	
-	glDisable(GL_BLEND);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+    
+    glDisable(GL_BLEND);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
     glClearColor(0.0, 0.0, 0.0, 1.0);
-	
+    
     try{
         sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
         sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
@@ -83,14 +83,14 @@ OpenGLContext::OpenGLContext(int width, int height):
         delete sh_pp;
         throw;
     }
-	
+    
     //TODO: Add exceptions
-	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
-	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
-	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
-	if(!m_gbuffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
-	if(!m_accum[0].Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
-	if(!m_accum[1].Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+    if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
+    if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
+    if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
+    if(!m_gbuffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+    if(!m_accum[0].Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+    if(!m_accum[1].Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
 
     glGenVertexArrays(1, &fullscreen_triangle_vao);
         
@@ -114,73 +114,73 @@ OpenGLContext::OpenGLContext(int width, int height):
     
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
-	createGui();
+    
+    createGui();
 }
 
 OpenGLContext::~OpenGLContext(void) { 
-	delete sh_gbuffer; // GLSL Shader
-	delete sh_gbuffer_instanced; // GLSL Shader
-	delete sh_ssao;
-	delete sh_shadowmap_instanced;
-	delete sh_blur;
-	delete sh_accumulator;
+    delete sh_gbuffer; // GLSL Shader
+    delete sh_gbuffer_instanced; // GLSL Shader
+    delete sh_ssao;
+    delete sh_shadowmap_instanced;
+    delete sh_blur;
+    delete sh_accumulator;
 
-	glDeleteBuffers(1, &vbo_instanced);
-	glDeleteBuffers(1, &vboBox);
-	glDeleteBuffers(1, &iboBox);
-	glDeleteVertexArrays(1, &vao_instanced);
-	glDeleteVertexArrays(1, &vaoBox);
-	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
+    glDeleteBuffers(1, &vbo_instanced);
+    glDeleteBuffers(1, &vboBox);
+    glDeleteBuffers(1, &iboBox);
+    glDeleteVertexArrays(1, &vao_instanced);
+    glDeleteVertexArrays(1, &vaoBox);
+    glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-	TwTerminate();
+    TwTerminate();
 }  
 
 void OpenGLContext::createGui(void){
-	TwInit(TW_OPENGL_CORE, NULL);
-	TwWindowSize(windowWidth, windowHeight);
-	bar = TwNewBar("Parameters");
-	
-	TwDefine(
-		"Parameters position='0 0' size='200 250' iconified=true");
-	
-	TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &m_rotating, "");	
-	
-	TwAddVarCB(bar, "Direction", TW_TYPE_DIR3F, CLight::SetDirCallback, CLight::GetDirCallback, &light,"\
-		group=Light");
-	
-	TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-	
-	TwAddVarCB(bar, "Diffuse", TW_TYPE_FLOAT, CLight::SetDiffIntCallback, CLight::GetDiffIntCallback, &light,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-	
-	TwAddVarCB(bar, "Ambient", TW_TYPE_FLOAT, CLight::SetAmbIntCallback, CLight::GetAmbIntCallback, &light,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-	
-	TwAddVarCB(bar, "Intensity", TW_TYPE_FLOAT, CLight::SetIntCallback, CLight::GetIntCallback, &light,"\
-		min=0.0 max=2.0	step=0.01 group=Light");	
-		
-	TwAddVarRW(bar, "Blur", TW_TYPE_BOOLCPP, &m_blur, "\
-		group=AO");	
-	
-	TwAddVarCB(bar, "Radius", TW_TYPE_FLOAT, Cssao::SetRadiusCallback, Cssao::GetRadiusCallback, &m_ssao,"\
-		help='The radius of the ambient occlusion sampling kernel.'\
-		min=0.1 max=30.0 step=0.1 group=AO");
-	
-	TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
-		help='Number of samples for ambient occlusion. Increase for higher quality.'\
-		min=4 max=256 step=2 group=AO");
+    TwInit(TW_OPENGL_CORE, NULL);
+    TwWindowSize(windowWidth, windowHeight);
+    bar = TwNewBar("Parameters");
+    
+    TwDefine(
+        "Parameters position='0 0' size='200 250' iconified=true");
+    
+    TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &m_rotating, "");  
+    
+    TwAddVarCB(bar, "Direction", TW_TYPE_DIR3F, CLight::SetDirCallback, CLight::GetDirCallback, &light,"\
+        group=Light");
+    
+    TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
+        min=0.0 max=2.0 step=0.01 group=Light");
+    
+    TwAddVarCB(bar, "Diffuse", TW_TYPE_FLOAT, CLight::SetDiffIntCallback, CLight::GetDiffIntCallback, &light,"\
+        min=0.0 max=2.0 step=0.01 group=Light");
+    
+    TwAddVarCB(bar, "Ambient", TW_TYPE_FLOAT, CLight::SetAmbIntCallback, CLight::GetAmbIntCallback, &light,"\
+        min=0.0 max=2.0 step=0.01 group=Light");
+    
+    TwAddVarCB(bar, "Intensity", TW_TYPE_FLOAT, CLight::SetIntCallback, CLight::GetIntCallback, &light,"\
+        min=0.0 max=2.0 step=0.01 group=Light");    
+        
+    TwAddVarRW(bar, "Blur", TW_TYPE_BOOLCPP, &m_blur, "\
+        group=AO"); 
+    
+    TwAddVarCB(bar, "Radius", TW_TYPE_FLOAT, Cssao::SetRadiusCallback, Cssao::GetRadiusCallback, &m_ssao,"\
+        help='The radius of the ambient occlusion sampling kernel.'\
+        min=0.1 max=30.0 step=0.1 group=AO");
+    
+    TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
+        help='Number of samples for ambient occlusion. Increase for higher quality.'\
+        min=4 max=256 step=2 group=AO");
 
-	TwAddVarRW(bar, "Sky Color", TW_TYPE_COLOR3F, &skycolor," colormode=hls ");
-	TwAddVarRW(bar, "Particle Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
-	TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
+    TwAddVarRW(bar, "Sky Color", TW_TYPE_COLOR3F, &skycolor," colormode=hls ");
+    TwAddVarRW(bar, "Particle Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
+    TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
 }
 
 void OpenGLContext::load_scene(const SimConfig& config){
     is_scene_loaded = true;
-	mNInstances = config.n_part;
-	
+    mNInstances = config.n_part;
+    
     //Configuration box
     {
         glm::vec3 offset(
@@ -224,15 +224,16 @@ void OpenGLContext::load_scene(const SimConfig& config){
     znear = -init_zoom - out_radius;
     zfar  = -init_zoom + 2.0 * out_radius;
 
-	
-	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+    
+    projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
-	viewMatrix = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    viewMatrix = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    prevPVMatrix = projectionMatrix * viewMatrix;
     invViewMatrix = glm::inverse(viewMatrix);
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	modelMatrix = glm::mat4(1.0);
-	
+    modelMatrix = glm::mat4(1.0);
+    
     mesh.set(config.meshes[0]);
     {
         glm::mat4* ModelArray = new glm::mat4[mNInstances];
@@ -291,59 +292,58 @@ void OpenGLContext::load_scene(const SimConfig& config){
 
     //TODO: Move shader uniform initialization to constructor
 
-	// SSAO Uniforms
-	glm::vec2 projAB;
-	sh_ssao->bind();
-	{
-		float projA = zfar / (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
-		projAB = glm::vec2(projA, projB);
-		m_ssao.UploadUniforms(*sh_ssao);
-		sh_ssao->setUniform("NormalMap", 0);
-		sh_ssao->setUniform("DepthMap", 1);
-		sh_ssao->setUniform("projAB", 1, projAB);
-		sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
-		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
-		
-	}
-	
-	// Blur Uniforms
-	sh_blur->bind();
-	{
-		sh_blur->setUniform("aoSampler", 0);
-		sh_blur->setUniform("use_blur", int(m_blur));
-	}
-	
-	// Accumulator Uniforms
-	sh_accumulator->bind();
-	{
-		sh_accumulator->setUniform("ColorMap", 0);
-		sh_accumulator->setUniform("NormalMap", 1);
-		sh_accumulator->setUniform("DepthMap", 2);
-		sh_accumulator->setUniform("LightDepthMap", 3);
-		sh_accumulator->setUniform("previousFrame", 4);
-		
-		float projA = (zfar + znear) / (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
-		projAB = glm::vec2(projA, projB);
-		sh_accumulator->setUniform("projAB", 1, projAB);
-		sh_accumulator->setUniform("skyColor", 1, skycolor);
-		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
-	}
+    // SSAO Uniforms
+    glm::vec2 projAB;
+    sh_ssao->bind();
+    {
+        float projA = zfar / (zfar - znear);
+        float projB = 2.0 * zfar * znear / (zfar - znear);
+        projAB = glm::vec2(projA, projB);
+        m_ssao.UploadUniforms(*sh_ssao);
+        sh_ssao->setUniform("NormalMap", 0);
+        sh_ssao->setUniform("DepthMap", 1);
+        sh_ssao->setUniform("projAB", 1, projAB);
+        sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
+        sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
+        
+    }
+    
+    // Blur Uniforms
+    sh_blur->bind();
+    {
+        sh_blur->setUniform("aoSampler", 0);
+        sh_blur->setUniform("use_blur", int(m_blur));
+    }
+    
+    // Accumulator Uniforms
+    sh_accumulator->bind();
+    {
+        sh_accumulator->setUniform("ColorMap", 0);
+        sh_accumulator->setUniform("NormalMap", 1);
+        sh_accumulator->setUniform("DepthMap", 2);
+        sh_accumulator->setUniform("LightDepthMap", 3);
+        sh_accumulator->setUniform("previousFrame", 4);
+        
+        float projA = (zfar + znear) / (zfar - znear);
+        float projB = 2.0 * zfar * znear / (zfar - znear);
+        projAB = glm::vec2(projA, projB);
+        sh_accumulator->setUniform("projAB", 1, projAB);
+        sh_accumulator->setUniform("skyColor", 1, skycolor);
+        sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
+    }
 
-	sh_pp->bind();
-	{
-        sh_pp->setUniform("previousSampler", 0);
-        sh_pp->setUniform("thisSampler", 1);
+    sh_pp->bind();
+    {
+        sh_pp->setUniform("thisSampler", 0);
     }
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){
-	windowWidth = w;
-	windowHeight = h;
-	TwWindowSize(w, h);
-	glViewport(0, 0, windowWidth, windowHeight);
-	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+    windowWidth = w;
+    windowHeight = h;
+    TwWindowSize(w, h);
+    glViewport(0, 0, windowWidth, windowHeight);
+    projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     m_gbuffer.Resize(windowWidth, windowHeight);
     m_accum[0].Resize(windowWidth, windowHeight);
@@ -356,8 +356,8 @@ void OpenGLContext::reshapeWindow(int w, int h){
 }
 
 void OpenGLContext::processScene(void){
-	static uint64_t last_time = 0;
-	uint64_t this_time = perf_mon.get_time_ns();
+    static uint64_t last_time = 0;
+    uint64_t this_time = perf_mon.get_time_ns();
     if(m_rotating){
         glm::mat4 rLocalMatrix = glm::rotate(
             glm::mat4(1.0),
@@ -374,29 +374,36 @@ void OpenGLContext::processScene(void){
 
 //TODO: Improve line rendering!!!
 void OpenGLContext::drawConfigurationBox(void)const{
-	
-	glLineWidth(fabs(-0.067f * zoom + 4.0f));
-	
-	glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
-	sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
-	sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
-	
-	glBindVertexArray(vaoBox);
-	glDrawElements(GL_LINE_LOOP, 8, GL_UNSIGNED_SHORT, 0);
-	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
-	
-	glBindVertexArray(0);
+    
+    glLineWidth(fabs(-0.067f * zoom + 4.0f));
+    
+    glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+    sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
+    sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
+    
+    glBindVertexArray(vaoBox);
+    glDrawElements(GL_LINE_LOOP, 8, GL_UNSIGNED_SHORT, 0);
+    glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
+    
+    glBindVertexArray(0);
 }
 
-void OpenGLContext::renderScene(void){	
+static const glm::vec2 sub_samples[] = {
+    {0.375f, 0.4375f}, {0.625f, 0.0625f}, {0.875f, 0.1875f}, {0.125f, 0.0625f},
+    {0.375f, 0.6875f}, {0.875f, 0.4375f}, {0.625f, 0.5625f}, {0.375f, 0.9375f},
+    {0.625f, 0.3125f}, {0.125f, 0.5625f}, {0.125f, 0.8125f}, {0.375f, 0.1875f},
+    {0.875f, 0.9375f}, {0.875f, 0.6875f}, {0.125f, 0.3125f}, {0.625f, 0.8125f}
+};
+
+void OpenGLContext::renderScene(void){
     static int front_back = 0;
     perf_mon.sync();
 
-	modelMatrix = trackballMatrix;
-	
-	glDepthMask(GL_TRUE);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
+    modelMatrix = trackballMatrix;
+    
+    glDepthMask(GL_TRUE);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 
     glBindVertexArray(vao_instanced);
 
@@ -406,7 +413,7 @@ void OpenGLContext::renderScene(void){
         glClear(GL_DEPTH_BUFFER_BIT);
         
         sh_shadowmap_instanced->bind();
-        {	
+        {   
             glm::mat4 vMatrix = lightViewMatrix;
             glm::mat4 pMatrix = lightProjectionMatrix;
 
@@ -423,19 +430,19 @@ void OpenGLContext::renderScene(void){
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         sh_gbuffer_instanced->bind();
-        {	
+        {   
             sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
             sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
-            if(front_back == 1) projectionMatrix = glm::translate(glm::mat4(1.0), glm::vec3(0.5f / windowWidth, 0.0f, 0.0f)) * projectionMatrix;
-            if(front_back == 2) projectionMatrix = glm::translate(glm::mat4(1.0), glm::vec3(0.0f, 0.5f / windowHeight, 0.0f)) * projectionMatrix;
-            if(front_back == 3) projectionMatrix = glm::translate(glm::mat4(1.0), glm::vec3(0.5f / windowWidth, 0.5f / windowHeight, 0.0f)) * projectionMatrix;
+            projectionMatrix = glm::translate(glm::mat4(1.0), glm::vec3((sub_samples[front_back].x - 0.5f) / windowWidth,
+                                                                        (sub_samples[front_back].y - 0.5f) / windowHeight, 0.0f)) * projectionMatrix;
+            invProjMatrix = glm::inverse(projectionMatrix);
             sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
             mesh.draw_instanced(mNInstances);
         }
         
         if(drawBox){
             sh_gbuffer->bind();
-            {	
+            {   
                 drawConfigurationBox();
             }
         }
@@ -488,7 +495,7 @@ void OpenGLContext::renderScene(void){
     {
         m_accum[front_back % 2].Bind();
         
-        glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
+        glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 1.0);
         glClear(GL_COLOR_BUFFER_BIT);
         glClearColor(0.0, 0.0, 0.0, 1.0);
 
@@ -504,12 +511,14 @@ void OpenGLContext::renderScene(void){
             sh_accumulator->setUniform("skyColor", 1, skycolor);
 
             glm::mat4 depth_matrix = biasMatrix * lightProjectionMatrix * lightViewMatrix * invViewMatrix;
+            glm::mat4 reprojection_matrix = prevPVMatrix * glm::inverse(modelMatrix) * invViewMatrix;
             sh_accumulator->setUniform("depth_matrix", 1, depth_matrix);
+            sh_accumulator->setUniform("reprojection_matrix", 1, reprojection_matrix);
 
             light.uploadDirection(viewMatrix);
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
-        
+        prevPVMatrix = projectionMatrix * viewMatrix * modelMatrix;
     }
     perf_mon.pop_query();
 
@@ -519,8 +528,7 @@ void OpenGLContext::renderScene(void){
     {
         glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         //glClear(GL_COLOR_BUFFER_BIT);
-        m_accum[!(front_back % 2)].BindTexture(0);
-        m_accum[front_back % 2].BindTexture(1);
+        m_accum[front_back % 2].BindTexture(0);
         sh_pp->bind();
         {
             glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -529,21 +537,21 @@ void OpenGLContext::renderScene(void){
     perf_mon.pop_query();
 
     perf_mon.push_query("TwDraw Pass");
-	TwDraw();
+    TwDraw();
     perf_mon.pop_query();
     glDisable(GL_FRAMEBUFFER_SRGB);
-    front_back = (front_back + 1) % 4;
+    front_back = (front_back + 1) % 16;
 }
 
 float OpenGLContext::getZoom(void)const{
-	return zoom;
+    return zoom;
 }
 
 void OpenGLContext::setZoom(float zoom){
-	this->zoom = zoom;
+    this->zoom = zoom;
 }
 
 glm::ivec2 OpenGLContext::getScreen(void)const{
-	glm::ivec2 screen = glm::ivec2(windowWidth, windowHeight);
-	return screen;
+    glm::ivec2 screen = glm::ivec2(windowWidth, windowHeight);
+    return screen;
 }

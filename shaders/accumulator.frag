@@ -10,20 +10,21 @@ struct Light{
 
 uniform Light light;
 
-uniform sampler2D DepthMap;
-uniform sampler2DShadow LightDepthMap;
 uniform sampler2D ColorMap;
 uniform sampler2D NormalMap;
+uniform sampler2D DepthMap;
+uniform sampler2DShadow LightDepthMap;
 uniform sampler2D previousFrame;
 
 uniform vec2 projAB;
 uniform vec3 skyColor;
 uniform mat4 depth_matrix;
+uniform mat4 reprojection_matrix;
 
 noperspective in vec2 TexCoord;
 smooth in vec3 viewRay;
 
-layout(location = 0) out vec4 out_Color;
+layout(location = 0) out vec3 out_Color;
 
 vec3 CalcPosition(float depth){
 	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
@@ -58,8 +59,8 @@ vec3 CalcLight(vec3 position, vec3 normal, float AO){
     );
     float visibility = 0.0;
     for(int i = 0; i < 4; ++i) visibility += texture(LightDepthMap, vec3(proj.xy + poissonDisk[i] / 700.0, proj.z - 0.01));
-    DiffuseColor  *= 1.0 - 0.25 * visibility;
-    SpecularColor *= 1.0 - 0.25 * visibility;
+    DiffuseColor  *= (1.0 - 0.25 * visibility);
+    SpecularColor *= (1.0 - 0.25 * visibility);
     //if(AO < 0.5) AO *= 0.5;
 
 	return light.Intensity * (light.Di * DiffuseColor + light.Si * SpecularColor + light.Ai * AO * skyColor);
@@ -82,14 +83,18 @@ void main(void){
     if(NormalAO.xyz != 0.0){
         float Depth = texture(DepthMap, TexCoord).r;
         vec3 Position = CalcPosition(Depth);
+        vec4 prevPosition = reprojection_matrix * vec4(Position, 1.0);
+        vec2 prevTexCoord = prevPosition.xy / prevPosition.w;
+        prevTexCoord = 0.5 * prevTexCoord + 0.5;
 
         vec3 Color = texture(ColorMap, TexCoord).rgb;
         vec3 Normal = NormalAO.xyz;
         float AO = NormalAO.a;
 
-        out_Color = vec4(Color * CalcLight(Position, Normal, AO), 1.0);
+        Color *= CalcLight(Position, Normal, AO);
         //if(isEdge(Normal)) out_Color = out_Color * 0.6;
-        out_Color = mix(out_Color, texture(previousFrame, TexCoord), 0.5);
+        //out_Color = (length(prevTexCoord - TexCoord) < 0.001)? mix(Color, texture(previousFrame, prevTexCoord).rgb, 0.9): Color;
+        out_Color = mix(Color, texture(previousFrame, prevTexCoord).rgb, 0.8);
     }
     else discard;
 }

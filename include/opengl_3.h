@@ -17,6 +17,27 @@
 
 class Shader;
 
+//NOTE: Temporary rng generator
+class XORrng{
+public:
+    XORrng(void):
+        x(0), y(1), z(2), w(3)
+    {}
+
+    uint32_t next_u32(void){
+        uint32_t t = x ^ (x << 11);
+        x = y; y = z; z = w;
+        return w = w ^ (w >> 19) ^ t ^ (t >> 8);
+    }
+
+    float next_f32(void){
+        return (float)next_u32() / UINT32_MAX;
+    }
+
+private:
+    uint32_t x, y, z, w;
+};
+
 class OpenGLContext{
 public:
     class GlewInitializationException: public std::exception{
@@ -54,6 +75,7 @@ private:
 	glm::mat4 modelMatrix;
     glm::mat4 lightProjectionMatrix;
     glm::mat4 lightViewMatrix;
+    glm::mat4 prevPVMatrix;
 	
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
@@ -91,6 +113,8 @@ private:
     PerfMon perf_mon;
 	
 	TwBar *bar;
+
+    XORrng rng;
 	
 	void drawConfigurationBox(void)const;
 	
