@@ -13,6 +13,7 @@ set(SOURCE_FILES
     src/opengl_3.cpp
     src/shadowmap.cpp
     src/g-buffer.cpp
+    src/accumulator.cpp
     src/light.cpp
     src/mesh.cpp
     src/obj_parser.cpp

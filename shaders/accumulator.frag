@@ -87,7 +87,7 @@ void main(void){
         float AO = NormalAO.a;
 
         out_Color = vec4(Color * CalcLight(Position, Normal, AO), 1.0);
-        if(isEdge(Normal)) out_Color = out_Color * 0.6;
+        //if(isEdge(Normal)) out_Color = out_Color * 0.6;
     }
     else discard;
 }

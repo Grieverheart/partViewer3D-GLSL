@@ -5,6 +5,7 @@
 #include "mesh.h"
 #include "light.h"
 #include "g-buffer.h"
+#include "accumulator.h"
 #include "ssao.h"
 #include "shadowmap.h"
 #include "perfmon.h"
@@ -66,6 +67,9 @@ private:
 	unsigned int vboBox;
 	unsigned int iboBox;
 	unsigned int fullscreen_triangle_vao;
+
+	unsigned int area_texture;
+	unsigned int search_texture;
 	
 	bool is_scene_loaded;
 	bool m_blur;
@@ -75,6 +79,9 @@ private:
 	GLMesh mesh;
 
 	CGBuffer m_gbuffer;
+	Accumulator m_accumulator;
+	Accumulator m_edge_buffer;
+	Accumulator m_blend_buffer;
 	Cssao m_ssao;
     CShadowmap m_shadowmap;
 	
@@ -84,6 +91,9 @@ private:
 	Shader *sh_shadowmap_instanced;
 	Shader *sh_blur;
 	Shader *sh_accumulator;
+	Shader *sh_edge_detection;
+	Shader *sh_blend_weights;
+	Shader *sh_blend;
 
     PerfMon perf_mon;
 	

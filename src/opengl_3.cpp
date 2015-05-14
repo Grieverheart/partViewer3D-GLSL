@@ -31,7 +31,8 @@ OpenGLContext::OpenGLContext(int width, int height):
     is_scene_loaded(false), m_blur(true), m_rotating(false),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
-    sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr)
+    sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
+    sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr)
 
 {
 	glewExperimental = GL_TRUE;
@@ -71,6 +72,9 @@ OpenGLContext::OpenGLContext(int width, int height):
         sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
         sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
         sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
+        sh_edge_detection = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
+        sh_blend_weights = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
+        sh_blend = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -79,6 +83,9 @@ OpenGLContext::OpenGLContext(int width, int height):
         delete sh_shadowmap_instanced;
         delete sh_blur;
         delete sh_accumulator;
+        delete sh_edge_detection;
+        delete sh_blend_weights;
+        delete sh_blend;
         throw;
     }
 	
@@ -87,6 +94,9 @@ OpenGLContext::OpenGLContext(int width, int height):
 	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
 	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
 	if(!m_gbuffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+	if(!m_accumulator.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+	if(!m_edge_buffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
+	if(!m_blend_buffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
 
     glGenVertexArrays(1, &fullscreen_triangle_vao);
         
@@ -110,17 +120,60 @@ OpenGLContext::OpenGLContext(int width, int height):
     
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-	
+
+    //Generate and load smaa textures
+    //TODO: Handle read errors!!!
+    FILE* fp = fopen("res/smaa_area.raw", "rb");
+    if(fp){
+        char* buffer = new char[160 * 560 * 2];
+
+        fread(buffer, 160 * 560 * 2, 1, fp);
+
+        glGenTextures(1, &area_texture);
+        glBindTexture(GL_TEXTURE_2D, area_texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, 160, 560, 0, GL_RG, GL_UNSIGNED_BYTE, buffer);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        delete[] buffer;
+
+        fclose(fp);
+    }
+
+    fp = fopen("res/smaa_search.raw", "rb");
+    if(fp){
+        char* buffer = new char[66 * 33];
+
+        fread(buffer, 66 * 33, 1, fp);
+
+        glGenTextures(1, &search_texture);
+        glBindTexture(GL_TEXTURE_2D, search_texture);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 66, 33, 0, GL_RED, GL_UNSIGNED_BYTE, buffer);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        delete[] buffer;
+
+        fclose(fp);
+    }
+
 	createGui();
 }
 
-OpenGLContext::~OpenGLContext(void) { 
+OpenGLContext::~OpenGLContext(void){
 	delete sh_gbuffer; // GLSL Shader
 	delete sh_gbuffer_instanced; // GLSL Shader
 	delete sh_ssao;
 	delete sh_shadowmap_instanced;
 	delete sh_blur;
 	delete sh_accumulator;
+	delete sh_edge_detection;
+	delete sh_blend_weights;
+	delete sh_blend;
 
 	glDeleteBuffers(1, &vbo_instanced);
 	glDeleteBuffers(1, &vboBox);
@@ -309,6 +362,27 @@ void OpenGLContext::load_scene(const SimConfig& config){
 		sh_blur->setUniform("aoSampler", 0);
 		sh_blur->setUniform("use_blur", int(m_blur));
 	}
+
+	// Edge Detection Uniforms
+	sh_edge_detection->bind();
+	{
+		sh_edge_detection->setUniform("colorTex", 0);
+	}
+
+	// Blend weights Uniforms
+	sh_blend_weights->bind();
+	{
+		sh_blend_weights->setUniform("edgesTex", 0);
+		sh_blend_weights->setUniform("areaTex", 1);
+		sh_blend_weights->setUniform("searchTex", 2);
+	}
+
+	// Blend Uniforms
+	sh_blend->bind();
+	{
+		sh_blend->setUniform("colorTex", 0);
+		sh_blend->setUniform("blendTex", 1);
+	}
 	
 	// Accumulator Uniforms
 	sh_accumulator->bind();
@@ -335,6 +409,9 @@ void OpenGLContext::reshapeWindow(int w, int h){
 	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     m_gbuffer.Resize(windowWidth, windowHeight);
+    m_edge_buffer.Resize(windowWidth, windowHeight);
+    m_blend_buffer.Resize(windowWidth, windowHeight);
+    m_accumulator.Resize(windowWidth, windowHeight);
     m_shadowmap.Resize(windowWidth, windowHeight);
     sh_ssao->bind();
     {
@@ -467,10 +544,10 @@ void OpenGLContext::renderScene(void){
     }
     perf_mon.pop_query();
 
-    glEnable(GL_FRAMEBUFFER_SRGB);
     perf_mon.push_query("Gather Pass");
     {
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+        m_accumulator.Bind();
         
         glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
         glClear(GL_COLOR_BUFFER_BIT);
@@ -493,6 +570,61 @@ void OpenGLContext::renderScene(void){
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         
+    }
+    perf_mon.pop_query();
+
+    perf_mon.push_query("SMAA");
+    {
+        perf_mon.push_query("Edge Pass");
+        {
+            m_edge_buffer.Bind();
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            m_accumulator.BindTexture(0);
+
+            sh_edge_detection->bind();
+            {
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+            }
+        }
+        perf_mon.pop_query();
+
+        perf_mon.push_query("Blend weight Pass");
+        {
+            m_blend_buffer.Bind();
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            m_edge_buffer.BindTexture(0);
+
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, area_texture);
+
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, search_texture);
+
+            sh_blend_weights->bind();
+            {
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+            }
+        }
+        perf_mon.pop_query();
+
+        perf_mon.push_query("Blend Pass");
+        {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            glClear(GL_COLOR_BUFFER_BIT);
+
+            m_accumulator.BindTexture(0);
+            m_blend_buffer.BindTexture(1);
+
+            glEnable(GL_FRAMEBUFFER_SRGB);
+
+            sh_blend->bind();
+            {
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+            }
+        }
+        perf_mon.pop_query();
     }
     perf_mon.pop_query();
 
