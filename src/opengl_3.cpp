@@ -367,6 +367,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
 	sh_edge_detection->bind();
 	{
 		sh_edge_detection->setUniform("colorTex", 0);
+		sh_edge_detection->setUniform("texel_size", 1, glm::vec2(1.0f / windowWidth, 1.0f / windowHeight));
 	}
 
 	// Blend weights Uniforms
@@ -375,6 +376,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
 		sh_blend_weights->setUniform("edgesTex", 0);
 		sh_blend_weights->setUniform("areaTex", 1);
 		sh_blend_weights->setUniform("searchTex", 2);
+		sh_blend_weights->setUniform("texel_size", 1, glm::vec2(1.0f / windowWidth, 1.0f / windowHeight));
 	}
 
 	// Blend Uniforms
@@ -382,6 +384,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
 	{
 		sh_blend->setUniform("colorTex", 0);
 		sh_blend->setUniform("blendTex", 1);
+		sh_blend->setUniform("texel_size", 1, glm::vec2(1.0f / windowWidth, 1.0f / windowHeight));
 	}
 	
 	// Accumulator Uniforms
@@ -417,6 +420,14 @@ void OpenGLContext::reshapeWindow(int w, int h){
     {
         m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
     }
+
+	// Edge Detection Uniforms
+	sh_edge_detection->bind();
+    sh_edge_detection->setUniform("texel_size", 1, glm::vec2(1.0f / windowWidth, 1.0f / windowHeight));
+	sh_blend_weights->bind();
+    sh_blend_weights->setUniform("texel_size", 1, glm::vec2(1.0f / windowWidth, 1.0f / windowHeight));
+	sh_blend->bind();
+    sh_blend->setUniform("texel_size", 1, glm::vec2(1.0f / windowWidth, 1.0f / windowHeight));
 }
 
 void OpenGLContext::processScene(void){

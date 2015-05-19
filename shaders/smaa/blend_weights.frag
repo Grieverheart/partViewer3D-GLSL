@@ -1,6 +1,6 @@
 #version 330 core
 
-#define SMAA_PRESET_MEDIUM
+#define SMAA_PRESET_ULTRA
 
 #if defined(SMAA_PRESET_LOW)
 #define SMAA_MAX_SEARCH_STEPS_DIAG 0
@@ -21,9 +21,10 @@
 #define SMAA_AREATEX_PIXEL_SIZE (1.0 / vec2(160.0, 560.0))
 #define SMAA_AREATEX_SUBTEX_SIZE (1.0 / 7.0)
 
-#define SMAA_PIXEL_SIZE vec2(1.0 / 600.0, 1.0 / 600.0)
 #define SMAAMad(a, b, c) (a * b + c)
 #define SMAASaturate(a) clamp(a, 0.0, 1.0)
+
+uniform vec2 texel_size;
 
 uniform sampler2D edgesTex;
 uniform sampler2D areaTex;
@@ -41,26 +42,26 @@ layout(location = 0) out vec4 outColor;
  * These functions allows to perform diagonal pattern searches.
  */
 float SMAASearchDiag1(vec2 texcoord, vec2 dir, float c) {
-    texcoord += dir * SMAA_PIXEL_SIZE;
-    vec2 e = vec2(0.0, 0.0);
+    texcoord += dir * texel_size;
+    vec2 e = vec2(0.0);
     float i;
-    for (i = 0.0; i < float(SMAA_MAX_SEARCH_STEPS_DIAG); i++) {
+    for (i = 0.0; i < float(SMAA_MAX_SEARCH_STEPS_DIAG); ++i) {
         e.rg = texture(edgesTex, texcoord).rg;
         if (dot(e, vec2(1.0, 1.0)) < 1.9) break;
-        texcoord += dir * SMAA_PIXEL_SIZE;
+        texcoord += dir * texel_size;
     }
     return i + float(e.g > 0.9) * c;
 }
 
 float SMAASearchDiag2(vec2 texcoord, vec2 dir, float c) {
-    texcoord += dir * SMAA_PIXEL_SIZE;
-    vec2 e = vec2(0.0, 0.0);
+    texcoord += dir * texel_size;
+    vec2 e = vec2(0.0);
     float i;
     for (i = 0.0; i < float(SMAA_MAX_SEARCH_STEPS_DIAG); i++) {
         e.g = texture(edgesTex, texcoord).g;
         e.r = textureOffset(edgesTex, texcoord, ivec2(1, 0)).r;
-        if (dot(e, vec2(1.0, 1.0)) < 1.9) break;
-        texcoord += dir * SMAA_PIXEL_SIZE;
+        if (dot(e, vec2(1.0)) < 1.9) break;
+        texcoord += dir * texel_size;
     }
     return i + float(e.g > 0.9) * c;
 }
@@ -88,14 +89,14 @@ vec2 SMAAAreaDiag(vec2 dist, vec2 e, float offset) {
  * This searches for diagonal patterns and returns the corresponding weights.
  */
 vec2 SMAACalculateDiagWeights(vec2 texcoord, vec2 e) {
-    vec2 weights = vec2(0.0, 0.0);
+    vec2 weights = vec2(0.0);
 
     vec2 d;
     d.x = (e.r > 0.0)? SMAASearchDiag1(texcoord, vec2(-1.0,  1.0), 1.0) : 0.0;
     d.y = SMAASearchDiag1(texcoord, vec2(1.0, -1.0), 0.0);
 
     if(d.r + d.g > 2.0){ // d.r + d.g + 1 > 3
-        vec4 coords = SMAAMad(vec4(-d.r, d.r, d.g, -d.g), SMAA_PIXEL_SIZE.xyxy, texcoord.xyxy);
+        vec4 coords = SMAAMad(vec4(-d.r, d.r, d.g, -d.g), texel_size.xyxy, texcoord.xyxy);
 
         vec4 c;
         c.x = textureOffset(edgesTex, coords.xy, ivec2(-1,  0)).g;
@@ -109,12 +110,12 @@ vec2 SMAACalculateDiagWeights(vec2 texcoord, vec2 e) {
         weights += SMAAAreaDiag(d, e, 0.0);
     }
 
-    d.x = SMAASearchDiag2(texcoord, vec2(-1.0, -1.0), 0.0);
+    d.x = SMAASearchDiag2(texcoord, vec2(-1.0), 0.0);
     float right = textureOffset(edgesTex, texcoord, ivec2(1, 0)).r;
-    d.y = right > 0.0? SMAASearchDiag2(texcoord, vec2(1.0, 1.0), 1.0) : 0.0;
+    d.y = right > 0.0? SMAASearchDiag2(texcoord, vec2(1.0), 1.0) : 0.0;
 
     if (d.r + d.g > 2.0) { // d.r + d.g + 1 > 3
-        vec4 coords = SMAAMad(vec4(-d.r, -d.r, d.g, d.g), SMAA_PIXEL_SIZE.xyxy, texcoord.xyxy);
+        vec4 coords = SMAAMad(vec4(-d.r, -d.r, d.g, d.g), texel_size.xyxy, texcoord.xyxy);
 
         vec4 c;
         c.x  = textureOffset(edgesTex, coords.xy, ivec2(-1,  0)).g;
@@ -177,40 +178,43 @@ float SMAASearchXLeft(vec2 texcoord, float end) {
      * which edges are active from the four fetched ones.
      */
     vec2 e = vec2(0.0, 1.0);
-    while (texcoord.x > end &&
-           e.g > 0.8281 && // Is there some edge not activated?
-           e.r == 0.0) { // Or is there a crossing edge that breaks the line?
+    while(texcoord.x > end &&
+          e.g > 0.8281 && // Is there some edge not activated?
+          e.r == 0.0) { // Or is there a crossing edge that breaks the line?
         e = texture(edgesTex, texcoord).rg;
-        texcoord -= vec2(2.0, 0.0) * SMAA_PIXEL_SIZE;
+        texcoord -= vec2(2.0, 0.0) * texel_size;
     }
 
     // We correct the previous (-0.25, -0.125) offset we applied:
-    texcoord.x += 0.25 * SMAA_PIXEL_SIZE.x;
+    texcoord.x += 0.25 * texel_size.x;
 
     // The searches are bias by 1, so adjust the coords accordingly:
-    texcoord.x += SMAA_PIXEL_SIZE.x;
+    texcoord.x += texel_size.x;
 
     // Disambiguate the length added by the last step:
-    texcoord.x += 2.0 * SMAA_PIXEL_SIZE.x; // Undo last step
-    texcoord.x -= SMAA_PIXEL_SIZE.x * SMAASearchLength(e, 0.0, 0.5);
-
+    texcoord.x += 2.0 * texel_size.x; // Undo last step
+    texcoord.x -= texel_size.x * SMAASearchLength(e, 0.0, 0.5);
     return texcoord.x;
+
+    //return texcoord.x + texel_size.x * (3.25 - SMAASearchLength(e, 0.0, 0.5));
 }
 
 float SMAASearchXRight(vec2 texcoord, float end) {
     vec2 e = vec2(0.0, 1.0);
-    while (texcoord.x < end &&
-           e.g > 0.8281 && // Is there some edge not activated?
-           e.r == 0.0) { // Or is there a crossing edge that breaks the line?
+    while(texcoord.x < end &&
+          e.g > 0.8281 && // Is there some edge not activated?
+          e.r == 0.0) { // Or is there a crossing edge that breaks the line?
         e = texture(edgesTex, texcoord).rg;
-        texcoord += vec2(2.0, 0.0) * SMAA_PIXEL_SIZE;
+        texcoord += vec2(2.0, 0.0) * texel_size;
     }
 
-    texcoord.x -= 0.25 * SMAA_PIXEL_SIZE.x;
-    texcoord.x -= SMAA_PIXEL_SIZE.x;
-    texcoord.x -= 2.0 * SMAA_PIXEL_SIZE.x;
-    texcoord.x += SMAA_PIXEL_SIZE.x * SMAASearchLength(e, 0.5, 0.5);
+    texcoord.x -= 0.25 * texel_size.x;
+    texcoord.x -= texel_size.x;
+    texcoord.x -= 2.0 * texel_size.x;
+    texcoord.x += texel_size.x * SMAASearchLength(e, 0.5, 0.5);
     return texcoord.x;
+
+    //return texcoord.x + texel_size.x * (SMAASearchLength(e, 0.5, 0.5) - 3.25);
 }
 
 float SMAASearchYUp(vec2 texcoord, float end) {
@@ -219,14 +223,16 @@ float SMAASearchYUp(vec2 texcoord, float end) {
            e.r > 0.8281 && // Is there some edge not activated?
            e.g == 0.0) { // Or is there a crossing edge that breaks the line?
         e = texture(edgesTex, texcoord).rg;
-        texcoord -= vec2(0.0, 2.0) * SMAA_PIXEL_SIZE;
+        texcoord -= vec2(0.0, 2.0) * texel_size;
     }
 
-    texcoord.y += 0.25 * SMAA_PIXEL_SIZE.y;
-    texcoord.y += SMAA_PIXEL_SIZE.y;
-    texcoord.y += 2.0 * SMAA_PIXEL_SIZE.y;
-    texcoord.y -= SMAA_PIXEL_SIZE.y * SMAASearchLength(e.gr, 0.0, 0.5);
+    texcoord.y += 0.25 * texel_size.y;
+    texcoord.y += texel_size.y;
+    texcoord.y += 2.0 * texel_size.y;
+    texcoord.y -= texel_size.y * SMAASearchLength(e.gr, 0.0, 0.5);
     return texcoord.y;
+
+    //return texcoord.y + texel_size.y * (3.25 - SMAASearchLength(e, 0.0, 0.5));
 }
 
 float SMAASearchYDown(vec2 texcoord, float end) {
@@ -235,14 +241,16 @@ float SMAASearchYDown(vec2 texcoord, float end) {
            e.r > 0.8281 && // Is there some edge not activated?
            e.g == 0.0) { // Or is there a crossing edge that breaks the line?
         e = texture(edgesTex, texcoord).rg;
-        texcoord += vec2(0.0, 2.0) * SMAA_PIXEL_SIZE;
+        texcoord += vec2(0.0, 2.0) * texel_size;
     }
 
-    texcoord.y -= 0.25 * SMAA_PIXEL_SIZE.y;
-    texcoord.y -= SMAA_PIXEL_SIZE.y;
-    texcoord.y -= 2.0 * SMAA_PIXEL_SIZE.y;
-    texcoord.y += SMAA_PIXEL_SIZE.y * SMAASearchLength(e.gr, 0.5, 0.5);
+    texcoord.y -= 0.25 * texel_size.y;
+    texcoord.y -= texel_size.y;
+    texcoord.y -= 2.0 * texel_size.y;
+    texcoord.y += texel_size.y * SMAASearchLength(e.gr, 0.5, 0.5);
     return texcoord.y;
+
+    //return texcoord.y + texel_size.y * (SMAASearchLength(e, 0.5, 0.5) - 3.25);
 }
 
 //-----------------------------------------------------------------------------
@@ -250,7 +258,7 @@ float SMAASearchYDown(vec2 texcoord, float end) {
 
 void SMAADetectHorizontalCornerPattern(inout vec2 weights, vec2 texcoord, vec2 d) {
     #if (SMAA_CORNER_ROUNDING < 100) || defined(SMAA_FORCE_CORNER_DETECTION)
-    vec4 coords = SMAAMad(vec4(d.x, 0.0, d.y, 0.0), SMAA_PIXEL_SIZE.xyxy, texcoord.xyxy);
+    vec4 coords = SMAAMad(vec4(d.x, 0.0, d.y, 0.0), texel_size.xyxy, texcoord.xyxy);
     vec2 e;
     e.r = textureOffset(edgesTex, coords.xy, ivec2(0.0,  1.0)).r;
     bool left = abs(d.x) < abs(d.y);
@@ -265,7 +273,7 @@ void SMAADetectHorizontalCornerPattern(inout vec2 weights, vec2 texcoord, vec2 d
 
 void SMAADetectVerticalCornerPattern(inout vec2 weights, vec2 texcoord, vec2 d) {
     #if (SMAA_CORNER_ROUNDING < 100) || defined(SMAA_FORCE_CORNER_DETECTION)
-    vec4 coords = SMAAMad(vec4(0.0, d.x, 0.0, d.y), SMAA_PIXEL_SIZE.xyxy, texcoord.xyxy);
+    vec4 coords = SMAAMad(vec4(0.0, d.x, 0.0, d.y), texel_size.xyxy, texcoord.xyxy);
     vec2 e;
     e.r = textureOffset(edgesTex, coords.xy, ivec2( 1.0, 0.0)).g;
     bool left = abs(d.x) < abs(d.y);
@@ -279,7 +287,7 @@ void SMAADetectVerticalCornerPattern(inout vec2 weights, vec2 texcoord, vec2 d) 
 }
 
 void main(void){
-    vec4 weights = vec4(0.0, 0.0, 0.0, 0.0);
+    vec4 weights = vec4(0.0);
 
     vec2 e = texture(edgesTex, texcoord).rg;
 
@@ -291,7 +299,7 @@ void main(void){
 
         // We give priority to diagonals, so if we find a diagonal we skip
         // horizontal/vertical processing.
-        if (dot(weights.rg, vec2(1.0, 1.0)) == 0.0) {
+        if (dot(weights.rg, vec2(1.0)) == 0.0) {
         #endif
 
         vec2 d;
@@ -299,7 +307,7 @@ void main(void){
         // Find the distance to the left:
         vec2 coords;
         coords.x = SMAASearchXLeft(offset[0].xy, offset[2].x);
-        coords.y = offset[1].y; // offset[1].y = texcoord.y - 0.25 * SMAA_PIXEL_SIZE.y (@CROSSING_OFFSET)
+        coords.y = offset[1].y; // offset[1].y = texcoord.y - 0.25 * texel_size.y (@CROSSING_OFFSET)
         d.x = coords.x;
 
         // Now fetch the left crossing edges, two at a time using bilinear
@@ -313,7 +321,7 @@ void main(void){
 
         // We want the distances to be in pixel units (doing this here allow to
         // better interleave arithmetic and memory accesses):
-        d = d / SMAA_PIXEL_SIZE.x - pixcoord.x;
+        d = d / texel_size.x - pixcoord.x;
 
         // SMAAArea below needs a sqrt, as the areas texture is compressed
         // quadratically:
@@ -341,7 +349,7 @@ void main(void){
         // Find the distance to the top:
         vec2 coords;
         coords.y = SMAASearchYUp(offset[1].xy, offset[2].z);
-        coords.x = offset[0].x; // offset[1].x = texcoord.x - 0.25 * SMAA_PIXEL_SIZE.x;
+        coords.x = offset[0].x; // offset[1].x = texcoord.x - 0.25 * texel_size.x;
         d.x = coords.y;
 
         // Fetch the top crossing edges:
@@ -352,7 +360,7 @@ void main(void){
         d.y = coords.y;
 
         // We want the distances to be in pixel units:
-        d = d / SMAA_PIXEL_SIZE.y - pixcoord.y;
+        d = d / texel_size.y - pixcoord.y;
 
         // SMAAArea below needs a sqrt, as the areas texture is compressed
         // quadratically:

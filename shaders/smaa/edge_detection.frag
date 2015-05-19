@@ -1,6 +1,6 @@
 #version 330 core
 
-#define SMAA_PRESET_MEDIUM
+#define SMAA_PRESET_ULTRA
 
 #if defined(SMAA_PRESET_LOW)
 #define SMAA_THRESHOLD 0.15
@@ -20,8 +20,6 @@ noperspective in vec4 offset[3];
 layout(location = 0) out vec3 outColor;
 
 void main(void){
-    vec2 threshold = vec2(SMAA_THRESHOLD, SMAA_THRESHOLD);
-
     // Calculate color deltas:
     vec4 delta;
     vec3 C = texture(colorTex, texcoord).rgb;
@@ -35,11 +33,10 @@ void main(void){
     delta.y = max(max(t.r, t.g), t.b);
 
     // We do the usual threshold:
-    vec2 edges = step(threshold, delta.xy);
+    vec2 edges = step(vec2(SMAA_THRESHOLD, SMAA_THRESHOLD), delta.xy);
 
     // Then discard if there is no edge:
-    if (dot(edges, vec2(1.0, 1.0)) == 0.0)
-        discard;
+    if (dot(edges, vec2(1.0)) == 0.0) discard;
 
     // Calculate right and bottom deltas:
     vec3 Cright = texture(colorTex, offset[1].xy).rgb;
