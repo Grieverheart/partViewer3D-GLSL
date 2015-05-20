@@ -76,7 +76,7 @@ bool Cssao::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	
 	glGenTextures(1, &m_ssaoTexture);
 	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, WindowWidth, WindowHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ssaoTexture, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
@@ -133,7 +133,7 @@ void Cssao::UpdateUniforms(const Shader& shader){
 
 void Cssao::Resize(unsigned int WindowWidth, unsigned int WindowHeight, Shader const *shader){
 	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_R16F, WindowWidth, WindowHeight, 0, GL_RED, GL_FLOAT, NULL);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
 	m_noiseScale = glm::ivec2(WindowWidth / m_noise_size, WindowHeight / m_noise_size);
 	shader->setUniform("noiseScale", 1, m_noiseScale);
 }

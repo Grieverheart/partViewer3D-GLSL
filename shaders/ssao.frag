@@ -14,7 +14,7 @@ uniform mat4 projectionMatrix;
 noperspective in vec2 TexCoord;
 smooth in vec3 viewRay;
 
-layout(location = 0) out float out_AO;
+layout(location = 0) out vec4 out_AO;
 
 vec3 CalcPosition(void){
 	float depth = texture(DepthMap, TexCoord).r;
@@ -53,7 +53,7 @@ void main(void){
 			sample_depth = projAB.y / (2.0 * sample_depth - 1.0 - projAB.x);
             occlusion += float(sample_depth > sample.z);
 		}
-		out_AO = 1.0 - occlusion / kernelSize;
+		out_AO = vec4(1.0 - occlusion / kernelSize, Normal);
 	}
 	else discard;
 }
