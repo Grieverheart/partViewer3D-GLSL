@@ -69,12 +69,14 @@ OpenGLContext::OpenGLContext(int width, int height):
         sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
         sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
         sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
-        sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
+        sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert", "shaders/shadowmap.frag");
         sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
         sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
         sh_edge_detection = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
         sh_blend_weights = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
         sh_blend = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
+        sh_gauss_x = new Shader("shaders/blur.vert", "shaders/gaussian_blur_x.frag");
+        sh_gauss_y = new Shader("shaders/blur.vert", "shaders/gaussian_blur_y.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -86,12 +88,15 @@ OpenGLContext::OpenGLContext(int width, int height):
         delete sh_edge_detection;
         delete sh_blend_weights;
         delete sh_blend;
+        delete sh_gauss_x;
+        delete sh_gauss_y;
         throw;
     }
 	
     //TODO: Add exceptions
 	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
-	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
+	if(!m_shadowmap[0].Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
+	if(!m_shadowmap[1].Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
 	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
 	if(!m_gbuffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
 	if(!m_accumulator.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
@@ -174,6 +179,8 @@ OpenGLContext::~OpenGLContext(void){
 	delete sh_edge_detection;
 	delete sh_blend_weights;
 	delete sh_blend;
+    delete sh_gauss_x;
+    delete sh_gauss_y;
 
 	glDeleteBuffers(1, &vbo_instanced);
 	glDeleteBuffers(1, &vboBox);
@@ -402,6 +409,16 @@ void OpenGLContext::load_scene(const SimConfig& config){
 		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
+
+	sh_gauss_x->bind();
+	{
+		sh_gauss_x->setUniform("image", 0);
+    }
+
+	sh_gauss_y->bind();
+	{
+		sh_gauss_y->setUniform("image", 0);
+    }
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){
@@ -415,7 +432,8 @@ void OpenGLContext::reshapeWindow(int w, int h){
     m_edge_buffer.Resize(windowWidth, windowHeight);
     m_blend_buffer.Resize(windowWidth, windowHeight);
     m_accumulator.Resize(windowWidth, windowHeight);
-    m_shadowmap.Resize(windowWidth, windowHeight);
+    m_shadowmap[0].Resize(windowWidth, windowHeight);
+    m_shadowmap[1].Resize(windowWidth, windowHeight);
     sh_ssao->bind();
     {
         m_ssao.Resize(windowWidth, windowHeight, sh_ssao);
@@ -476,9 +494,9 @@ void OpenGLContext::renderScene(void){
 
     perf_mon.push_query("Shadow Pass");
     {
-        m_shadowmap.Bind();
-        glClear(GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, windowWidth * 2, windowHeight * 2);
+        glCullFace(GL_FRONT);
+        m_shadowmap[0].Bind();
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         sh_shadowmap_instanced->bind();
         {	
@@ -490,7 +508,7 @@ void OpenGLContext::renderScene(void){
             mesh.draw_instanced(mNInstances);
         }
 
-        glViewport(0, 0, windowWidth, windowHeight);
+        glCullFace(GL_BACK);
     }
     perf_mon.pop_query();
 
@@ -558,6 +576,25 @@ void OpenGLContext::renderScene(void){
     }
     perf_mon.pop_query();
 
+    perf_mon.push_query("Shadowmap Blur Pass");
+    {
+        m_shadowmap[1].Bind();
+        m_shadowmap[0].BindTexture(0);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        sh_gauss_x->bind();
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+
+        m_shadowmap[0].Bind();
+        m_shadowmap[1].BindTexture(0);
+
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        sh_gauss_y->bind();
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+    }
+
     perf_mon.push_query("Gather Pass");
     {
         //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -570,7 +607,7 @@ void OpenGLContext::renderScene(void){
         m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
         m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 1);
         m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DEPTH, 2);
-        m_shadowmap.BindTexture(3);
+        m_shadowmap[0].BindTexture(3);
         
         sh_accumulator->bind();
         {
@@ -631,6 +668,7 @@ void OpenGLContext::renderScene(void){
             m_accumulator.BindTexture(0);
             m_blend_buffer.BindTexture(1);
 
+            //TODO: Check accumulator color bits. 8bit seems too low for SRGB
             glEnable(GL_FRAMEBUFFER_SRGB);
 
             sh_blend->bind();

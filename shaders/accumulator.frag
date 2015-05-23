@@ -11,7 +11,7 @@ struct Light{
 uniform Light light;
 
 uniform sampler2D DepthMap;
-uniform sampler2DShadow LightDepthMap;
+uniform sampler2D LightDepthMap;
 uniform sampler2D ColorMap;
 uniform sampler2D NormalMap;
 
@@ -55,10 +55,27 @@ vec3 CalcLight(vec3 position, vec3 normal, float AO){
 		SpecularColor = vec3(fspecular);
 	}
 
-    vec3 proj = (depth_matrix * vec4(position, 1.0)).xyz;
-    float visibility = 1.0 - texture(LightDepthMap, vec3(proj.xy, proj.z - 0.01));
-    DiffuseColor  *= visibility;
-    SpecularColor *= visibility;
+    {
+        vec3 proj = (depth_matrix * vec4(position, 1.0)).xyz;
+
+        vec2 moments = texture(LightDepthMap, proj.xy).rg;
+
+        float visibility = 1.0;
+
+        if(proj.z > moments.x){
+            float variance = moments.y - (moments.x * moments.x);
+            variance = max(variance, 0.00002);
+
+            float d = proj.z - moments.x;
+            float p_max = variance / (variance + d * d);
+            visibility = smoothstep(0.5, 1.0, p_max);
+        }
+
+        //float visibility = step(proj.z - 0.01, texture(LightDepthMap, proj.xy).r);
+
+        DiffuseColor  *= visibility;
+        SpecularColor *= visibility;
+    }
     //if(AO < 0.5) AO *= 0.5;
 
 	return light.Intensity * (light.Di * DiffuseColor + light.Si * SpecularColor + light.Ai * AO * skyColor);

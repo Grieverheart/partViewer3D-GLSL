@@ -10,12 +10,11 @@ CShadowmap::CShadowmap(void):
 
 CShadowmap::~CShadowmap(void){
     glDeleteTextures(1, &m_texture);
+    glDeleteRenderbuffers(1, &m_depth_rb);
     glDeleteFramebuffers(1, &m_fbo);
 }
 
 bool CShadowmap::Init(unsigned int WindowWidth, unsigned int WindowHeight){
-    WindowWidth *= 2;
-    WindowHeight *= 2;
 	//Create FBO
 	glGenFramebuffers(1, &m_fbo);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
@@ -25,14 +24,20 @@ bool CShadowmap::Init(unsigned int WindowWidth, unsigned int WindowHeight){
 	
 	//prepare depth buffer
 	glBindTexture(GL_TEXTURE_2D, m_texture);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WindowWidth, WindowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_texture, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, WindowWidth, WindowHeight, 0, GL_RG, GL_FLOAT, NULL);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_texture, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_R_TO_TEXTURE);
-	glTexParameteri (GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_GREATER);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+    glGenRenderbuffers(1, &m_depth_rb);
+    glBindRenderbuffer(GL_RENDERBUFFER, m_depth_rb);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, WindowWidth, WindowHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, m_depth_rb);
+	
+	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, DrawBuffers);
 	
 	GLenum Status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
 	
@@ -57,8 +62,6 @@ void CShadowmap::BindTexture(int attachment_point)const{
 }
 
 void CShadowmap::Resize(unsigned int WindowWidth, unsigned int WindowHeight)const{
-    WindowWidth *= 2;
-    WindowHeight *= 2;
     glBindTexture(GL_TEXTURE_2D, m_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WindowWidth, WindowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG32F, WindowWidth, WindowHeight, 0, GL_RG, GL_FLOAT, NULL);
 }

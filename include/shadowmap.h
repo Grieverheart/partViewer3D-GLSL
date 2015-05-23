@@ -12,6 +12,7 @@ public:
 private:
 	unsigned int m_fbo;
 	unsigned int m_texture;
+	unsigned int m_depth_rb;
 };
 
 #endif

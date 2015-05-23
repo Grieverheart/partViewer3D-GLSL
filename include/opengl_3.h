@@ -83,7 +83,7 @@ private:
 	Accumulator m_edge_buffer;
 	Accumulator m_blend_buffer;
 	Cssao m_ssao;
-    CShadowmap m_shadowmap;
+    CShadowmap m_shadowmap[2];
 	
 	Shader *sh_gbuffer;
 	Shader *sh_gbuffer_instanced;
@@ -94,6 +94,8 @@ private:
 	Shader *sh_edge_detection;
 	Shader *sh_blend_weights;
 	Shader *sh_blend;
+	Shader *sh_gauss_x;
+	Shader *sh_gauss_y;
 
     PerfMon perf_mon;
 	
