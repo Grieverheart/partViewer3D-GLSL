@@ -2,6 +2,8 @@
 #include <GL/glew.h>
 #include <cstdio>
 
+//TODO: Try variance shadow maps (VSM)
+
 CShadowmap::CShadowmap(void):
     m_fbo(0)
 {}
@@ -12,6 +14,8 @@ CShadowmap::~CShadowmap(void){
 }
 
 bool CShadowmap::Init(unsigned int WindowWidth, unsigned int WindowHeight){
+    WindowWidth *= 2;
+    WindowHeight *= 2;
 	//Create FBO
 	glGenFramebuffers(1, &m_fbo);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_fbo);
@@ -53,6 +57,8 @@ void CShadowmap::BindTexture(int attachment_point)const{
 }
 
 void CShadowmap::Resize(unsigned int WindowWidth, unsigned int WindowHeight)const{
+    WindowWidth *= 2;
+    WindowHeight *= 2;
     glBindTexture(GL_TEXTURE_2D, m_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, WindowWidth, WindowHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
 }

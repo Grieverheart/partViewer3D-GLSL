@@ -478,6 +478,7 @@ void OpenGLContext::renderScene(void){
     {
         m_shadowmap.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
+        glViewport(0, 0, windowWidth * 2, windowHeight * 2);
         
         sh_shadowmap_instanced->bind();
         {	
@@ -488,6 +489,8 @@ void OpenGLContext::renderScene(void){
 
             mesh.draw_instanced(mNInstances);
         }
+
+        glViewport(0, 0, windowWidth, windowHeight);
     }
     perf_mon.pop_query();
 

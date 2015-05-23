@@ -24,6 +24,13 @@ smooth in vec3 viewRay;
 
 layout(location = 0) out vec4 out_Color;
 
+//vec2 poissonDisk[4] = vec2[](
+//    vec2( -0.94201624, -0.39906216 ),
+//    vec2( 0.94558609, -0.76890725 ),
+//    vec2( -0.094184101, -0.92938870 ),
+//    vec2( 0.34495938, 0.29387760 )
+//);
+
 vec3 CalcPosition(float depth){
 	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
 	vec3 ray = viewRay / viewRay.z;
@@ -49,16 +56,9 @@ vec3 CalcLight(vec3 position, vec3 normal, float AO){
 	}
 
     vec3 proj = (depth_matrix * vec4(position, 1.0)).xyz;
-    vec2 poissonDisk[4] = vec2[](
-        vec2( -0.94201624, -0.39906216 ),
-        vec2( 0.94558609, -0.76890725 ),
-        vec2( -0.094184101, -0.92938870 ),
-        vec2( 0.34495938, 0.29387760 )
-    );
-    float visibility = 0.0;
-    for(int i = 0; i < 4; ++i) visibility += texture(LightDepthMap, vec3(proj.xy + poissonDisk[i] / 700.0, proj.z - 0.01));
-    DiffuseColor  *= 1.0 - 0.25 * visibility;
-    SpecularColor *= 1.0 - 0.25 * visibility;
+    float visibility = 1.0 - texture(LightDepthMap, vec3(proj.xy, proj.z - 0.01));
+    DiffuseColor  *= visibility;
+    SpecularColor *= visibility;
     //if(AO < 0.5) AO *= 0.5;
 
 	return light.Intensity * (light.Di * DiffuseColor + light.Si * SpecularColor + light.Ai * AO * skyColor);
