@@ -33,7 +33,7 @@ OpenGLContext::OpenGLContext(int width, int height):
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
     sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr),
-    sh_spheres(nullptr)
+    sh_spheres(nullptr), sh_shadowmap_spheres(nullptr)
 
 {
 	glewExperimental = GL_TRUE;
@@ -71,6 +71,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
         sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
         sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
+        sh_shadowmap_spheres = new Shader("shaders/shadowmap_spheres.vert", "shaders/shadowmap_spheres.frag");
         sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
         sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
         sh_edge_detection = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
@@ -89,6 +90,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         delete sh_blend_weights;
         delete sh_blend;
         delete sh_spheres;
+        delete sh_shadowmap_spheres;
         throw;
     }
 	
@@ -185,6 +187,7 @@ OpenGLContext::~OpenGLContext(void){
 	delete sh_blend_weights;
 	delete sh_blend;
 	delete sh_spheres;
+	delete sh_shadowmap_spheres;
 
 	glDeleteBuffers(1, &vbo_instanced);
 	glDeleteBuffers(1, &vboBox);
@@ -499,13 +502,13 @@ void OpenGLContext::renderScene(void){
 
     glBindVertexArray(vao_instanced);
 
-#if 0
     perf_mon.push_query("Shadow Pass");
     {
         m_shadowmap.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, windowWidth * 2, windowHeight * 2);
         
+#if 0
         sh_shadowmap_instanced->bind();
         {	
             glm::mat4 vMatrix = lightViewMatrix;
@@ -515,11 +518,23 @@ void OpenGLContext::renderScene(void){
 
             mesh.draw_instanced(mNInstances);
         }
+#else
+        sh_shadowmap_spheres->bind();
+        {	
+            glm::mat4 vMatrix = lightViewMatrix;
+            glm::mat4 pMatrix = lightProjectionMatrix;
+
+            sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
+            sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
+
+            glBindVertexBuffer(0, vboSphere, 0, sizeof(glm::vec3));
+            glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mNInstances);
+        }
+#endif
 
         glViewport(0, 0, windowWidth, windowHeight);
     }
     perf_mon.pop_query();
-#endif
 
     perf_mon.push_query("FBO Pass");
     {

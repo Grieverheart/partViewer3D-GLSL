@@ -96,6 +96,7 @@ private:
 	Shader *sh_blend_weights;
 	Shader *sh_blend;
 	Shader *sh_spheres;
+	Shader *sh_shadowmap_spheres;
 
     PerfMon perf_mon;
 	
