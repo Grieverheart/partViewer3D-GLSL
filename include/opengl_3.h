@@ -66,6 +66,7 @@ private:
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
+	unsigned int vboSphere;
 	unsigned int fullscreen_triangle_vao;
 
 	unsigned int area_texture;
@@ -94,6 +95,7 @@ private:
 	Shader *sh_edge_detection;
 	Shader *sh_blend_weights;
 	Shader *sh_blend;
+	Shader *sh_spheres;
 
     PerfMon perf_mon;
 	

@@ -32,7 +32,8 @@ OpenGLContext::OpenGLContext(int width, int height):
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
-    sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr)
+    sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr),
+    sh_spheres(nullptr)
 
 {
 	glewExperimental = GL_TRUE;
@@ -75,6 +76,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         sh_edge_detection = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
         sh_blend_weights = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
         sh_blend = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
+        sh_spheres = new Shader("shaders/spheres.vert", "shaders/spheres.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -86,6 +88,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         delete sh_edge_detection;
         delete sh_blend_weights;
         delete sh_blend;
+        delete sh_spheres;
         throw;
     }
 	
@@ -120,6 +123,13 @@ OpenGLContext::OpenGLContext(int width, int height):
     
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    glm::vec3 vertices[] = {
+        glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0)
+    };
+    glGenBuffers(1, &vboSphere);
+	glBindBuffer(GL_ARRAY_BUFFER, vboSphere);
+	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
     //Generate and load smaa textures
     //TODO: Handle read errors!!!
@@ -174,10 +184,12 @@ OpenGLContext::~OpenGLContext(void){
 	delete sh_edge_detection;
 	delete sh_blend_weights;
 	delete sh_blend;
+	delete sh_spheres;
 
 	glDeleteBuffers(1, &vbo_instanced);
 	glDeleteBuffers(1, &vboBox);
 	glDeleteBuffers(1, &iboBox);
+	glDeleteBuffers(1, &vboSphere);
 	glDeleteVertexArrays(1, &vao_instanced);
 	glDeleteVertexArrays(1, &vaoBox);
 	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
@@ -317,19 +329,32 @@ void OpenGLContext::load_scene(const SimConfig& config){
 
         glBindVertexArray(vao_instanced);
         
+#if 0
         glEnableVertexAttribArray((GLuint)0);
         glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
         glVertexAttribBinding(0, 0);
         glEnableVertexAttribArray((GLuint)1);
         glVertexAttribFormat((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
         glVertexAttribBinding(1, 0);
-        
+
         glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
         for(int i = 0; i < 4; i++){ //MVP Matrices
             glEnableVertexAttribArray(2 + i);
             glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
             glVertexAttribDivisor(2 + i, 1);
         }
+#else
+        glEnableVertexAttribArray((GLuint)0);
+        glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
+        glVertexAttribBinding(0, 0);
+        
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
+        for(int i = 0; i < 4; i++){ //MVP Matrices
+            glEnableVertexAttribArray(1 + i);
+            glVertexAttribPointer(1 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+            glVertexAttribDivisor(1 + i, 1);
+        }
+#endif
         glBufferData(GL_ARRAY_BUFFER, mNInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
         
         glBindVertexArray(0);
@@ -474,6 +499,7 @@ void OpenGLContext::renderScene(void){
 
     glBindVertexArray(vao_instanced);
 
+#if 0
     perf_mon.push_query("Shadow Pass");
     {
         m_shadowmap.Bind();
@@ -493,12 +519,13 @@ void OpenGLContext::renderScene(void){
         glViewport(0, 0, windowWidth, windowHeight);
     }
     perf_mon.pop_query();
+#endif
 
     perf_mon.push_query("FBO Pass");
     {
         m_gbuffer.Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+#if 0
         sh_gbuffer_instanced->bind();
         {	
             sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
@@ -506,6 +533,16 @@ void OpenGLContext::renderScene(void){
             sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
             mesh.draw_instanced(mNInstances);
         }
+#else
+        sh_spheres->bind();
+        {	
+            sh_spheres->setUniform("diffColor", 1, diffcolor);
+            sh_spheres->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+            sh_spheres->setUniform("ProjectionMatrix", 1, projectionMatrix);
+            glBindVertexBuffer(0, vboSphere, 0, sizeof(glm::vec3));
+            glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mNInstances);
+        }
+#endif
         
         if(drawBox){
             sh_gbuffer->bind();
