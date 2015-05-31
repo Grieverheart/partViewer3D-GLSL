@@ -4,7 +4,7 @@
 #include "include/coord_parser.h"
 #include "include/obj_parser.h"
 
-//TODO: use cstdio for parsing
+//TODO: Use xml parsing
 SimConfig parse_config(const char* file_path){
 	SimConfig config;
 	std::string line;
@@ -15,39 +15,49 @@ SimConfig parse_config(const char* file_path){
     std::getline(file, line);
     s.str(line);
     s >> config.n_part;
-    config.pos = new glm::vec3[config.n_part];
-    config.rot = new glm::vec4[config.n_part];
-    config.mesh_id = new int[config.n_part];
+    config.particles = new Particle[config.n_part];
     std::getline(file, line);
     s.str(line);
     s.seekg(0);
     for(int i = 0; i < 9; i++) s >> config.box[i / 3][i % 3];
 
-    int n_meshes = 0;
+    int n_shapes = 0;
 	for(int n = 0; n < config.n_part; ++n){
         std::getline(file, line);
         s.str(line);
         s.seekg(0);
-        glm::vec3& v = config.pos[n];
-        glm::vec4& r = config.rot[n];
-        int& mesh_id = config.mesh_id[n];
+        glm::vec3& v = config.particles[n].pos;
+        glm::vec4& r = config.particles[n].rot;
         for(int i = 0; i < 3; i++) s >> v[i];
         for(int i = 0; i < 4; i++) s >> r[i];
-        s >> mesh_id;
-        if(mesh_id > n_meshes) n_meshes = mesh_id;
+        int shape_id;
+        s >> shape_id;
+        if(shape_id > n_shapes) n_shapes = shape_id;
         r.x = glm::radians(r.x);
 	}
-    ++n_meshes;
-    config.n_meshes = n_meshes;
+    ++n_shapes;
+    config.n_shapes = n_shapes;
     //TODO: Fix
     std::getline(file, line);
     s.str(line);
     s.seekg(0);
-    int mesh_id;
-    std::string mesh_type;
-    std::string mesh_name;
-    s >> mesh_id >> mesh_type >> mesh_name;
-    config.meshes = new std::vector<Vertex>[n_meshes];
-	parse_obj(("obj/" + mesh_name + ".obj").c_str(), config.meshes[0], "flat");
+    int shape_id;
+    std::string shape_type;
+    std::string shape_name;
+    s >> shape_id >> shape_type >> shape_name;
+    config.shapes = new Shape[n_shapes];
+
+    if(shape_type == "polyhedron"){
+        config.shapes[shape_id].shape_type = Shape::MESH;
+        parse_obj(("obj/" + shape_name + ".obj").c_str(), config.shapes[shape_id].mesh, "flat");
+    }
+    else if(shape_type == "sphere"){
+        config.shapes[shape_id].shape_type = Shape::SPHERE;
+    }
+    else{
+        //ERROR!!! Not yet implemented!
+        config.shapes[shape_id].shape_type = Shape::OTHER;
+    }
+
     return config;
 }

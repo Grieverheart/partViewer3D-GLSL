@@ -299,7 +299,8 @@ void OpenGLContext::load_scene(const SimConfig& config){
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	modelMatrix = glm::mat4(1.0);
 	
-    mesh.set(config.meshes[0]);
+    //TODO: Dangerous / Temporary
+    mesh.set(config.shapes[0].mesh);
     {
         glm::mat4* ModelArray = new glm::mat4[mNInstances];
 
@@ -314,11 +315,11 @@ void OpenGLContext::load_scene(const SimConfig& config){
         
         
         for(unsigned int i = 0; i < mNInstances; i++){
-            glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.pos[i]);
+            glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[i].pos);
             glm::mat4 rLocalMatrix = glm::rotate(
                 glm::mat4(1.0),
-                config.rot[i].x,
-                glm::vec3(config.rot[i].y, config.rot[i].z, config.rot[i].w)
+                config.particles[i].rot.x,
+                glm::vec3(config.particles[i].rot.y, config.particles[i].rot.z, config.particles[i].rot.w)
             );
             
             ModelArray[i] = tLocalMatrix * rLocalMatrix ;
