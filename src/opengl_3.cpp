@@ -12,6 +12,8 @@
 #include "include/gl_utils.h"
 #include "include/shader.h"
 
+//#define DRAW_SPHERES
+
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
     0.0, 0.5, 0.0, 0.0,
@@ -332,7 +334,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
 
         glBindVertexArray(vao_instanced);
         
-#if 0
+#ifndef DRAW_SPHERES
         glEnableVertexAttribArray((GLuint)0);
         glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
         glVertexAttribBinding(0, 0);
@@ -508,7 +510,7 @@ void OpenGLContext::renderScene(void){
         glClear(GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, windowWidth * 2, windowHeight * 2);
         
-#if 0
+#ifndef DRAW_SPHERES
         sh_shadowmap_instanced->bind();
         {	
             glm::mat4 vMatrix = lightViewMatrix;
@@ -540,7 +542,7 @@ void OpenGLContext::renderScene(void){
     {
         m_gbuffer.Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-#if 0
+#ifndef DRAW_SPHERES
         sh_gbuffer_instanced->bind();
         {	
             sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);

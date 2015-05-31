@@ -1,7 +1,8 @@
-Draw spheres as impostors.
+--Draw spheres as impostors.
 Change configuration loading.
 Add clipping planes.
 Add lua scripting support.
 Add periodic repetition.
 Draw points.
+Draw spheres with proper perspective.
 Cleanup code.
