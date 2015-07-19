@@ -8,11 +8,6 @@
 struct Vertex{
 	glm::vec3 _coord;
 	glm::vec3 _normal;
-	
-	Vertex(glm::vec3 coord, glm::vec3 normal):
-		_coord(coord),
-		_normal(normal)
-	{}
 };
 
 #endif

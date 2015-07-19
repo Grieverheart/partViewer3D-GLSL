@@ -7,8 +7,8 @@ GLMesh::GLMesh(void):
     vbo_(0)
 {}
 
-GLMesh::GLMesh(const std::vector<Vertex>& vertices):
-    n_vertices_(vertices.size()),
+GLMesh::GLMesh(const Vertex* vertices, int n_vertices):
+    n_vertices_(n_vertices),
     vbo_(0)
 {
 	glGenBuffers(1, &vbo_);
@@ -20,10 +20,10 @@ GLMesh::~GLMesh(void){
 	glDeleteBuffers(1, &vbo_);
 }
 
-void GLMesh::set(const std::vector<Vertex>& vertices){
+void GLMesh::set(const Vertex* vertices, int n_vertices){
 	if(n_vertices_ == 0){
         glGenBuffers(1, &vbo_);
-        n_vertices_ = vertices.size();
+        n_vertices_ = n_vertices;
     }
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_);
 	glBufferData(GL_ARRAY_BUFFER, n_vertices_ * sizeof(Vertex), &vertices[0], GL_STATIC_DRAW);

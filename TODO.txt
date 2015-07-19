@@ -1,5 +1,6 @@
 --Draw spheres as impostors.
-Change configuration loading.
+--Change configuration loading.
+Make renderer handle different shapes.
 Add clipping planes.
 Add lua scripting support.
 Add periodic repetition.

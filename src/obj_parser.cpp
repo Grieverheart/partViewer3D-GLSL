@@ -6,7 +6,7 @@
 #include <glm/glm.hpp>
 
 //TODO: Use cstdio. We must have done this for the game engine code.
-void parse_obj(const char *filename, std::vector<Vertex>& mesh, std::string shading_model){
+void parse_obj(const char *filename, Shape::Mesh& mesh, std::string shading_model){
 	bool has_texture = false;
 	
 	// Hold the data from the object file
@@ -83,15 +83,19 @@ void parse_obj(const char *filename, std::vector<Vertex>& mesh, std::string shad
 			glm::normalize(normal);
 			vertexnormals.push_back(normal);
 		}
+        mesh.n_vertices = f_size;
+        mesh.vertices   = new Vertex[f_size];
         for(int i = 0; i < f_size; i++){
-            Vertex vertex(temp_vertices[vertex_elements[i]], vertexnormals[vertex_elements[i]]);
-            mesh.push_back(vertex);
+            Vertex vertex{temp_vertices[vertex_elements[i]], vertexnormals[vertex_elements[i]]};
+            mesh.vertices[i] = vertex;
         }
 	}
 	else{
+        mesh.n_vertices = f_size;
+        mesh.vertices   = new Vertex[f_size];
         for(int i = 0; i < f_size; i++){
-            Vertex vertex(temp_vertices[vertex_elements[i]], temp_vnormals[normal_elements[i]]);
-            mesh.push_back(vertex);
+            Vertex vertex{temp_vertices[vertex_elements[i]], temp_vnormals[normal_elements[i]]};
+            mesh.vertices[i] = vertex;
         }
 	}
 }

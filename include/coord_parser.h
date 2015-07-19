@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 #include "vertex.h"
+#include "shape.h"
 
 //TODO: Might need recosidering
 struct Particle{
@@ -11,26 +12,6 @@ struct Particle{
     glm::vec4 rot;
     glm::vec3 pos;
     float size;
-};
-
-struct Shape{
-    Shape(void):
-        mesh()
-    {}
-
-    ~Shape(void){}
-
-    union{
-        std::vector<Vertex> mesh;
-        struct{} sphere;
-    };
-
-    //int id; //TODO: We might need this in case shapes are not in order
-
-    enum{
-        MESH, SPHERE,
-        OTHER //Not yet implemented
-    }shape_type;
 };
 
 //TODO: Destructor/Constructor!!

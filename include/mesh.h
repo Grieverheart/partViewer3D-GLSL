@@ -8,10 +8,10 @@ struct Vertex;
 class GLMesh{
 public:
     GLMesh(void);
-	GLMesh(const std::vector<Vertex>& vertices);
+	GLMesh(const Vertex* vertices, int n_vertices);
 	~GLMesh(void);
 	
-    void set(const std::vector<Vertex>& vertices);
+    void set(const Vertex* vertices, int n_vertices);
 	void draw(void)const;
 	void draw_instanced(int n_instances)const;
 

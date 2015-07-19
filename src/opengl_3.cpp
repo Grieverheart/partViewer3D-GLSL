@@ -291,16 +291,16 @@ void OpenGLContext::load_scene(const SimConfig& config){
     zfar  = -init_zoom + 2.0 * out_radius;
 
 	
-	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
-    invProjMatrix = glm::inverse(projectionMatrix);
+	projectionMatrix      = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+    invProjMatrix         = glm::inverse(projectionMatrix);
     lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
-	viewMatrix = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-    invViewMatrix = glm::inverse(viewMatrix);
-    lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	modelMatrix = glm::mat4(1.0);
+	viewMatrix            = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    invViewMatrix         = glm::inverse(viewMatrix);
+    lightViewMatrix       = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	modelMatrix           = glm::mat4(1.0);
 	
     //TODO: Dangerous / Temporary
-    mesh.set(config.shapes[0].mesh);
+    mesh.set(config.shapes[0].mesh.vertices, config.shapes[0].mesh.n_vertices);
     {
         glm::mat4* ModelArray = new glm::mat4[mNInstances];
 
@@ -334,11 +334,12 @@ void OpenGLContext::load_scene(const SimConfig& config){
         glGenBuffers(1, &vbo_instanced);
 
         glBindVertexArray(vao_instanced);
-        
-#ifndef DRAW_SPHERES
+
         glEnableVertexAttribArray((GLuint)0);
         glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
         glVertexAttribBinding(0, 0);
+        
+#ifndef DRAW_SPHERES
         glEnableVertexAttribArray((GLuint)1);
         glVertexAttribFormat((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
         glVertexAttribBinding(1, 0);
@@ -350,10 +351,6 @@ void OpenGLContext::load_scene(const SimConfig& config){
             glVertexAttribDivisor(2 + i, 1);
         }
 #else
-        glEnableVertexAttribArray((GLuint)0);
-        glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
-        glVertexAttribBinding(0, 0);
-        
         glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
         for(int i = 0; i < 4; i++){ //MVP Matrices
             glEnableVertexAttribArray(1 + i);

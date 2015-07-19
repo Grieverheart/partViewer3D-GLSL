@@ -4,8 +4,9 @@
 #include <vector>
 #include <string>
 #include "vertex.h"
+#include "shape.h"
 
 //TODO: Change shading model type
-void parse_obj(const char *filename, std::vector<Vertex>& mesh, std::string shading_model);
+void parse_obj(const char *filename, Shape::Mesh& mesh, std::string shading_model);
 
 #endif

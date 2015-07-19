@@ -55,7 +55,6 @@ SimConfig parse_config(const char* file_path){
         config.shapes[shape_id].shape_type = Shape::SPHERE;
     }
     else{
-        //ERROR!!! Not yet implemented!
         config.shapes[shape_id].shape_type = Shape::OTHER;
     }
 
