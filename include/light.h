@@ -4,6 +4,9 @@
 #include <AntTweakBar.h>
 #include <glm/glm.hpp>
 
+//TODO: This class shouldn't make any openGL calls,
+//they should instead be done by the renderer.
+
 class CLight{
 public:
 	CLight(void);

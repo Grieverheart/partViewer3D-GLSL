@@ -3,6 +3,9 @@
 
 #include <vector>
 
+//TODO: We don't need this to be in a separate header
+//since only the render needs to know about it.
+
 struct Vertex;
 
 class GLMesh{
