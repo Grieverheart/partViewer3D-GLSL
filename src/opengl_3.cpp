@@ -175,7 +175,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         fclose(fp);
     }
 
-	createGui();
+	//createGui();
 }
 
 OpenGLContext::~OpenGLContext(void){
@@ -199,7 +199,7 @@ OpenGLContext::~OpenGLContext(void){
 	glDeleteVertexArrays(1, &vaoBox);
 	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
-	TwTerminate();
+	//TwTerminate();
 }  
 
 void OpenGLContext::createGui(void){
@@ -325,31 +325,35 @@ void OpenGLContext::load_scene(const SimConfig& config){
             ModelArray[i] = tLocalMatrix * rLocalMatrix ;
         }
 
+        glGenBuffers(1, &vbo_instanced);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
+        glBufferData(GL_ARRAY_BUFFER, mNInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
         //TODO: This should be done for each mesh that was loaded. Additionally, we should
         //only add vertex attributes to the vao and move the ModelArray to a separate vertex
         //buffer bound at index 1.
         
         //Build instanced vao
         glGenVertexArrays(1, &vao_instanced);
-        glGenBuffers(1, &vbo_instanced);
 
         glBindVertexArray(vao_instanced);
 
-        glEnableVertexAttribArray((GLuint)0);
+        glEnableVertexAttribArray(0);
         glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
         glVertexAttribBinding(0, 0);
         
 #ifndef DRAW_SPHERES
-        glEnableVertexAttribArray((GLuint)1);
+        glEnableVertexAttribArray(1);
         glVertexAttribFormat((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
         glVertexAttribBinding(1, 0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
         for(int i = 0; i < 4; i++){ //MVP Matrices
             glEnableVertexAttribArray(2 + i);
-            glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-            glVertexAttribDivisor(2 + i, 1);
+            glVertexAttribFormat(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * i * 4);
+            glVertexAttribBinding(2 + i, 1);
         }
+        glVertexAttribDivisor(1, 1);
 #else
         glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
         for(int i = 0; i < 4; i++){ //MVP Matrices
@@ -358,10 +362,8 @@ void OpenGLContext::load_scene(const SimConfig& config){
             glVertexAttribDivisor(1 + i, 1);
         }
 #endif
-        glBufferData(GL_ARRAY_BUFFER, mNInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
         
         glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
         delete[] ModelArray;
     }
@@ -516,6 +518,7 @@ void OpenGLContext::renderScene(void){
 
             sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
 
+            glBindVertexBuffer(1, vbo_instanced, 0, sizeof(glm::mat4));
             mesh.draw_instanced(mNInstances);
         }
 #else
@@ -546,6 +549,8 @@ void OpenGLContext::renderScene(void){
             sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
             sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
             sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+
+            glBindVertexBuffer(1, vbo_instanced, 0, sizeof(glm::mat4));
             mesh.draw_instanced(mNInstances);
         }
 #else
@@ -695,7 +700,7 @@ void OpenGLContext::renderScene(void){
     perf_mon.pop_query();
 
     perf_mon.push_query("TwDraw Pass");
-	TwDraw();
+	//TwDraw();
     perf_mon.pop_query();
     glDisable(GL_FRAMEBUFFER_SRGB);
 }
