@@ -1,6 +1,7 @@
 --Draw spheres as impostors.
 --Change configuration loading.
-Make renderer handle different shapes.
+--Make renderer handle different shapes.
+Parse configuration in XML instead.
 Add clipping planes.
 Add lua scripting support.
 Add periodic repetition.

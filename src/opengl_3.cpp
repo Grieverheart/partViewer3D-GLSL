@@ -29,7 +29,10 @@ OpenGLContext::OpenGLContext(int width, int height):
 	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
-    vao_instanced(0), vbo_instanced(0), vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
+	shape_instances(nullptr), shape_vaos(nullptr), shape_vertex_vbos(nullptr),
+	shape_model_matrix_vbos(nullptr), shape_num_vertices(nullptr),
+    shape_types(nullptr), n_shapes(0),
+    vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), m_blur(true), m_rotating(false),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -128,13 +131,6 @@ OpenGLContext::OpenGLContext(int width, int height):
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glm::vec3 vertices[] = {
-        glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0)
-    };
-    glGenBuffers(1, &vboSphere);
-	glBindBuffer(GL_ARRAY_BUFFER, vboSphere);
-	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
-
     //Generate and load smaa textures
     //TODO: Handle read errors!!!
     FILE* fp = fopen("res/smaa_area.raw", "rb");
@@ -145,6 +141,7 @@ OpenGLContext::OpenGLContext(int width, int height):
 
         glGenTextures(1, &area_texture);
         glBindTexture(GL_TEXTURE_2D, area_texture);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, 160, 560, 0, GL_RG, GL_UNSIGNED_BYTE, buffer);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -164,6 +161,7 @@ OpenGLContext::OpenGLContext(int width, int height):
 
         glGenTextures(1, &search_texture);
         glBindTexture(GL_TEXTURE_2D, search_texture);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 66, 33, 0, GL_RED, GL_UNSIGNED_BYTE, buffer);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -191,12 +189,21 @@ OpenGLContext::~OpenGLContext(void){
 	delete sh_spheres;
 	delete sh_shadowmap_spheres;
 
-	glDeleteBuffers(1, &vbo_instanced);
+	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
+	if(n_shapes) glDeleteBuffers(n_shapes, shape_vertex_vbos);
+	if(n_shapes) glDeleteBuffers(n_shapes, shape_model_matrix_vbos);
+
+    delete[] shape_vaos;
+    delete[] shape_vertex_vbos;
+    delete[] shape_model_matrix_vbos;
+    delete[] shape_instances;
+    delete[] shape_types;
+    delete[] shape_num_vertices;
+
+	glDeleteVertexArrays(1, &vaoBox);
 	glDeleteBuffers(1, &vboBox);
 	glDeleteBuffers(1, &iboBox);
-	glDeleteBuffers(1, &vboSphere);
-	glDeleteVertexArrays(1, &vao_instanced);
-	glDeleteVertexArrays(1, &vaoBox);
+
 	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 
 	//TwTerminate();
@@ -245,7 +252,6 @@ void OpenGLContext::createGui(void){
 
 void OpenGLContext::load_scene(const SimConfig& config){
     is_scene_loaded = true;
-	mNInstances = config.n_part;
 	
     //Configuration box
     {
@@ -299,10 +305,26 @@ void OpenGLContext::load_scene(const SimConfig& config){
     lightViewMatrix       = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 	modelMatrix           = glm::mat4(1.0);
 	
-    //TODO: Dangerous / Temporary
-    mesh.set(config.shapes[0].mesh.vertices, config.shapes[0].mesh.n_vertices);
-    {
-        glm::mat4* ModelArray = new glm::mat4[mNInstances];
+	shape_instances         = new unsigned int[config.n_shapes]{};
+	shape_vaos              = new unsigned int[config.n_shapes]{};
+	shape_vertex_vbos       = new unsigned int[config.n_shapes]{};
+	shape_model_matrix_vbos = new unsigned int[config.n_shapes]{};
+	shape_num_vertices      = new unsigned int[config.n_shapes]{};
+
+    n_shapes = config.n_shapes;
+    shape_types = new Shape::Type[n_shapes];
+
+    glGenVertexArrays(config.n_shapes, shape_vaos);
+    glGenBuffers(config.n_shapes, shape_vertex_vbos);
+    glGenBuffers(config.n_shapes, shape_model_matrix_vbos);
+
+    //Count shape instances
+    for(int i = 0; i < config.n_part; ++i) ++shape_instances[config.particles[i].shape_id];
+
+    for(int shape_id = 0; shape_id < config.n_shapes; ++shape_id){
+        shape_types[shape_id] = config.shapes[shape_id].type;
+
+        glm::mat4* ModelArray = new glm::mat4[shape_instances[shape_id]];
 
         glm::mat4 tMatrix = glm::translate(
             glm::mat4(1.0),
@@ -313,56 +335,62 @@ void OpenGLContext::load_scene(const SimConfig& config){
             )
         );
         
-        
-        for(unsigned int i = 0; i < mNInstances; i++){
-            glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[i].pos);
-            glm::mat4 rLocalMatrix = glm::rotate(
-                glm::mat4(1.0),
-                config.particles[i].rot.x,
-                glm::vec3(config.particles[i].rot.y, config.particles[i].rot.z, config.particles[i].rot.w)
-            );
-            
-            ModelArray[i] = tLocalMatrix * rLocalMatrix ;
+        for(int pid = 0, i = 0; pid < config.n_part; ++pid){
+            if(config.particles[pid].shape_id == shape_id){
+                glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[pid].pos);
+                glm::mat4 rLocalMatrix = glm::rotate(
+                    glm::mat4(1.0),
+                    config.particles[pid].rot.x,
+                    glm::vec3(config.particles[pid].rot.y, config.particles[pid].rot.z, config.particles[pid].rot.w)
+                );
+                
+                ModelArray[i++] = tLocalMatrix * rLocalMatrix;
+            }
         }
-
-        glGenBuffers(1, &vbo_instanced);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
-        glBufferData(GL_ARRAY_BUFFER, mNInstances * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-        //TODO: This should be done for each mesh that was loaded. Additionally, we should
-        //only add vertex attributes to the vao and move the ModelArray to a separate vertex
-        //buffer bound at index 1.
         
         //Build instanced vao
-        glGenVertexArrays(1, &vao_instanced);
+        glBindVertexArray(shape_vaos[shape_id]);
+        if(config.shapes[shape_id].type == Shape::MESH){
+            const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
+            shape_num_vertices[shape_id] = mesh.n_vertices;
 
-        glBindVertexArray(vao_instanced);
+            glBindBuffer(GL_ARRAY_BUFFER, shape_vertex_vbos[shape_id]);
+            glBufferData(GL_ARRAY_BUFFER, mesh.n_vertices * sizeof(Vertex), mesh.vertices, GL_STATIC_DRAW);
 
-        glEnableVertexAttribArray(0);
-        glVertexAttribFormat((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0);
-        glVertexAttribBinding(0, 0);
-        
-#ifndef DRAW_SPHERES
-        glEnableVertexAttribArray(1);
-        glVertexAttribFormat((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3));
-        glVertexAttribBinding(1, 0);
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)0);
 
-        for(int i = 0; i < 4; i++){ //MVP Matrices
-            glEnableVertexAttribArray(2 + i);
-            glVertexAttribFormat(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(float) * i * 4);
-            glVertexAttribBinding(2 + i, 1);
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)sizeof(glm::vec3));
+
+            glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
+            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
+
+            for(int i = 0; i < 4; i++){ //MVP Matrices
+                glEnableVertexAttribArray(2 + i);
+                glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+                glVertexAttribDivisor(2 + i, 1);
+            }
         }
-        glVertexAttribDivisor(1, 1);
-#else
-        glBindBuffer(GL_ARRAY_BUFFER, vbo_instanced);
-        for(int i = 0; i < 4; i++){ //MVP Matrices
-            glEnableVertexAttribArray(1 + i);
-            glVertexAttribPointer(1 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-            glVertexAttribDivisor(1 + i, 1);
+        else if(config.shapes[shape_id].type == Shape::SPHERE){
+            glm::vec3 vertices[] = {
+                glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0)
+            };
+            glBindBuffer(GL_ARRAY_BUFFER, shape_vertex_vbos[shape_id]);
+            glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
+
+            glEnableVertexAttribArray(0);
+            glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+
+            glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
+            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
+
+            for(int i = 0; i < 4; i++){ //MVP Matrices
+                glEnableVertexAttribArray(1 + i);
+                glVertexAttribPointer(1 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+                glVertexAttribDivisor(1 + i, 1);
+            }
         }
-#endif
-        
         glBindVertexArray(0);
 
         delete[] ModelArray;
@@ -502,38 +530,36 @@ void OpenGLContext::renderScene(void){
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-    glBindVertexArray(vao_instanced);
-
     perf_mon.push_query("Shadow Pass");
     {
         m_shadowmap.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
         glViewport(0, 0, windowWidth * 2, windowHeight * 2);
         
-#ifndef DRAW_SPHERES
-        sh_shadowmap_instanced->bind();
-        {	
-            glm::mat4 vMatrix = lightViewMatrix;
-            glm::mat4 pMatrix = lightProjectionMatrix;
+        for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
+            glBindVertexArray(shape_vaos[shape_id]);
+            if(shape_types[shape_id] == Shape::MESH){
+                sh_shadowmap_instanced->bind();
 
-            sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
+                glm::mat4 vMatrix = lightViewMatrix;
+                glm::mat4 pMatrix = lightProjectionMatrix;
 
-            glBindVertexBuffer(1, vbo_instanced, 0, sizeof(glm::mat4));
-            mesh.draw_instanced(mNInstances);
+                sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
+
+                glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
+            }
+            else{
+                sh_shadowmap_spheres->bind();
+
+                glm::mat4 vMatrix = lightViewMatrix;
+                glm::mat4 pMatrix = lightProjectionMatrix;
+
+                sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
+                sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
+
+                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
+            }
         }
-#else
-        sh_shadowmap_spheres->bind();
-        {	
-            glm::mat4 vMatrix = lightViewMatrix;
-            glm::mat4 pMatrix = lightProjectionMatrix;
-
-            sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
-            sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
-
-            glBindVertexBuffer(0, vboSphere, 0, sizeof(glm::vec3));
-            glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mNInstances);
-        }
-#endif
 
         glViewport(0, 0, windowWidth, windowHeight);
     }
@@ -543,26 +569,27 @@ void OpenGLContext::renderScene(void){
     {
         m_gbuffer.Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-#ifndef DRAW_SPHERES
-        sh_gbuffer_instanced->bind();
-        {	
-            sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
-            sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
-            sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+        for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
+            glBindVertexArray(shape_vaos[shape_id]);
+            if(shape_types[shape_id] == Shape::MESH){
+                sh_gbuffer_instanced->bind();
 
-            glBindVertexBuffer(1, vbo_instanced, 0, sizeof(glm::mat4));
-            mesh.draw_instanced(mNInstances);
+                sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
+                sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+                sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+
+                glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
+            }
+            else{
+                sh_spheres->bind();
+
+                sh_spheres->setUniform("diffColor", 1, diffcolor);
+                sh_spheres->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+                sh_spheres->setUniform("ProjectionMatrix", 1, projectionMatrix);
+
+                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
+            }
         }
-#else
-        sh_spheres->bind();
-        {	
-            sh_spheres->setUniform("diffColor", 1, diffcolor);
-            sh_spheres->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
-            sh_spheres->setUniform("ProjectionMatrix", 1, projectionMatrix);
-            glBindVertexBuffer(0, vboSphere, 0, sizeof(glm::vec3));
-            glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, mNInstances);
-        }
-#endif
         
         if(drawBox){
             sh_gbuffer->bind();

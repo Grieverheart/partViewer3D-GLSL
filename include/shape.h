@@ -1,9 +1,11 @@
 #ifndef PV_SHAPE_H
 #define PV_SHAPE_H
 
+#include "vertex.h"
+
 struct Shape{
     ~Shape(void){
-        if(shape_type == MESH) delete[] mesh.vertices;
+        if(type == MESH) delete[] mesh.vertices;
     }
 
     struct Mesh{
@@ -20,10 +22,10 @@ struct Shape{
 
     //int id; //TODO: We might need this in case shapes are not in order
 
-    enum eShapeType{
+    enum Type{
         MESH, SPHERE,
         OTHER //Not yet implemented
-    }shape_type;
+    }type;
 };
 
 #endif

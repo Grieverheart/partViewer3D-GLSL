@@ -2,7 +2,6 @@
 #define __OPENGL_3_H
 
 #include "coord_parser.h"
-#include "mesh.h"
 #include "light.h"
 #include "g-buffer.h"
 #include "accumulator.h"
@@ -59,14 +58,18 @@ private:
 	glm::vec3 diffcolor;
 	glm::vec3 skycolor;
 	
-	unsigned int mNInstances;
-	
-	unsigned int vao_instanced;
-	unsigned int vbo_instanced;
+	unsigned int* shape_instances;
+	unsigned int* shape_vaos;
+	unsigned int* shape_vertex_vbos;
+	unsigned int* shape_model_matrix_vbos;
+	unsigned int* shape_num_vertices;
+
+    Shape::Type* shape_types;
+    unsigned int n_shapes;
+
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
-	unsigned int vboSphere;
 	unsigned int fullscreen_triangle_vao;
 
 	unsigned int area_texture;
@@ -77,7 +80,6 @@ private:
 	bool m_rotating;
 	
 	CLight light;
-	GLMesh mesh;
 
 	CGBuffer m_gbuffer;
 	Accumulator m_accumulator;

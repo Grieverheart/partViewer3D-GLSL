@@ -5,6 +5,7 @@
 #include "include/obj_parser.h"
 
 //TODO: Use xml parsing
+//TODO: Handle errors
 SimConfig parse_config(const char* file_path){
 	SimConfig config;
 	std::string line;
@@ -30,7 +31,7 @@ SimConfig parse_config(const char* file_path){
         glm::vec4& r = config.particles[n].rot;
         for(int i = 0; i < 3; i++) s >> v[i];
         for(int i = 0; i < 4; i++) s >> r[i];
-        int shape_id;
+        int& shape_id = config.particles[n].shape_id;
         s >> shape_id;
         if(shape_id > n_shapes) n_shapes = shape_id;
         r.x = glm::radians(r.x);
@@ -48,14 +49,14 @@ SimConfig parse_config(const char* file_path){
     config.shapes = new Shape[n_shapes];
 
     if(shape_type == "polyhedron"){
-        config.shapes[shape_id].shape_type = Shape::MESH;
+        config.shapes[shape_id].type = Shape::MESH;
         parse_obj(("obj/" + shape_name + ".obj").c_str(), config.shapes[shape_id].mesh, "flat");
     }
     else if(shape_type == "sphere"){
-        config.shapes[shape_id].shape_type = Shape::SPHERE;
+        config.shapes[shape_id].type = Shape::SPHERE;
     }
     else{
-        config.shapes[shape_id].shape_type = Shape::OTHER;
+        config.shapes[shape_id].type = Shape::OTHER;
     }
 
     return config;

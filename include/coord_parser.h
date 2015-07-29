@@ -2,8 +2,6 @@
 #define PV_COORD_PARSER_H
 
 #include <glm/glm.hpp>
-#include <vector>
-#include "vertex.h"
 #include "shape.h"
 
 //TODO: Might need recosidering
@@ -16,13 +14,11 @@ struct Particle{
 
 //TODO: Destructor/Constructor!!
 struct SimConfig{
-    int n_part;
+    int n_part, n_shapes;
     Particle* particles;
+    Shape* shapes;
     //TODO: Should we consider spherical boxes differently?
     glm::mat3 box;
-
-    int n_shapes;
-    Shape* shapes;
 };
 
 SimConfig parse_config(const char* file_path);
