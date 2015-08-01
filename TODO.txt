@@ -1,10 +1,13 @@
 --Draw spheres as impostors.
 --Change configuration loading.
 --Make renderer handle different shapes.
-Parse configuration in XML instead.
+Add particle selection.
+Add selection outline rendering.
+Add some kind of scene class.
+Cleanup code.
 Add clipping planes.
+Parse configuration in XML instead.
 Add lua scripting support.
 Add periodic repetition.
 Draw points.
 Draw spheres with proper perspective.
-Cleanup code.

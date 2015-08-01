@@ -30,7 +30,7 @@ OpenGLContext::OpenGLContext(int width, int height):
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
 	shape_instances(nullptr), shape_vaos(nullptr), shape_vertex_vbos(nullptr),
-	shape_model_matrix_vbos(nullptr), shape_num_vertices(nullptr),
+	shape_model_matrix_vbos(nullptr), shape_colors_vbos(nullptr), shape_num_vertices(nullptr),
     shape_types(nullptr), n_shapes(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), m_blur(true), m_rotating(false),
@@ -192,10 +192,12 @@ OpenGLContext::~OpenGLContext(void){
 	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
 	if(n_shapes) glDeleteBuffers(n_shapes, shape_vertex_vbos);
 	if(n_shapes) glDeleteBuffers(n_shapes, shape_model_matrix_vbos);
+	if(n_shapes) glDeleteBuffers(n_shapes, shape_colors_vbos);
 
     delete[] shape_vaos;
     delete[] shape_vertex_vbos;
     delete[] shape_model_matrix_vbos;
+    delete[] shape_colors_vbos;
     delete[] shape_instances;
     delete[] shape_types;
     delete[] shape_num_vertices;
@@ -309,6 +311,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
 	shape_vaos              = new unsigned int[config.n_shapes]{};
 	shape_vertex_vbos       = new unsigned int[config.n_shapes]{};
 	shape_model_matrix_vbos = new unsigned int[config.n_shapes]{};
+	shape_colors_vbos       = new unsigned int[config.n_shapes]{};
 	shape_num_vertices      = new unsigned int[config.n_shapes]{};
 
     n_shapes = config.n_shapes;
@@ -317,6 +320,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
     glGenVertexArrays(config.n_shapes, shape_vaos);
     glGenBuffers(config.n_shapes, shape_vertex_vbos);
     glGenBuffers(config.n_shapes, shape_model_matrix_vbos);
+    glGenBuffers(config.n_shapes, shape_colors_vbos);
 
     //Count shape instances
     for(int i = 0; i < config.n_part; ++i) ++shape_instances[config.particles[i].shape_id];
@@ -347,6 +351,11 @@ void OpenGLContext::load_scene(const SimConfig& config){
                 ModelArray[i++] = tLocalMatrix * rLocalMatrix;
             }
         }
+
+        glm::vec3* shape_colors = new glm::vec3[shape_instances[shape_id]];
+        for(unsigned int pid = 0; pid < shape_instances[shape_id]; ++pid){
+            shape_colors[pid] = diffcolor;
+        }
         
         //Build instanced vao
         glBindVertexArray(shape_vaos[shape_id]);
@@ -363,13 +372,20 @@ void OpenGLContext::load_scene(const SimConfig& config){
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)sizeof(glm::vec3));
 
+            glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
+            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::vec3), shape_colors, GL_STATIC_DRAW);
+
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+            glVertexAttribDivisor(2, 1);
+
             glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
             glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
 
             for(int i = 0; i < 4; i++){ //MVP Matrices
-                glEnableVertexAttribArray(2 + i);
-                glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-                glVertexAttribDivisor(2 + i, 1);
+                glEnableVertexAttribArray(3 + i);
+                glVertexAttribPointer(3 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+                glVertexAttribDivisor(3 + i, 1);
             }
         }
         else if(config.shapes[shape_id].type == Shape::SPHERE){
@@ -382,17 +398,25 @@ void OpenGLContext::load_scene(const SimConfig& config){
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
 
+            glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
+            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::vec3), shape_colors, GL_STATIC_DRAW);
+
+            glEnableVertexAttribArray(1);
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
+            glVertexAttribDivisor(1, 1);
+
             glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
             glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
 
             for(int i = 0; i < 4; i++){ //MVP Matrices
-                glEnableVertexAttribArray(1 + i);
-                glVertexAttribPointer(1 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-                glVertexAttribDivisor(1 + i, 1);
+                glEnableVertexAttribArray(2 + i);
+                glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
+                glVertexAttribDivisor(2 + i, 1);
             }
         }
         glBindVertexArray(0);
 
+        delete[] shape_colors;
         delete[] ModelArray;
     }
 
@@ -574,7 +598,7 @@ void OpenGLContext::renderScene(void){
             if(shape_types[shape_id] == Shape::MESH){
                 sh_gbuffer_instanced->bind();
 
-                sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
+                //sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
                 sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
 
@@ -583,7 +607,7 @@ void OpenGLContext::renderScene(void){
             else{
                 sh_spheres->bind();
 
-                sh_spheres->setUniform("diffColor", 1, diffcolor);
+                //sh_spheres->setUniform("diffColor", 1, diffcolor);
                 sh_spheres->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_spheres->setUniform("ProjectionMatrix", 1, projectionMatrix);
 

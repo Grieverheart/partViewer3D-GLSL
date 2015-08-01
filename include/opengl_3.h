@@ -62,6 +62,7 @@ private:
 	unsigned int* shape_vaos;
 	unsigned int* shape_vertex_vbos;
 	unsigned int* shape_model_matrix_vbos;
+	unsigned int* shape_colors_vbos;
 	unsigned int* shape_num_vertices;
 
     Shape::Type* shape_types;

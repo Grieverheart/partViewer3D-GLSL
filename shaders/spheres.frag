@@ -1,10 +1,10 @@
 #version 330 core
 
-uniform vec3 diffColor;
 uniform mat4 ProjectionMatrix;
 
 smooth in vec2 TexCoord;
 flat in vec2 depth;
+flat in vec3 pass_Color;
 
 layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec3 outNormal;
@@ -19,7 +19,7 @@ void main(void){
 
     pos.z = sqrt(0.25 - pos.x * pos.x - pos.y * pos.y);
 
-    outColor  = diffColor;
+    outColor  = pass_Color;
 	outNormal = normalize(pos);
 
     //NOTE: This works for perspective projection. You will have to change

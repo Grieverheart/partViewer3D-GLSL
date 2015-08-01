@@ -4,7 +4,7 @@ uniform mat4 ProjectionMatrix;
 uniform mat4 MVMatrix;
 
 layout(location = 0) in vec3 in_Position;
-layout(location = 1) in mat4 ModelMatrix;
+layout(location = 2) in mat4 ModelMatrix;
 
 smooth out vec2 TexCoord;
 
