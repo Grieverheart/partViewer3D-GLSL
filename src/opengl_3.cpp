@@ -358,8 +358,13 @@ void OpenGLContext::load_scene(const SimConfig& config){
         }
         
         //Build instanced vao
+        //TODO: Buffer data filling will be deferred until rendering.
+        //We will have a needs_update kind of variable that will be checked
+        //each frame.
         glBindVertexArray(shape_vaos[shape_id]);
         if(config.shapes[shape_id].type == Shape::MESH){
+            //TODO: Find the maximal vertex here. This will be used for
+            //constructing the cell list.
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
             shape_num_vertices[shape_id] = mesh.n_vertices;
 

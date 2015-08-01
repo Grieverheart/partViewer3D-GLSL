@@ -4,6 +4,8 @@
 #include <glm/glm.hpp>
 #include "shape.h"
 
+//TODO: Move these structures to separate header.
+
 //TODO: Might need recosidering
 struct Particle{
     int shape_id;
