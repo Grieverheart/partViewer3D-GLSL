@@ -8,6 +8,7 @@ Accumulator::Accumulator(void):
 
 Accumulator::~Accumulator(void){
     glDeleteTextures(1, &m_texture);
+    glDeleteRenderbuffers(1, &depth_buffer);
     glDeleteFramebuffers(1, &m_fbo);
 }
 
@@ -26,6 +27,11 @@ bool Accumulator::Init(unsigned int WindowWidth, unsigned int WindowHeight){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glGenRenderbuffers(1, &depth_buffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WindowWidth, WindowHeight);
+	glFramebufferRenderbuffer(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depth_buffer);
 	
 	GLenum DrawBuffers[] = {GL_COLOR_ATTACHMENT0};
 	glDrawBuffers(1, DrawBuffers);

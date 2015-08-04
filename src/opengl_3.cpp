@@ -34,6 +34,7 @@ OpenGLContext::OpenGLContext(int width, int height):
 	shape_model_matrix_vbos(nullptr), shape_colors_vbos(nullptr), shape_num_vertices(nullptr),
     shape_types(nullptr), n_shapes(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
+    selected_pid(-1),
     is_scene_loaded(false), m_blur(true), m_rotating(false),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -85,6 +86,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         sh_blend_weights = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
         sh_blend = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
         sh_spheres = new Shader("shaders/spheres.vert", "shaders/spheres.frag");
+        sh_color = new Shader("shaders/color.vert", "shaders/color.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -98,6 +100,7 @@ OpenGLContext::OpenGLContext(int width, int height):
         delete sh_blend;
         delete sh_spheres;
         delete sh_shadowmap_spheres;
+        delete sh_color;
         throw;
     }
 	
@@ -190,6 +193,7 @@ OpenGLContext::~OpenGLContext(void){
 	delete sh_blend;
 	delete sh_spheres;
 	delete sh_shadowmap_spheres;
+	delete sh_color;
 
 	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
 	if(n_shapes) glDeleteBuffers(n_shapes, shape_vertex_vbos);
@@ -203,6 +207,7 @@ OpenGLContext::~OpenGLContext(void){
     delete[] shape_instances;
     delete[] shape_types;
     delete[] shape_num_vertices;
+    delete[] model_matrices;
 
     delete grid;
 
@@ -328,6 +333,8 @@ void OpenGLContext::load_scene(const SimConfig& config){
     glGenBuffers(config.n_shapes, shape_model_matrix_vbos);
     glGenBuffers(config.n_shapes, shape_colors_vbos);
 
+    model_matrices = new glm::mat4[config.n_part];
+
     //Count shape instances
     for(int i = 0; i < config.n_part; ++i) ++shape_instances[config.particles[i].shape_id];
 
@@ -355,6 +362,7 @@ void OpenGLContext::load_scene(const SimConfig& config){
                 );
                 
                 ModelArray[i++] = tLocalMatrix * rLocalMatrix;
+                model_matrices[pid] = ModelArray[i - 1];
             }
         }
 
@@ -429,6 +437,16 @@ void OpenGLContext::load_scene(const SimConfig& config){
 
         delete[] shape_colors;
         delete[] ModelArray;
+    }
+
+    {
+        glGenVertexArrays(1, &temp_vao);
+        glBindVertexArray(temp_vao);
+
+        glBindBuffer(GL_ARRAY_BUFFER, shape_vertex_vbos[0]);
+
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)0);
     }
 
     //TODO: Move shader uniform initialization to constructor
@@ -508,9 +526,19 @@ void OpenGLContext::select_particle(int x, int y){
     if(grid->raycast(o, glm::normalize(glm::vec3(dir) - o), pid)){
         glm::vec3 new_color = glm::vec3(1.0f);
         //Change particle color
-        glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);
-        glBufferSubData(GL_ARRAY_BUFFER, pid * sizeof(glm::vec3), sizeof(glm::vec3), &new_color[0]);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        //glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);
+        //glBufferSubData(GL_ARRAY_BUFFER, pid * sizeof(glm::vec3), sizeof(glm::vec3), &new_color[0]);
+        //if(selected_pid >= 0) glBufferSubData(GL_ARRAY_BUFFER, selected_pid * sizeof(glm::vec3), sizeof(glm::vec3), &diffcolor[0]);
+        //glBindBuffer(GL_ARRAY_BUFFER, 0);
+        selected_pid = pid;
+    }
+    else{
+        if(selected_pid >= 0){
+            //glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);
+            //glBufferSubData(GL_ARRAY_BUFFER, selected_pid * sizeof(glm::vec3), sizeof(glm::vec3), &diffcolor[0]);
+            //glBindBuffer(GL_ARRAY_BUFFER, 0);
+        }
+        selected_pid = -1;
     }
 }
 
@@ -722,6 +750,39 @@ void OpenGLContext::renderScene(void){
         
     }
     perf_mon.pop_query();
+
+    if(selected_pid >= 0){
+        perf_mon.push_query("Selection Pass");
+        {
+            m_accumulator.Bind();
+
+            glBindVertexArray(temp_vao);
+            glEnable(GL_DEPTH_TEST);
+            glEnable(GL_STENCIL_TEST);
+            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+            sh_color->bind();
+            {
+                glStencilFunc(GL_ALWAYS, 1, 0xFF);
+                glStencilMask(0xFF);
+                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
+                sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
+                glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[0]);
+
+                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+                glStencilMask(0x00);
+                glDisable(GL_DEPTH_TEST);
+                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
+                sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
+                glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[0]);
+                glDisable(GL_STENCIL_TEST);
+                glStencilMask(0xFF);
+            }
+        }
+    }
 
     perf_mon.push_query("SMAA");
     {

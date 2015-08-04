@@ -60,6 +60,7 @@ private:
 	glm::mat4 modelMatrix;
     glm::mat4 lightProjectionMatrix;
     glm::mat4 lightViewMatrix;
+    glm::mat4* model_matrices;
 	
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
@@ -75,6 +76,7 @@ private:
     Shape::Type* shape_types;
     unsigned int n_shapes;
 
+	unsigned int temp_vao;
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
@@ -82,6 +84,8 @@ private:
 
 	unsigned int area_texture;
 	unsigned int search_texture;
+
+    int selected_pid;
 	
 	bool is_scene_loaded;
 	bool m_blur;
@@ -90,6 +94,7 @@ private:
 	CLight light;
 
 	CGBuffer m_gbuffer;
+    //TODO: Do something about these, make them more specific!
 	Accumulator m_accumulator;
 	Accumulator m_edge_buffer;
 	Accumulator m_blend_buffer;
@@ -107,6 +112,7 @@ private:
 	Shader *sh_blend;
 	Shader *sh_spheres;
 	Shader *sh_shadowmap_spheres;
+	Shader *sh_color;
 
     Grid* grid;
 
