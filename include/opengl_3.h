@@ -8,7 +8,6 @@
 #include "ssao.h"
 #include "shadowmap.h"
 #include "perfmon.h"
-#include "grid.h"
 #include <exception>
 
 #ifdef _MSC_VER
@@ -16,6 +15,7 @@
 #endif
 
 class Shader;
+class Grid;
 
 class OpenGLContext{
 public:

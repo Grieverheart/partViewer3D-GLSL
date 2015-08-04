@@ -9,7 +9,6 @@ public:
 	virtual bool raycast(glm::vec3, glm::vec3, float &t) = 0;
 	virtual glm::vec3 normal(void)const = 0;
     virtual const AABB& get_AABB(void)const = 0;
-    virtual int get_pid(void)const = 0;
 };
 
 IntersectionObject::~IntersectionObject(void){
@@ -44,8 +43,8 @@ bool AABB::raycast(glm::vec3 o, glm::vec3 ray_dir, float &t)const{
 //Sphere derivative
 class Sphere: public IntersectionObject{
 public:
-	Sphere(glm::vec3 pos, float radius, int pid):
-        pid_(pid), radius_(radius), pos_(pos),
+	Sphere(glm::vec3 pos, float radius):
+        radius_(radius), pos_(pos),
         mAABB{glm::vec3(-radius) + pos, glm::vec3(radius) + pos}
     {}
 
@@ -74,15 +73,10 @@ public:
         return mAABB;
     }
 
-    int get_pid(void)const{
-        return pid_;
-    }
-
 	glm::vec3 normal(void)const{
 		return glm::normalize(raycastion_point_ - pos_);
 	};
 private:
-    int pid_;
 	float radius_;
 	glm::vec3 pos_;
 	glm::vec3 raycastion_point_; //Holds the point of raycastion on the sphere for returning the normal
@@ -125,8 +119,7 @@ private:
 //Triangle derivative
 class Triangle: public IntersectionObject{
 public:
-	Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, int pid):
-        pid_(pid),
+	Triangle(glm::vec3 v0, glm::vec3 v1, glm::vec3 v2):
         normal_(glm::normalize(glm::cross(v1 - v0, v2 - v0))),
         vertices_{v0, v1, v2}
     {
@@ -165,15 +158,10 @@ public:
         return mAABB;
     }
 
-    int get_pid(void)const{
-        return pid_;
-    }
-
 	glm::vec3 normal(void)const{
 		return normal_;
 	};
 private:
-    int pid_;
 	glm::vec3 normal_;
 	glm::vec3 vertices_[3]; // We use a pointer so that we can use triangles inside meshes without having duplicate vertices
 	AABB mAABB;
@@ -210,42 +198,44 @@ Grid::Grid(const SimConfig& config):
     );
 
 	// Find Scene Extends and allocate IntersectionObjects
-	glm::vec3 min(10000.0f);
-	glm::vec3 max(-10000.0f);
-	for(int i = 0; i < config.n_part; ++i){
-        int shape_id = config.particles[i].shape_id;
-        glm::vec3 pos = config.particles[i].pos + offset;
-        float size = config.particles[i].size;
-        for(uint j = 0; j < 3; j++){
-            if(pos[j] - size * out_radii[shape_id] < min[j]) min[j] = pos[j] - size * out_radii[shape_id];
-            if(pos[j] + size * out_radii[shape_id] > max[j]) max[j] = pos[j] + size * out_radii[shape_id];
-        }
+    {
+        glm::vec3 min(10000.0f);
+        glm::vec3 max(-10000.0f);
+        for(int i = 0; i < config.n_part; ++i){
+            int shape_id = config.particles[i].shape_id;
+            glm::vec3 pos = config.particles[i].pos + offset;
+            float size = config.particles[i].size;
+            for(int j = 0; j < 3; ++j){
+                if(pos[j] - size * out_radii[shape_id] < min[j]) min[j] = pos[j] - size * out_radii[shape_id];
+                if(pos[j] + size * out_radii[shape_id] > max[j]) max[j] = pos[j] + size * out_radii[shape_id];
+            }
 
-        if(config.shapes[shape_id].type == Shape::MESH){
-            for(int fid = 0; fid < config.shapes[shape_id].mesh.n_vertices; fid += 3){
-                const Vertex* vertices = config.shapes[shape_id].mesh.vertices + fid;
-                glm::vec3 vertex_pos[] = {vertices[0]._coord, vertices[1]._coord, vertices[2]._coord};
-                glm::vec4 rot = config.particles[i].rot;
-                glm::mat4 rotation_matrix = glm::rotate(glm::mat4(1.0), rot.x, glm::vec3(rot.y, rot.z, rot.w));
-                for(int vid = 0; vid < 3; ++vid){
-                    vertex_pos[vid] = pos + glm::mat3(rotation_matrix) * (size * vertex_pos[vid]);
+            if(config.shapes[shape_id].type == Shape::MESH){
+                for(int fid = 0; fid < config.shapes[shape_id].mesh.n_vertices; fid += 3){
+                    const Vertex* vertices = config.shapes[shape_id].mesh.vertices + fid;
+                    glm::vec3 vertex_pos[] = {vertices[0]._coord, vertices[1]._coord, vertices[2]._coord};
+                    glm::vec4 rot = config.particles[i].rot;
+                    glm::mat4 rotation_matrix = glm::rotate(glm::mat4(1.0), rot.x, glm::vec3(rot.y, rot.z, rot.w));
+                    for(int vid = 0; vid < 3; ++vid){
+                        vertex_pos[vid] = pos + glm::mat3(rotation_matrix) * (size * vertex_pos[vid]);
+                    }
+                    Triangle* triangle = new Triangle(vertex_pos[0], vertex_pos[1], vertex_pos[2]);
+                    items_.push_back({triangle, i});
                 }
-                Triangle* triangle = new Triangle(vertex_pos[0], vertex_pos[1], vertex_pos[2], i);
-                objects_.push_back(triangle);
+            }
+            else{
+                Sphere* sphere = new Sphere(pos, 0.5);
+                items_.push_back({sphere, i});
             }
         }
-        else{
-            Sphere* sphere = new Sphere(pos, 1.0, i);
-            objects_.push_back(sphere);
-        }
-	}
 
-	// Add 0.1 so that we don't get out of bounds
-	scene_bounds_ = {min - 0.1f, max + 0.1f};
+        // Add 0.1 so that we don't get out of bounds
+        scene_bounds_ = {min - 0.1f, max + 0.1f};
+    }
 	
 	//Calculate grid properties
-	glm::vec3 gridSize = max - min;
-	float cubeRoot = pow((5.0f * objects_.size()) / (gridSize[0] * gridSize[1] * gridSize[2]), 0.333);
+	glm::vec3 gridSize = scene_bounds_.bounds_[1] - scene_bounds_.bounds_[0];
+	float cubeRoot = pow((5.0f * items_.size()) / (gridSize[0] * gridSize[1] * gridSize[2]), 0.333);
 	for(int i = 0; i < 3; i++){
 		float temp = gridSize[i] * cubeRoot;
 		temp = std::max(1.0f, std::min(temp, 128.0f)); //Minimum of 1 cell and maximum of 128 cells in each dimension
@@ -254,19 +244,23 @@ Grid::Grid(const SimConfig& config):
 	cell_size_ = gridSize / glm::vec3(n_cells_[0], n_cells_[1], n_cells_[2]);
 	
 	//Alocate memory
-	cells_ = new Cell[n_cells_[0] * n_cells_[1] * n_cells_[2]]{};
+	cells_ = new Cell[n_cells_[0] * n_cells_[1] * n_cells_[2]];
 	//Insert Objects in grid
-	for(auto object: objects_){
+	for(const auto& item: items_){
         //convert AABB to cell coordinates
-        glm::vec3 min = object->get_AABB().bounds_[0];
-        glm::vec3 max = object->get_AABB().bounds_[1];
+        glm::vec3 min = item.object_->get_AABB().bounds_[0];
+        glm::vec3 max = item.object_->get_AABB().bounds_[1];
         min = (min - scene_bounds_.bounds_[0]) / cell_size_;
         max = (max - scene_bounds_.bounds_[0]) / cell_size_;
         for(int z = int(min.z); z <= int(max.z); z++){
             for(int y = int(min.y); y <= int(max.y); y++){
                 for(int x = int(min.x); x <= int(max.x); x++){
                     int index = x + y * n_cells_[0] + z * n_cells_[0] * n_cells_[1];
-                    cells_[index].push_back(object);
+                    if(index >= n_cells_[0] * n_cells_[1] * n_cells_[2]){
+                        printf("Out of bounds! Vec(%d, %d, %d)\n", x, y, z);
+                        printf("Scene size: Vec(%d, %d, %d)", n_cells_[0], n_cells_[2], n_cells_[2]);
+                    }
+                    cells_[index].push_back(&item);
                 }
             }
         }
@@ -276,7 +270,7 @@ Grid::Grid(const SimConfig& config):
 
 Grid::~Grid(void){
     delete[] cells_;
-    for(auto object: objects_) delete object;
+    for(auto item: items_) delete item.object_;
 }
 
 template<typename T>
@@ -319,10 +313,10 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
 	float retValue = false;
 	while(1){
 		int index = cell[0] + cell[1] * n_cells_[0] + cell[2] * n_cells_[0] * n_cells_[1];
-        for(auto object: cells_[index]){
-			if(object->raycast(o, ray_dir, t)){
+        for(auto item: cells_[index]){
+			if(item->object_->raycast(o, ray_dir, t)){
                 retValue = true;
-                pid = object->get_pid();
+                pid = item->pid_;
             }
 		}
 		unsigned char k = 

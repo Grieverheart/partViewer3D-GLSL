@@ -1,7 +1,7 @@
 --Draw spheres as impostors.
 --Change configuration loading.
 --Make renderer handle different shapes.
-Add particle selection.
+--Add particle selection.
 Add selection outline rendering.
 Add some kind of scene class.
 Cleanup code.

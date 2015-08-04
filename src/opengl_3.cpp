@@ -11,6 +11,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include "include/gl_utils.h"
 #include "include/shader.h"
+#include "include/grid.h"
 
 //#define DRAW_SPHERES
 

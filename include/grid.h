@@ -18,10 +18,14 @@ public:
     ~Grid(void);
     bool raycast(glm::vec3 o, glm::vec3 dir, int& pid);
 private:
-    using Cell = std::vector<IntersectionObject*>;
+    struct Item{
+        IntersectionObject* object_;
+        int pid_;
+    };
+    using Cell = std::vector<const Item*>;
 
     Cell* cells_;
-    std::vector<IntersectionObject*> objects_;
+    std::vector<Item> items_;
     AABB scene_bounds_;
     glm::vec3 cell_size_;
     int n_cells_[3];
