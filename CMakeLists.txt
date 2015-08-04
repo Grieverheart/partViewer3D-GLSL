@@ -15,7 +15,7 @@ set(SOURCE_FILES
     src/g-buffer.cpp
     src/accumulator.cpp
     src/light.cpp
-    src/mesh.cpp
+    src/grid.cpp
     src/obj_parser.cpp
     src/shader.cpp
     src/ssao.cpp)

@@ -27,6 +27,8 @@ SimConfig parse_config(const char* file_path){
         std::getline(file, line);
         s.str(line);
         s.seekg(0);
+        //TODO: Temporary
+        config.particles[n].size = 1.0f;
         glm::vec3& v = config.particles[n].pos;
         glm::vec4& r = config.particles[n].rot;
         for(int i = 0; i < 3; i++) s >> v[i];

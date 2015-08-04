@@ -38,7 +38,8 @@ OpenGLContext::OpenGLContext(int width, int height):
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
     sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr),
-    sh_spheres(nullptr), sh_shadowmap_spheres(nullptr)
+    sh_spheres(nullptr), sh_shadowmap_spheres(nullptr),
+    grid(nullptr)
 
 {
 	glewExperimental = GL_TRUE;
@@ -202,6 +203,8 @@ OpenGLContext::~OpenGLContext(void){
     delete[] shape_types;
     delete[] shape_num_vertices;
 
+    delete grid;
+
 	glDeleteVertexArrays(1, &vaoBox);
 	glDeleteBuffers(1, &vboBox);
 	glDeleteBuffers(1, &iboBox);
@@ -254,6 +257,8 @@ void OpenGLContext::createGui(void){
 
 void OpenGLContext::load_scene(const SimConfig& config){
     is_scene_loaded = true;
+
+    grid = new Grid(config);
 	
     //Configuration box
     {
@@ -489,6 +494,24 @@ void OpenGLContext::load_scene(const SimConfig& config){
 		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
+}
+
+void OpenGLContext::select_particle(int x, int y){
+    //glm::vec3 o = glm::vec3(0.0, 0.0, -init_zoom);
+    glm::vec3 o = glm::vec3(glm::inverse(viewMatrix * modelMatrix) * glm::vec4(glm::vec3(0.0), 1.0));
+
+    glm::vec4 mouse_clip = glm::vec4(2.0f * x / windowWidth - 1.0f, 1.0f - 2.0f * y / windowHeight, 0.0, 1.0);
+    glm::vec4 dir = glm::inverse(projectionMatrix * viewMatrix * modelMatrix) * mouse_clip;
+    dir /= dir.w;
+    glm::vec3 ray_dir = glm::normalize(glm::vec3(dir) - o);
+    int pid;
+    if(grid->raycast(o, ray_dir, pid)){
+        glm::vec3 new_color = glm::vec3(1.0f);
+        //Change particle color
+        glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);
+        glBufferSubData(GL_ARRAY_BUFFER, pid * sizeof(glm::vec3), sizeof(glm::vec3), &new_color[0]);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){

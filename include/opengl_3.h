@@ -8,6 +8,7 @@
 #include "ssao.h"
 #include "shadowmap.h"
 #include "perfmon.h"
+#include "grid.h"
 #include <exception>
 
 #ifdef _MSC_VER
@@ -35,6 +36,7 @@ public:
 	float getZoom(void)const;
 	void setZoom(float zoom);
 	glm::ivec2 getScreen(void)const;
+    void select_particle(int x, int y);
 	
 	bool drawBox;
 	glm::mat4 trackballMatrix;
@@ -100,6 +102,8 @@ private:
 	Shader *sh_blend;
 	Shader *sh_spheres;
 	Shader *sh_shadowmap_spheres;
+
+    Grid* grid;
 
     PerfMon perf_mon;
 	

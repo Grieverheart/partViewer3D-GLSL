@@ -66,7 +66,7 @@ void CMouse::onButton(int button, int state, int x, int y){
         else if(dragging){
             dragging=false;
             if(last_mx==x&&last_my==y){
-            //Regular Clicking goes here//
+                context->select_particle((int)x, (int)y);
             }
             last_mx=cur_mx;
             last_my=cur_my;
