@@ -2,8 +2,8 @@
 --Change configuration loading.
 --Make renderer handle different shapes.
 --Add particle selection.
+--Add some kind of scene class (The renderer will also act as a scenegraph).
 Add selection outline rendering.
-Add some kind of scene class.
 Cleanup code.
 Add clipping planes.
 Parse configuration in XML instead.

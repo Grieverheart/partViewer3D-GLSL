@@ -498,15 +498,14 @@ void OpenGLContext::load_scene(const SimConfig& config){
 }
 
 void OpenGLContext::select_particle(int x, int y){
-    //glm::vec3 o = glm::vec3(0.0, 0.0, -init_zoom);
     glm::vec3 o = glm::vec3(glm::inverse(viewMatrix * modelMatrix) * glm::vec4(glm::vec3(0.0), 1.0));
 
     glm::vec4 mouse_clip = glm::vec4(2.0f * x / windowWidth - 1.0f, 1.0f - 2.0f * y / windowHeight, 0.0, 1.0);
     glm::vec4 dir = glm::inverse(projectionMatrix * viewMatrix * modelMatrix) * mouse_clip;
     dir /= dir.w;
-    glm::vec3 ray_dir = glm::normalize(glm::vec3(dir) - o);
+
     int pid;
-    if(grid->raycast(o, ray_dir, pid)){
+    if(grid->raycast(o, glm::normalize(glm::vec3(dir) - o), pid)){
         glm::vec3 new_color = glm::vec3(1.0f);
         //Change particle color
         glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);

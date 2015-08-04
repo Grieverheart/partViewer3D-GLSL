@@ -36,9 +36,14 @@ public:
 	float getZoom(void)const;
 	void setZoom(float zoom);
 	glm::ivec2 getScreen(void)const;
+    //TODO: Make this a raycast, and add a separate select_particle function
+    //that takes the particle id. We also need a separate camera class that
+    //will shoot rays. The problem is that both camera and renderer need
+    //the window resolution which complicates things.
     void select_particle(int x, int y);
 	
 	bool drawBox;
+    //TODO: Move this to some transform function
 	glm::mat4 trackballMatrix;
 	
 private:
