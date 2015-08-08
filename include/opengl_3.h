@@ -72,11 +72,13 @@ private:
 	unsigned int* shape_model_matrix_vbos;
 	unsigned int* shape_colors_vbos;
 	unsigned int* shape_num_vertices;
+	unsigned int* shape_single_vaos;
 
+    Particle* particles;
     Shape::Type* shape_types;
     unsigned int n_shapes;
+    unsigned int n_particles;
 
-	unsigned int temp_vao;
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
@@ -113,6 +115,7 @@ private:
 	Shader *sh_spheres;
 	Shader *sh_shadowmap_spheres;
 	Shader *sh_color;
+	Shader *sh_color_sphere;
 
     Grid* grid;
 

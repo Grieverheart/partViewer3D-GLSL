@@ -148,6 +148,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
     }
 }
 
+//TODO: Properly delete shaders!
 Shader::~Shader(void){
 	glDeleteShader(shader_vp);
     glDeleteShader(shader_fp);
