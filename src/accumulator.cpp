@@ -65,4 +65,6 @@ void Accumulator::BindTexture(int attachment_point)const{
 void Accumulator::Resize(unsigned int WindowWidth, unsigned int WindowHeight)const{
     glBindTexture(GL_TEXTURE_2D, m_texture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
+    glBindRenderbuffer(GL_RENDERBUFFER, depth_buffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, WindowWidth, WindowHeight);
 }

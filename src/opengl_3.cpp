@@ -757,15 +757,16 @@ void OpenGLContext::renderScene(void){
             m_accumulator.Bind();
 
             glBindVertexArray(temp_vao);
+            glDepthMask(GL_TRUE);
             glEnable(GL_DEPTH_TEST);
             glEnable(GL_STENCIL_TEST);
             glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+            glStencilMask(0xFF);
             glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
             sh_color->bind();
             {
                 glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glStencilMask(0xFF);
                 glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
                 glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
                 sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
@@ -778,9 +779,9 @@ void OpenGLContext::renderScene(void){
                 mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
                 sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
                 glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[0]);
-                glDisable(GL_STENCIL_TEST);
-                glStencilMask(0xFF);
             }
+            glDisable(GL_STENCIL_TEST);
+            glDepthMask(GL_FALSE);
         }
     }
 

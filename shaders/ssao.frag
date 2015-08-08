@@ -49,7 +49,7 @@ void main(void){
 			vec4 offset = projectionMatrix * vec4(sample, 1.0);
 			offset.xy = (offset.xy / offset.w) * 0.5 + 0.5;
 			// Get sample depth
-			float sample_depth = texture(DepthMap, offset.xy);
+			float sample_depth = texture(DepthMap, offset.xy).r;
 			sample_depth = projAB.y / (2.0 * sample_depth - 1.0 - projAB.x);
             occlusion += float(sample_depth > sample.z);
 		}
