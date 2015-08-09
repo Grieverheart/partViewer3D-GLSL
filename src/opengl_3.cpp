@@ -538,22 +538,10 @@ void OpenGLContext::select_particle(int x, int y){
 
     int pid;
     if(grid->raycast(o, glm::normalize(glm::vec3(dir) - o), pid)){
-        glm::vec3 new_color = glm::vec3(1.0f);
-        //Change particle color
-        //glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);
-        //glBufferSubData(GL_ARRAY_BUFFER, pid * sizeof(glm::vec3), sizeof(glm::vec3), &new_color[0]);
-        //if(selected_pid >= 0) glBufferSubData(GL_ARRAY_BUFFER, selected_pid * sizeof(glm::vec3), sizeof(glm::vec3), &diffcolor[0]);
-        //glBindBuffer(GL_ARRAY_BUFFER, 0);
-        selected_pid = pid;
+        if(selected_pid == pid) selected_pid = -1;
+        else selected_pid = pid;
     }
-    else{
-        if(selected_pid >= 0){
-            //glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[0]);
-            //glBufferSubData(GL_ARRAY_BUFFER, selected_pid * sizeof(glm::vec3), sizeof(glm::vec3), &diffcolor[0]);
-            //glBindBuffer(GL_ARRAY_BUFFER, 0);
-        }
-        selected_pid = -1;
-    }
+    else selected_pid = -1;
 }
 
 void OpenGLContext::reshapeWindow(int w, int h){
