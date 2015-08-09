@@ -2,13 +2,16 @@
 #include "include/mouse.h"
 #include "include/event_manager.h"
 #include "include/events.h"
+#include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 #include <AntTweakBar.h>
 #include <cstdio>
 
 bool running = true;
-OpenGLContext* openglContext; // Our OpenGL Context Object
-CMouse* mouse;
+
+OpenGLContext* openglContext = nullptr;
+EventManager* evt_mgr        = nullptr;
+CMouse* mouse                = nullptr;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
 	if(!TwEventKeyGLFW(key, action)){
@@ -46,7 +49,7 @@ void scroll_callback(GLFWwindow* window, double x, double y){
 ////////////////////////////////////////////////////////
 
 void reshape(GLFWwindow* window, int width, int height){
-	openglContext->reshapeWindow(width,height);
+    if(evt_mgr) evt_mgr->queueEvent(new WindowSizeEvent(width, height));
 }
 
 void glfw_error_callback(int error, const char* description){
@@ -79,19 +82,14 @@ int main(int argc,char *argv[] ){
 
     glfwMakeContextCurrent(window);
 
-    EventManager* evt_mgr = new EventManager();
-	
+    evt_mgr       = new EventManager();
     //TODO: Add try catch for OpenGLContext construction
     openglContext = new OpenGLContext(width, height);
-    mouse = new CMouse(openglContext, evt_mgr);
+    mouse         = new CMouse(evt_mgr, width, height);
 
-    glm::mat4 trackballMatrix;
-    evt_mgr->addHandler([&trackballMatrix](const Event& event){
-        trackballMatrix = openglContext->trackballMatrix;
-    }, EVT_ARCBALL_START);
-
-    evt_mgr->addHandler([trackballMatrix](const Event& event){
-        openglContext->trackballMatrix = static_cast<const ArcballRotateEvent&>(event).rotation * trackballMatrix;
+    evt_mgr->addHandler([=](const Event& event){
+        auto rotation_event = static_cast<const ArcballRotateEvent&>(event);
+        openglContext->rotate(rotation_event.angle, rotation_event.axis);
     }, EVT_ARCBALL_ROTATE);
 
     evt_mgr->addHandler([=](const Event& event){
@@ -101,11 +99,15 @@ int main(int argc,char *argv[] ){
 
     evt_mgr->addHandler([=](const Event& event){
         float dz = static_cast<const ZoomEvent&>(event).dz;
-        float zoom = openglContext->getZoom() - dz * 2.0f; // put wheel up and down in one
-        if(zoom < -58) zoom = -58.0f;
-        else if(zoom > 90) zoom = 90.0f;
-        openglContext->setZoom(zoom);
+        openglContext->zoom(dz);
     }, EVT_ZOOM);
+
+    evt_mgr->addHandler([=](const Event& event){
+        auto wsize_event = static_cast<const WindowSizeEvent&>(event);
+        openglContext->wsize_changed(wsize_event.width, wsize_event.height);
+        mouse->wsize_changed(wsize_event.width, wsize_event.height);
+    }, EVT_WINDOW_SIZE_CHANGED);
+
 
 	openglContext->load_scene(parse_config(argv[1]));
 
@@ -118,9 +120,9 @@ int main(int argc,char *argv[] ){
         glfwPollEvents();
     }
 
+    delete evt_mgr;
     delete mouse;
     delete openglContext;
-    delete evt_mgr;
 
     glfwDestroyWindow(window);
 

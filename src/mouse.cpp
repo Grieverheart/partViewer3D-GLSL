@@ -1,18 +1,15 @@
 #include "../include/mouse.h"
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include "include/opengl_3.h"
 #include "include/events.h"
 
-CMouse::CMouse(OpenGLContext *context_, EventManager* manager):
-    context(context_), evt_mgr(manager),
+CMouse::CMouse(EventManager* manager, int width, int height):
+    evt_mgr(manager),
     last_mx(0), last_my(0), cur_mx(0), cur_my(0),
-    dragging(false)
+    dragging(false),
+    pressed(false),
+    windowWidth(width), windowHeight(height)
 {}
-
-CMouse::~CMouse(void){
-}
 
 glm::vec3 CMouse::getArcballVec3(int x, int y){
     int screen_min = windowHeight;
@@ -33,17 +30,15 @@ glm::vec3 CMouse::getArcballVec3(int x, int y){
 void CMouse::onButton(int button, int state, int x, int y){
     if(button == GLFW_MOUSE_BUTTON_LEFT){
         if(state == GLFW_PRESS){
-            evt_mgr->queueEvent(new ArcballStartEvent());
-            dragging = true;
-            cur_mx = x;
-            cur_my = y;
+            pressed = true;
             last_mx = cur_mx;
             last_my = cur_my;
         }
-        else if(dragging){
-            dragging = false;
-            evt_mgr->queueEvent(new ArcballEndEvent());
-            if((last_mx == x) && (last_my == y)){
+        else{
+            pressed = false;
+            if(dragging) dragging = false;
+            //Normal clicks go here
+            else{
                 evt_mgr->queueEvent(new SelectionEvent(x, y));
             }
         }
@@ -51,15 +46,12 @@ void CMouse::onButton(int button, int state, int x, int y){
 }
 
 void CMouse::onMotion(int x, int y){
-    if(dragging){
-        cur_mx = x;
-        cur_my = y;
+    cur_mx = x;
+    cur_my = y;
 
-        glm::ivec2 screen = context->getScreen();
-        windowWidth  = screen.x;
-        windowHeight = screen.y;
-
-        if((cur_mx != last_mx) || (cur_my != last_my)){
+    if((cur_mx != last_mx) || (cur_my != last_my)){
+        if(pressed && !dragging) dragging = true;
+        if(dragging){
             glm::vec3 a, b;
 
             a = getArcballVec3(last_mx, last_my);
@@ -72,11 +64,18 @@ void CMouse::onMotion(int x, int y){
             float angle = acos(dot);
             glm::vec3 axis = glm::cross(a, b);
 
-            evt_mgr->queueEvent(new ArcballRotateEvent(glm::rotate(glm::mat4(1.0), angle, axis)));
+            evt_mgr->queueEvent(new ArcballRotateEvent(angle, axis));
+            last_mx = cur_mx;
+            last_my = cur_my;
         }
     }
 }
 
 void CMouse::onScroll(double yoffset){
     evt_mgr->queueEvent(new ZoomEvent(yoffset));
+}
+
+void CMouse::wsize_changed(int width, int height){
+    windowWidth  = width;
+    windowHeight = height;
 }

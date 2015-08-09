@@ -1,30 +1,13 @@
 #include "event.h"
 
 constexpr EventType EVT_ARCBALL_ROTATE("EVT_ARCBALL_ROTATE");
-constexpr EventType EVT_ARCBALL_START("EVT_ARCBALL_START");
-constexpr EventType EVT_ARCBALL_END("EVT_ARCBALL_END");
-
 constexpr EventType EVT_SELECTION("EVT_SELECTION");
-
 constexpr EventType EVT_ZOOM("EVT_ZOOM");
-
-struct ArcballStartEvent: Event{
-    const EventType& getEventType(void)const{
-        return EVT_ARCBALL_START;
-    }
-    ~ArcballStartEvent(void){};
-};
-
-struct ArcballEndEvent: Event{
-    const EventType& getEventType(void)const{
-        return EVT_ARCBALL_END;
-    }
-    ~ArcballEndEvent(void){};
-};
+constexpr EventType EVT_WINDOW_SIZE_CHANGED("EVT_WINDOW_SIZE_CHANGED");
 
 struct ArcballRotateEvent: Event{
-    ArcballRotateEvent(const glm::mat4& rot):
-        rotation(rot)
+    ArcballRotateEvent(float angle_, const glm::vec3& axis_):
+        angle(angle_), axis(axis_)
     {}
 
     const EventType& getEventType(void)const{
@@ -32,7 +15,8 @@ struct ArcballRotateEvent: Event{
     }
     ~ArcballRotateEvent(void){};
 
-    glm::mat4 rotation;
+    float angle;
+    glm::vec3 axis;
 };
 
 struct SelectionEvent: Event{
@@ -59,5 +43,18 @@ struct ZoomEvent: Event{
     ~ZoomEvent(void){};
 
     float dz;
+};
+
+struct WindowSizeEvent: Event{
+    WindowSizeEvent(int width_, int height_):
+        width(width_), height(height_)
+    {}
+
+    const EventType& getEventType(void)const{
+        return EVT_WINDOW_SIZE_CHANGED;
+    }
+    ~WindowSizeEvent(void){};
+
+    int width, height;
 };
 

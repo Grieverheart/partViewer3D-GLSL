@@ -8,17 +8,19 @@ class OpenGLContext;
 
 class CMouse{
 public:
-	CMouse(OpenGLContext *context, EventManager* manager);
-	~CMouse(void);
+	CMouse(EventManager* manager, int width, int height);
 	
 	void onButton(int button, int state, int x, int y);
 	void onMotion(int x, int y);
 	void onScroll(double y);
+
+    void wsize_changed(int width, int height);
+
 private:
-	OpenGLContext *context;
     EventManager* evt_mgr;
 	int last_mx, last_my, cur_mx, cur_my;
 	bool dragging;
+	bool pressed;
 	int windowWidth;
 	int windowHeight;
 	

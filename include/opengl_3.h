@@ -29,13 +29,13 @@ public:
 	OpenGLContext(int width, int height);
 	~OpenGLContext(void);
 	void load_scene(const SimConfig& config);
-	void reshapeWindow(int width, int height);
+	void wsize_changed(int width, int height);
 	void renderScene(void);
 	void processScene(void);
+
+    void rotate(float angle, const glm::vec3& axis);
 	
-	float getZoom(void)const;
-	void setZoom(float zoom);
-	glm::ivec2 getScreen(void)const;
+	void zoom(float dz);
     //TODO: Make this a raycast, and add a separate select_particle function
     //that takes the particle id. We also need a separate camera class that
     //will shoot rays. The problem is that both camera and renderer need
@@ -43,13 +43,11 @@ public:
     void select_particle(int x, int y);
 	
 	bool drawBox;
-    //TODO: Move this to some transform function
-	glm::mat4 trackballMatrix;
 	
 private:
 	int windowWidth;
 	int windowHeight;
-	float fov, zoom;
+	float fov, zoom_;
 	float znear,zfar;
     float out_radius;
 	

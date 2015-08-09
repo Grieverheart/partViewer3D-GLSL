@@ -24,9 +24,9 @@ static const glm::mat4 biasMatrix(
 
 OpenGLContext::OpenGLContext(int width, int height):
     drawBox(false),
-	trackballMatrix(1.0),
     windowWidth(width), windowHeight(height),
-    fov(60.0f), zoom(0.0f),
+    fov(60.0f), zoom_(0.0f),
+	modelMatrix(1.0),
 	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
@@ -319,13 +319,12 @@ void OpenGLContext::load_scene(const SimConfig& config){
     zfar  = -init_zoom + 2.0 * out_radius;
 
 	
-	projectionMatrix      = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+	projectionMatrix      = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix         = glm::inverse(projectionMatrix);
     lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
 	viewMatrix            = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
     invViewMatrix         = glm::inverse(viewMatrix);
     lightViewMatrix       = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-	modelMatrix           = glm::mat4(1.0);
 	
 	shape_instances         = new unsigned int[config.n_shapes]{};
 	shape_vaos              = new unsigned int[config.n_shapes]{};
@@ -544,12 +543,12 @@ void OpenGLContext::select_particle(int x, int y){
     else selected_pid = -1;
 }
 
-void OpenGLContext::reshapeWindow(int w, int h){
+void OpenGLContext::wsize_changed(int w, int h){
 	windowWidth = w;
 	windowHeight = h;
 	TwWindowSize(w, h);
 	glViewport(0, 0, windowWidth, windowHeight);
-	projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+	projectionMatrix = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     m_gbuffer.Resize(windowWidth, windowHeight);
     m_edge_buffer.Resize(windowWidth, windowHeight);
@@ -579,10 +578,10 @@ void OpenGLContext::processScene(void){
             glm::radians(float(((this_time-last_time) / 1000000000.0) * 30.0)),
             glm::vec3(0.0, 1.0, 0.0)
         );
-        trackballMatrix = rLocalMatrix * trackballMatrix;
+        modelMatrix = rLocalMatrix * modelMatrix;
     }
     last_time = this_time;
-    projectionMatrix = glm::perspective(glm::radians(fov+zoom), (float)windowWidth/(float)windowHeight, znear, zfar);
+    projectionMatrix = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/(float)windowHeight, znear, zfar);
     invProjMatrix = glm::inverse(projectionMatrix);
     lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 }
@@ -590,7 +589,7 @@ void OpenGLContext::processScene(void){
 //TODO: Improve line rendering!!!
 void OpenGLContext::drawConfigurationBox(void)const{
 	
-	glLineWidth(fabs(-0.067f * zoom + 4.0f));
+	glLineWidth(fabs(-0.067f * zoom_ + 4.0f));
 	
 	glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 	sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
@@ -606,8 +605,6 @@ void OpenGLContext::drawConfigurationBox(void)const{
 void OpenGLContext::renderScene(void){	
     perf_mon.sync();
 
-	modelMatrix = trackballMatrix;
-	
 	glDepthMask(GL_TRUE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
@@ -871,15 +868,14 @@ void OpenGLContext::renderScene(void){
     glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
-float OpenGLContext::getZoom(void)const{
-	return zoom;
+void OpenGLContext::rotate(float angle, const glm::vec3& axis){
+    modelMatrix = glm::rotate(glm::mat4(1.0), angle, axis) * modelMatrix;
 }
 
-void OpenGLContext::setZoom(float zoom){
-	this->zoom = zoom;
+//TODO: Move to camera
+void OpenGLContext::zoom(float dz){
+    zoom_ = zoom_ - 2.0f * dz; // put wheel up and down in one
+    if(zoom_ < -58) zoom_ = -58.0f;
+    else if(zoom_ > 90) zoom_ = 90.0f;
 }
 
-glm::ivec2 OpenGLContext::getScreen(void)const{
-	glm::ivec2 screen = glm::ivec2(windowWidth, windowHeight);
-	return screen;
-}
