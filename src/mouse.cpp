@@ -3,12 +3,12 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "include/opengl_3.h"
+#include "include/events.h"
 
-CMouse::CMouse(OpenGLContext *context_):
-    context(context_),
+CMouse::CMouse(OpenGLContext *context_, EventManager* manager):
+    context(context_), evt_mgr(manager),
     last_mx(0), last_my(0), cur_mx(0), cur_my(0),
-    dragging(false),
-    LastRotMatrix(glm::mat4(1.0))
+    dragging(false)
 {}
 
 CMouse::~CMouse(void){
@@ -33,17 +33,18 @@ glm::vec3 CMouse::getArcballVec3(int x, int y){
 void CMouse::onButton(int button, int state, int x, int y){
     if(button == GLFW_MOUSE_BUTTON_LEFT){
         if(state == GLFW_PRESS){
+            evt_mgr->queueEvent(new ArcballStartEvent());
             dragging = true;
             cur_mx = x;
             cur_my = y;
             last_mx = cur_mx;
             last_my = cur_my;
-            LastRotMatrix = context->trackballMatrix;
         }
         else if(dragging){
             dragging = false;
+            evt_mgr->queueEvent(new ArcballEndEvent());
             if((last_mx == x) && (last_my == y)){
-                context->select_particle((int)x, (int)y);
+                evt_mgr->queueEvent(new SelectionEvent(x, y));
             }
         }
     }
@@ -71,15 +72,11 @@ void CMouse::onMotion(int x, int y){
             float angle = acos(dot);
             glm::vec3 axis = glm::cross(a, b);
 
-            context->trackballMatrix = glm::rotate(glm::mat4(1.0), angle, axis) * LastRotMatrix;
+            evt_mgr->queueEvent(new ArcballRotateEvent(glm::rotate(glm::mat4(1.0), angle, axis)));
         }
     }
 }
 
 void CMouse::onScroll(double yoffset){
-    float zoom = context->getZoom();
-    zoom = zoom - yoffset * 2.0f; // put wheel up and down in one
-    if(zoom < -58)zoom = -58.0f;
-    else if(zoom > 90)zoom = 90.0f;
-    context->setZoom(zoom);
+    evt_mgr->queueEvent(new ZoomEvent(yoffset));
 }
