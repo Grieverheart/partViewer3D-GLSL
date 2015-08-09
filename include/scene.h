@@ -1,5 +1,5 @@
-#ifndef __OPENGL_3_H
-#define __OPENGL_3_H
+#ifndef __SCENE_H
+#define __SCENE_H
 
 #include "coord_parser.h"
 #include "light.h"
@@ -17,7 +17,7 @@
 class Shader;
 class Grid;
 
-class OpenGLContext{
+class Scene{
 public:
     class GlewInitializationException: public std::exception{
     public:
@@ -26,31 +26,32 @@ public:
         }
     };
 
-	OpenGLContext(int width, int height);
-	~OpenGLContext(void);
+	Scene(int width, int height);
+	~Scene(void);
+
 	void load_scene(const SimConfig& config);
 	void wsize_changed(int width, int height);
-	void renderScene(void);
-	void processScene(void);
+	void render(void);
+	void process(void);
 
     void rotate(float angle, const glm::vec3& axis);
-	
+
 	void zoom(float dz);
     //TODO: Make this a raycast, and add a separate select_particle function
     //that takes the particle id. We also need a separate camera class that
     //will shoot rays. The problem is that both camera and renderer need
     //the window resolution which complicates things.
     void select_particle(int x, int y);
-	
+
 	bool drawBox;
-	
+
 private:
 	int windowWidth;
 	int windowHeight;
 	float fov, zoom_;
 	float znear,zfar;
     float out_radius;
-	
+
 	glm::mat4 projectionMatrix;
 	glm::mat4 invProjMatrix;
 	glm::mat4 viewMatrix;
@@ -59,11 +60,11 @@ private:
     glm::mat4 lightProjectionMatrix;
     glm::mat4 lightViewMatrix;
     glm::mat4* model_matrices;
-	
+
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
 	glm::vec3 skycolor;
-	
+
 	unsigned int* shape_instances;
 	unsigned int* shape_vaos;
 	unsigned int* shape_vertex_vbos;
@@ -86,11 +87,11 @@ private:
 	unsigned int search_texture;
 
     int selected_pid;
-	
+
 	bool is_scene_loaded;
 	bool m_blur;
 	bool m_rotating;
-	
+
 	CLight light;
 
 	CGBuffer m_gbuffer;
@@ -100,7 +101,7 @@ private:
 	Accumulator m_blend_buffer;
 	Cssao m_ssao;
     CShadowmap m_shadowmap;
-	
+
 	Shader *sh_gbuffer;
 	Shader *sh_gbuffer_instanced;
 	Shader *sh_ssao;
@@ -118,12 +119,12 @@ private:
     Grid* grid;
 
     PerfMon perf_mon;
-	
-    //Move gui code outside
+
+    //TODO: Move gui code outside
 	TwBar *bar;
-	
+
 	void drawConfigurationBox(void)const;
-	
+
 	void createGui(void);
 };
 

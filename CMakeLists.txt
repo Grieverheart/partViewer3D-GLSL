@@ -10,7 +10,7 @@ set(SOURCE_FILES
     src/perfmon.cpp
     src/coord_parser.cpp
     src/mouse.cpp
-    src/opengl_3.cpp
+    src/scene.cpp
     src/event_manager.cpp
     src/shadowmap.cpp
     src/g-buffer.cpp

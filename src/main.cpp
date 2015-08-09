@@ -1,17 +1,16 @@
-#include "include/opengl_3.h"
+#include "include/scene.h"
 #include "include/mouse.h"
 #include "include/event_manager.h"
 #include "include/events.h"
-#include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
 #include <AntTweakBar.h>
 #include <cstdio>
 
 bool running = true;
 
-OpenGLContext* openglContext = nullptr;
-EventManager* evt_mgr        = nullptr;
-CMouse* mouse                = nullptr;
+Scene* scene          = nullptr;
+EventManager* evt_mgr = nullptr;
+CMouse* mouse         = nullptr;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
 	if(!TwEventKeyGLFW(key, action)){
@@ -20,7 +19,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             if(action == GLFW_PRESS) running = false;
             break;
         case 'B':
-            if(action == GLFW_PRESS) openglContext->drawBox = !openglContext->drawBox;
+            if(action == GLFW_PRESS) scene->drawBox = !scene->drawBox;
             break;
         default:
             break;
@@ -82,39 +81,39 @@ int main(int argc,char *argv[] ){
 
     glfwMakeContextCurrent(window);
 
-    evt_mgr       = new EventManager();
-    //TODO: Add try catch for OpenGLContext construction
-    openglContext = new OpenGLContext(width, height);
-    mouse         = new CMouse(evt_mgr, width, height);
+    evt_mgr = new EventManager();
+    //TODO: Add try catch for Scene construction
+    scene   = new Scene(width, height);
+    mouse   = new CMouse(evt_mgr, width, height);
 
     evt_mgr->addHandler([=](const Event& event){
         auto rotation_event = static_cast<const ArcballRotateEvent&>(event);
-        openglContext->rotate(rotation_event.angle, rotation_event.axis);
+        scene->rotate(rotation_event.angle, rotation_event.axis);
     }, EVT_ARCBALL_ROTATE);
 
     evt_mgr->addHandler([=](const Event& event){
         auto selection_event = static_cast<const SelectionEvent&>(event);
-        openglContext->select_particle(selection_event.x, selection_event.y);
+        scene->select_particle(selection_event.x, selection_event.y);
     }, EVT_SELECTION);
 
     evt_mgr->addHandler([=](const Event& event){
         float dz = static_cast<const ZoomEvent&>(event).dz;
-        openglContext->zoom(dz);
+        scene->zoom(dz);
     }, EVT_ZOOM);
 
     evt_mgr->addHandler([=](const Event& event){
         auto wsize_event = static_cast<const WindowSizeEvent&>(event);
-        openglContext->wsize_changed(wsize_event.width, wsize_event.height);
+        scene->wsize_changed(wsize_event.width, wsize_event.height);
         mouse->wsize_changed(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
 
 
-	openglContext->load_scene(parse_config(argv[1]));
+	scene->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){
         evt_mgr->processQueue();
-        openglContext->processScene();
-        openglContext->renderScene();
+        scene->process();
+        scene->render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -122,7 +121,7 @@ int main(int argc,char *argv[] ){
 
     delete evt_mgr;
     delete mouse;
-    delete openglContext;
+    delete scene;
 
     glfwDestroyWindow(window);
 
