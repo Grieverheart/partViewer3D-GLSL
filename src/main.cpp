@@ -84,7 +84,6 @@ int main(int argc,char *argv[] ){
 	openglContext->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){
-        mouse->idleArcball();
         openglContext->processScene();
         openglContext->renderScene();
 

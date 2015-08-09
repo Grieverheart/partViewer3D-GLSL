@@ -121,6 +121,7 @@ private:
 
     PerfMon perf_mon;
 	
+    //Move gui code outside
 	TwBar *bar;
 	
 	void drawConfigurationBox(void)const;

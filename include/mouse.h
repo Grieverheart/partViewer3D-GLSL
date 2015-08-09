@@ -13,10 +13,9 @@ public:
 	void onButton(int button, int state, int x, int y);
 	void onMotion(int x, int y);
 	void onScroll(double y);
-	void idleArcball(void);
 private:
 	OpenGLContext *context;
-	int last_mx,last_my,cur_mx,cur_my;
+	int last_mx, last_my, cur_mx, cur_my;
 	bool dragging;
 	int windowWidth;
 	int windowHeight;
