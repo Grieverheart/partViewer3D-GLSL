@@ -573,7 +573,7 @@ void Scene::wsize_changed(int w, int h){
     sh_blend->setUniform("texel_size", 1, texel_size);
 }
 
-void Scene::processScene(void){
+void Scene::process(void){
 	static uint64_t last_time = 0;
 	uint64_t this_time = perf_mon.get_time_ns();
     if(m_rotating){
@@ -607,7 +607,7 @@ void Scene::drawConfigurationBox(void)const{
 	glBindVertexArray(0);
 }
 
-void Scene::renderScene(void){
+void Scene::render(void){
     perf_mon.sync();
 
 	glDepthMask(GL_TRUE);
