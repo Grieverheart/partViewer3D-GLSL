@@ -320,10 +320,12 @@ void Scene::load_scene(const SimConfig& config){
     zfar  = -init_zoom + 2.0 * out_radius;
 
 
+    view_pos = glm::vec3(0.0, 0.0, -init_zoom);
+
     set_projection();
 
     lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
-	viewMatrix            = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	viewMatrix            = glm::lookAt(view_pos, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
     invViewMatrix         = glm::inverse(viewMatrix);
     lightViewMatrix       = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
@@ -586,11 +588,28 @@ void Scene::process(void){
 
     //TODO: Maybe we should update uniforms here? Also maybe have
     //flags for if stuff has changed so we don't have to do more work.
+    
+    glm::mat2 iproj = glm::mat2(invProjMatrix[2][2], invProjMatrix[2][3],
+                                invProjMatrix[3][2], invProjMatrix[3][3]);
+
+	sh_ssao->bind();
+	{
+		sh_ssao->setUniform("depth_iproj", 1, iproj);
+		sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
+		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
+	}
+
+	sh_accumulator->bind();
+	{
+		sh_accumulator->setUniform("depth_iproj", 1, iproj);
+		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
+	}
 }
 
 void Scene::set_projection(void){
     if(projection_type == Projection::ORTHOGRAPHIC){
-        projectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, znear, zfar);
+        float half_length = glm::length(view_pos) * tan(0.5f * glm::radians(fov + zoom_));
+        projectionMatrix = glm::ortho(-half_length, half_length, -half_length, half_length, znear, zfar);
         invProjMatrix    = glm::inverse(projectionMatrix);
     }
     else{

@@ -13,6 +13,7 @@ EventManager* evt_mgr = nullptr;
 CMouse* mouse         = nullptr;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+    static int mode = 0;
 	if(!TwEventKeyGLFW(key, action)){
         switch(key){
         case GLFW_KEY_ESCAPE:
@@ -21,6 +22,12 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         case 'B':
             if(action == GLFW_PRESS) scene->drawBox = !scene->drawBox;
             break;
+        case 'O':
+            if(action == GLFW_PRESS){
+                if(mode == 0) scene->set_projection_type(Projection::ORTHOGRAPHIC);
+                else scene->set_projection_type(Projection::PERSPECTIVE);
+                mode = !mode;
+            }
         default:
             break;
         }
@@ -107,8 +114,6 @@ int main(int argc,char *argv[] ){
         mouse->wsize_changed(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
 
-
-    //scene->set_projection_type(Projection::ORTHOGRAPHIC);
 
 	scene->load_scene(parse_config(argv[1]));
 

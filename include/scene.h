@@ -66,6 +66,7 @@ private:
     glm::mat4 lightProjectionMatrix;
     glm::mat4 lightViewMatrix;
     glm::mat4* model_matrices;
+    glm::vec3 view_pos;
 
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
