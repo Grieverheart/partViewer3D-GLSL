@@ -108,6 +108,8 @@ int main(int argc,char *argv[] ){
     }, EVT_WINDOW_SIZE_CHANGED);
 
 
+    //scene->set_projection_type(Projection::ORTHOGRAPHIC);
+
 	scene->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){

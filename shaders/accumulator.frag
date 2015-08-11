@@ -15,12 +15,13 @@ uniform sampler2DShadow LightDepthMap;
 uniform sampler2D ColorMap;
 uniform sampler2D NormalMap;
 
-uniform vec2 projAB;
-uniform vec3 skyColor;
+uniform mat2 depth_iproj;
 uniform mat4 depth_matrix;
+uniform vec3 skyColor;
 
 noperspective in vec2 TexCoord;
-smooth in vec3 viewRay;
+smooth in vec3 ray_origin;
+smooth in vec3 ray_direction;
 
 layout(location = 0) out vec4 out_Color;
 
@@ -32,9 +33,8 @@ layout(location = 0) out vec4 out_Color;
 //);
 
 vec3 CalcPosition(float depth){
-	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
-	vec3 ray = viewRay / viewRay.z;
-	return linearDepth * ray;
+	vec2 linearDepth = depth_iproj * vec2(2.0 * depth - 1.0, 1.0);
+	return ray_origin + ray_direction * (linearDepth.x / (linearDepth.y * ray_direction.z));
 }
 
 vec3 CalcLight(vec3 position, vec3 normal, float AO){

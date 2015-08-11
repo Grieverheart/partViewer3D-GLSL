@@ -197,6 +197,11 @@ void Shader::setUniform(const char * name, int count, glm::ivec4 const &value)co
 	glUniform4iv(location, count, &value[0]);
 }
 
+void Shader::setUniform(const char * name, int count, glm::mat2 const &value)const{
+	GLint location = mUniformLocations.find(std::string(name))->second;
+	glUniformMatrix2fv(location, count, GL_FALSE, &value[0][0]);
+}
+
 void Shader::setUniform(const char * name, int count, glm::mat3 const &value)const{
 	GLint location = mUniformLocations.find(std::string(name))->second;
 	glUniformMatrix3fv(location, count, GL_FALSE, &value[0][0]);

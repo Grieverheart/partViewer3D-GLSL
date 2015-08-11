@@ -40,6 +40,7 @@ public:
 	void setUniform(const char * name, int count, glm::ivec2 const &value)const;
 	void setUniform(const char * name, int count, glm::ivec3 const &value)const;
 	void setUniform(const char * name, int count, glm::ivec4 const &value)const;
+	void setUniform(const char * name, int count, glm::mat2 const &value)const;
 	void setUniform(const char * name, int count, glm::mat3 const &value)const;
 	void setUniform(const char * name, int count, glm::mat4 const &value)const;
 	void setUniform(const char * name, int value)const;

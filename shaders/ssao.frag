@@ -4,22 +4,22 @@ uniform sampler2D DepthMap;
 uniform sampler2D NormalMap;
 uniform sampler2D noise;
 
-uniform vec2 projAB;
-uniform ivec2 noiseScale;
-uniform int kernelSize;
+uniform mat4 projectionMatrix;
+uniform mat2 depth_iproj;
 uniform vec3 kernel[256];
 uniform float RADIUS;
-uniform mat4 projectionMatrix;
+uniform ivec2 noiseScale;
+uniform int kernelSize;
 
 noperspective in vec2 TexCoord;
-smooth in vec3 viewRay;
+smooth in vec3 ray_origin;
+smooth in vec3 ray_direction;
 
 layout(location = 0) out vec4 out_AO;
 
 vec3 CalcPosition(void){
-	float depth = texture(DepthMap, TexCoord).r;
-	float linearDepth = projAB.y / (2.0 * depth - 1.0 - projAB.x);
-	return linearDepth * (viewRay / viewRay.z);
+	vec2 depth = depth_iproj * vec2(2.0 * texture(DepthMap, TexCoord).r - 1.0, 1.0);
+	return ray_origin + ray_direction * (depth.x / (depth.y * ray_direction.z));
 }
 
 mat3 CalcRMatrix(vec3 normal, vec2 texcoord){
@@ -49,9 +49,8 @@ void main(void){
 			vec4 offset = projectionMatrix * vec4(sample, 1.0);
 			offset.xy = (offset.xy / offset.w) * 0.5 + 0.5;
 			// Get sample depth
-			float sample_depth = texture(DepthMap, offset.xy).r;
-			sample_depth = projAB.y / (2.0 * sample_depth - 1.0 - projAB.x);
-            occlusion += step(sample.z, sample_depth);
+			vec2 sample_depth = depth_iproj * vec2(2.0 * texture(DepthMap, offset.xy).r - 1.0, 1.0);
+            occlusion += step(sample.z, sample_depth.x / sample_depth.y);
 		}
 		out_AO = vec4(1.0 - occlusion / kernelSize, Normal);
 	}

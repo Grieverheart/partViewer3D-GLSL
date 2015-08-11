@@ -17,6 +17,11 @@
 class Shader;
 class Grid;
 
+enum class Projection{
+    PERSPECTIVE,
+    ORTHOGRAPHIC,
+};
+
 class Scene{
 public:
     class GlewInitializationException: public std::exception{
@@ -42,6 +47,7 @@ public:
     //will shoot rays. The problem is that both camera and renderer need
     //the window resolution which complicates things.
     void select_particle(int x, int y);
+    void set_projection_type(Projection);
 
 	bool drawBox;
 
@@ -92,6 +98,8 @@ private:
 	bool m_blur;
 	bool m_rotating;
 
+    Projection projection_type;
+
 	CLight light;
 
 	CGBuffer m_gbuffer;
@@ -123,8 +131,8 @@ private:
     //TODO: Move gui code outside
 	TwBar *bar;
 
+    void set_projection(void);
 	void drawConfigurationBox(void)const;
-
 	void createGui(void);
 };
 

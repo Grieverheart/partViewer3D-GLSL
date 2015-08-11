@@ -37,6 +37,7 @@ Scene::Scene(int width, int height):
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     selected_pid(-1),
     is_scene_loaded(false), m_blur(true), m_rotating(false),
+    projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
@@ -319,8 +320,8 @@ void Scene::load_scene(const SimConfig& config){
     zfar  = -init_zoom + 2.0 * out_radius;
 
 
-	projectionMatrix      = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/(float)windowHeight, znear, zfar);
-    invProjMatrix         = glm::inverse(projectionMatrix);
+    set_projection();
+
     lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
 	viewMatrix            = glm::lookAt(glm::vec3(0.0, 0.0, -init_zoom), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
     invViewMatrix         = glm::inverse(viewMatrix);
@@ -465,16 +466,15 @@ void Scene::load_scene(const SimConfig& config){
     //TODO: Move shader uniform initialization to constructor
 
 	// SSAO Uniforms
-	glm::vec2 projAB;
+    glm::mat2 iproj = glm::mat2(invProjMatrix[2][2], invProjMatrix[2][3],
+                                invProjMatrix[3][2], invProjMatrix[3][3]);
+
 	sh_ssao->bind();
 	{
-		float projA = (zfar + znear) / (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
-		projAB = glm::vec2(projA, projB);
 		m_ssao.UploadUniforms(*sh_ssao);
 		sh_ssao->setUniform("NormalMap", 0);
 		sh_ssao->setUniform("DepthMap", 1);
-		sh_ssao->setUniform("projAB", 1, projAB);
+		sh_ssao->setUniform("depth_iproj", 1, iproj);
 		sh_ssao->setUniform("projectionMatrix", 1, projectionMatrix);
 		sh_ssao->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
@@ -517,11 +517,7 @@ void Scene::load_scene(const SimConfig& config){
 		sh_accumulator->setUniform("NormalMap", 1);
 		sh_accumulator->setUniform("DepthMap", 2);
 		sh_accumulator->setUniform("LightDepthMap", 3);
-
-		float projA = (zfar + znear) / (zfar - znear);
-		float projB = 2.0 * zfar * znear / (zfar - znear);
-		projAB = glm::vec2(projA, projB);
-		sh_accumulator->setUniform("projAB", 1, projAB);
+		sh_accumulator->setUniform("depth_iproj", 1, iproj);
 		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
@@ -548,8 +544,7 @@ void Scene::wsize_changed(int w, int h){
 	TwWindowSize(w, h);
 	glViewport(0, 0, windowWidth, windowHeight);
 
-	projectionMatrix = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/(float)windowHeight, znear, zfar);
-    invProjMatrix    = glm::inverse(projectionMatrix);
+    set_projection();
 
     m_gbuffer.Resize(windowWidth, windowHeight);
     m_edge_buffer.Resize(windowWidth, windowHeight);
@@ -586,9 +581,26 @@ void Scene::process(void){
     }
     last_time = this_time;
 
-    projectionMatrix = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/(float)windowHeight, znear, zfar);
-    invProjMatrix    = glm::inverse(projectionMatrix);
-    lightViewMatrix  = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    set_projection();
+    lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+
+    //TODO: Maybe we should update uniforms here? Also maybe have
+    //flags for if stuff has changed so we don't have to do more work.
+}
+
+void Scene::set_projection(void){
+    if(projection_type == Projection::ORTHOGRAPHIC){
+        projectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, znear, zfar);
+        invProjMatrix    = glm::inverse(projectionMatrix);
+    }
+    else{
+        projectionMatrix = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/windowHeight, znear, zfar);
+        invProjMatrix    = glm::inverse(projectionMatrix);
+    }
+}
+
+void Scene::set_projection_type(Projection ptype){
+    projection_type = ptype;
 }
 
 //TODO: Improve line rendering!!!
