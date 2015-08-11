@@ -51,7 +51,7 @@ void main(void){
 			// Get sample depth
 			float sample_depth = texture(DepthMap, offset.xy).r;
 			sample_depth = projAB.y / (2.0 * sample_depth - 1.0 - projAB.x);
-            occlusion += float(sample_depth > sample.z);
+            occlusion += step(sample.z, sample_depth);
 		}
 		out_AO = vec4(1.0 - occlusion / kernelSize, Normal);
 	}

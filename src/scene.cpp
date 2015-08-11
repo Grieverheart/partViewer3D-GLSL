@@ -468,7 +468,7 @@ void Scene::load_scene(const SimConfig& config){
 	glm::vec2 projAB;
 	sh_ssao->bind();
 	{
-		float projA = zfar / (zfar - znear);
+		float projA = (zfar + znear) / (zfar - znear);
 		float projB = 2.0 * zfar * znear / (zfar - znear);
 		projAB = glm::vec2(projA, projB);
 		m_ssao.UploadUniforms(*sh_ssao);
