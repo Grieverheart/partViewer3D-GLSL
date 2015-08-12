@@ -2,25 +2,22 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include <cstdio>
-#include <cstring>
 
 static inline void validateShader(GLuint shader, const char *file = 0){
-	const unsigned int BUFFER_SIZE = 512;
+	static const unsigned int BUFFER_SIZE = 512;
 	char buffer[BUFFER_SIZE];
-	//memset(buffer, 0, BUFFER_SIZE);
 	GLsizei length = 0;
 	
 	glGetShaderInfoLog(shader, BUFFER_SIZE, &length, buffer);
 	
 	if(length>0){
-		printf("Shader %d(%s) compile error: %s\n", shader, (file?file:""), buffer);
+		printf("Shader %d(%s) compile error: %s\n", shader, (file? file: ""), buffer);
 	}
 }
 
 static inline bool validateProgram(GLuint program){
-	const GLsizei BUFFER_SIZE = 512;
+	static const GLsizei BUFFER_SIZE = 512;
 	GLchar buffer[BUFFER_SIZE];
-	memset(buffer, 0, BUFFER_SIZE);
 	GLsizei length = 0;
 	
 	glGetProgramInfoLog(program, BUFFER_SIZE, &length, buffer);
@@ -74,6 +71,8 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
         validateShader(shader_vp, vsFile);
         glAttachShader(shader_id, shader_vp);
 
+        glDeleteShader(shader_vp);
+
         delete[] vertexText;
     }
 
@@ -81,7 +80,6 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
         shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
         FILE* fp = fopen(fsFile, "rb");
         if(!fp){
-            glDeleteShader(shader_vp);
             glDeleteShader(shader_fp);
             glDeleteProgram(shader_id);
             throw InitializationException("fragment", fsFile);
@@ -100,6 +98,8 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
         validateShader(shader_fp, fsFile);
         glAttachShader(shader_id, shader_fp);
 
+        glDeleteShader(shader_fp);
+
         delete[] fragmentText;
     }
 
@@ -107,11 +107,8 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
         shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
         FILE* fp = fopen(gsFile, "rb");
         if(!fp){
-            glDeleteShader(shader_vp);
-            glDeleteShader(shader_fp);
             glDeleteShader(shader_gp);
             glDeleteProgram(shader_id);
-            throw InitializationException("fragment", fsFile);
             throw InitializationException("geometry", gsFile);
         }
         fseek(fp, 0, SEEK_END);
@@ -126,6 +123,8 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
 		glCompileShader(shader_gp);
 		validateShader(shader_gp, gsFile);
         glAttachShader(shader_id, shader_gp);
+
+        glDeleteShader(shader_gp);
 
         delete[] geometryText;
     }
@@ -150,10 +149,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
 
 //TODO: Properly delete shaders!
 Shader::~Shader(void){
-	glDeleteShader(shader_vp);
-    glDeleteShader(shader_fp);
-    glDeleteShader(shader_gp);
-	glDeleteShader(shader_id);
+	glDeleteProgram(shader_id);
 }
 
 unsigned int Shader::id(void){

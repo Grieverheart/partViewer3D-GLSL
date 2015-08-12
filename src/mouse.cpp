@@ -21,8 +21,10 @@ glm::vec3 CMouse::getArcballVec3(int x, int y){
 
     float OP_squared = P.x * P.x + P.y * P.y;
     if(OP_squared <= 0.5f) P.z = sqrt(1.0f - OP_squared);
-    else P.z = 0.5f / sqrt(OP_squared);
-    P = glm::normalize(P);
+    else{
+        P.z = 0.5f / sqrt(OP_squared);
+        P = glm::normalize(P);
+    }
 
     return P;
 }
@@ -52,17 +54,14 @@ void CMouse::onMotion(int x, int y){
     if((cur_mx != last_mx) || (cur_my != last_my)){
         if(pressed && !dragging) dragging = true;
         if(dragging){
-            glm::vec3 a, b;
-
-            a = getArcballVec3(last_mx, last_my);
-            b = getArcballVec3(cur_mx, cur_my);
+            glm::vec3 a = getArcballVec3(last_mx, last_my);
+            glm::vec3 b = getArcballVec3(cur_mx, cur_my);
+            glm::vec3 axis = glm::cross(a, b);
 
             float dot = glm::dot(a, b);
             if(dot > 1.0f) dot = 1.0f;
-            else if(dot < -1.0f) dot = -1.0f;
 
             float angle = acos(dot);
-            glm::vec3 axis = glm::cross(a, b);
 
             evt_mgr->queueEvent(new ArcballRotateEvent(angle, axis));
             last_mx = cur_mx;

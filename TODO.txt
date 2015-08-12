@@ -4,7 +4,7 @@
 --Add particle selection.
 --Add some kind of scene class (The renderer will also act as a scenegraph).
 --Add selection outline rendering.
-Add orthographic projection.
+--Add orthographic projection.
 Cleanup code.
 Add clipping planes.
 Parse configuration in XML instead.
