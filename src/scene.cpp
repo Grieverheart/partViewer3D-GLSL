@@ -753,7 +753,7 @@ void Scene::render(void){
             sh_accumulator->setUniform("light.Si", light.specular_);
             sh_accumulator->setUniform("light.Di", light.diffuse_);
             sh_accumulator->setUniform("light.Ai", light.ambient_);
-            sh_accumulator->setUniform("light.intensity", light.intensity_);
+            sh_accumulator->setUniform("light.Intensity", light.intensity_);
 
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
