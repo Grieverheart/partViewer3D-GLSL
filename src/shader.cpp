@@ -38,11 +38,11 @@ static inline bool validateProgram(GLuint program){
 }
 
 Shader::Shader(void):
-    shader_id(0), shader_vp(0), shader_gp(0), shader_fp(0)
+    shader_id(0)
 {}
 
 Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
-    shader_id(0), shader_vp(0), shader_gp(0), shader_fp(0)
+    shader_id(0)
 {
 	bool isGS = (gsFile != NULL);
 	bool isFS = (fsFile != NULL);
@@ -50,7 +50,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
 	shader_id = glCreateProgram();
 	
     {
-        shader_vp = glCreateShader(GL_VERTEX_SHADER);
+        unsigned int shader_vp = glCreateShader(GL_VERTEX_SHADER);
         FILE* fp = fopen(vsFile, "rb");
         if(!fp){
             glDeleteShader(shader_vp);
@@ -77,7 +77,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
     }
 
 	if(isFS){
-        shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
+        unsigned int shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
         FILE* fp = fopen(fsFile, "rb");
         if(!fp){
             glDeleteShader(shader_fp);
@@ -104,7 +104,7 @@ Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
     }
 
 	if(isGS){
-        shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
+        unsigned int shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
         FILE* fp = fopen(gsFile, "rb");
         if(!fp){
             glDeleteShader(shader_gp);

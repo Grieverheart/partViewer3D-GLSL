@@ -7,7 +7,6 @@ project(partviewer3D-GLSL)
 
 set(SOURCE_FILES
     src/main.cpp
-    src/perfmon.cpp
     src/coord_parser.cpp
     src/mouse.cpp
     src/scene.cpp

@@ -49,9 +49,6 @@ public:
 	
 private:
 	unsigned int shader_id;
-	unsigned int shader_vp;
-	unsigned int shader_gp;
-	unsigned int shader_fp;
 	
 	std::map<std::string, int> mUniformLocations;
 };

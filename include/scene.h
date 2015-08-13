@@ -54,9 +54,9 @@ public:
 private:
 	int windowWidth;
 	int windowHeight;
-	float fov, zoom_;
-	float znear,zfar;
-    float out_radius;
+	float fov_, zoom_;
+	float znear_, zfar_;
+    float out_radius_;
 
 	glm::mat4 projectionMatrix;
 	glm::mat4 invProjMatrix;
@@ -97,7 +97,6 @@ private:
 
 	bool is_scene_loaded;
 	bool m_blur;
-	bool m_rotating;
 
     Projection projection_type;
 
@@ -126,8 +125,6 @@ private:
 	Shader *sh_color_sphere;
 
     Grid* grid;
-
-    PerfMon perf_mon;
 
     //TODO: Move gui code outside
 	TwBar *bar;

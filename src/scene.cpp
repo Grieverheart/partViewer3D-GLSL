@@ -7,13 +7,10 @@
 #include <GL/glxew.h>
 #endif
 
-#include <fstream>
 #include <glm/gtc/matrix_transform.hpp>
 #include "include/gl_utils.h"
 #include "include/shader.h"
 #include "include/grid.h"
-
-//#define DRAW_SPHERES
 
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
@@ -25,7 +22,7 @@ static const glm::mat4 biasMatrix(
 Scene::Scene(int width, int height):
     drawBox(false),
     windowWidth(width), windowHeight(height),
-    fov(60.0f), zoom_(0.0f),
+    fov_(60.0f), zoom_(0.0f),
 	modelMatrix(1.0),
 	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
@@ -36,7 +33,7 @@ Scene::Scene(int width, int height):
     particles(nullptr), shape_types(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     selected_pid(-1),
-    is_scene_loaded(false), m_blur(true), m_rotating(false),
+    is_scene_loaded(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -111,7 +108,6 @@ Scene::Scene(int width, int height):
     //TODO: Add exceptions
 	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");
 	if(!m_shadowmap.Init(windowWidth, windowHeight)) printf("Couldn't initialize Shadowmap!");
-	if(!light.Init(sh_accumulator->id())) printf("Cannot bind light uniform");
 	if(!m_gbuffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
 	if(!m_accumulator.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
 	if(!m_edge_buffer.Init(windowWidth, windowHeight)) printf("Couldn't initialize FBO!");
@@ -235,21 +231,19 @@ void Scene::createGui(void){
 	TwDefine(
 		"Parameters position='0 0' size='200 250' iconified=true");
 
-	TwAddVarRW(bar, "Rotation", TW_TYPE_BOOLCPP, &m_rotating, "");
-
-	TwAddVarCB(bar, "Direction", TW_TYPE_DIR3F, CLight::SetDirCallback, CLight::GetDirCallback, &light,"\
+	TwAddVarRW(bar, "Direction", TW_TYPE_DIR3F, &light.direction_,"\
 		group=Light");
 
-	TwAddVarCB(bar, "Specular", TW_TYPE_FLOAT, CLight::SetSpecIntCallback, CLight::GetSpecIntCallback, &light,"\
+	TwAddVarRW(bar, "Specular", TW_TYPE_FLOAT, &light.specular_,"\
 		min=0.0 max=2.0	step=0.01 group=Light");
 
-	TwAddVarCB(bar, "Diffuse", TW_TYPE_FLOAT, CLight::SetDiffIntCallback, CLight::GetDiffIntCallback, &light,"\
+	TwAddVarRW(bar, "Diffuse", TW_TYPE_FLOAT, &light.diffuse_,"\
 		min=0.0 max=2.0	step=0.01 group=Light");
 
-	TwAddVarCB(bar, "Ambient", TW_TYPE_FLOAT, CLight::SetAmbIntCallback, CLight::GetAmbIntCallback, &light,"\
+	TwAddVarRW(bar, "Ambient", TW_TYPE_FLOAT, &light.ambient_,"\
 		min=0.0 max=2.0	step=0.01 group=Light");
 
-	TwAddVarCB(bar, "Intensity", TW_TYPE_FLOAT, CLight::SetIntCallback, CLight::GetIntCallback, &light,"\
+	TwAddVarRW(bar, "Intensity", TW_TYPE_FLOAT, &light.intensity_,"\
 		min=0.0 max=2.0	step=0.01 group=Light");
 
 	TwAddVarRW(bar, "Blur", TW_TYPE_BOOLCPP, &m_blur, "\
@@ -303,31 +297,30 @@ void Scene::load_scene(const SimConfig& config){
         glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 8, vertices, GL_STATIC_DRAW);
     }
 
-    out_radius = glm::length(glm::vec3(
+    out_radius_ = glm::length(glm::vec3(
         (config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
         (config.box[1][1] + config.box[1][2]) / 2.0,
         config.box[2][2] / 2.0
     )) + 1.0;
 
-    //TODO: Fix
     float init_zoom = -4.0;
     for(int i=0;i<3;i++){
         GLfloat max_zoom = -3.5f*glm::length(glm::transpose(config.box)[i]);
         if(max_zoom < init_zoom) init_zoom = max_zoom;
     }
 
-    znear = -init_zoom - out_radius;
-    zfar  = -init_zoom + 2.0 * out_radius;
+    znear_ = -init_zoom - out_radius_;
+    zfar_  = -init_zoom + 2.0 * out_radius_;
 
 
     view_pos = glm::vec3(0.0, 0.0, -init_zoom);
 
     set_projection();
 
-    lightProjectionMatrix = glm::ortho(-out_radius, out_radius, -out_radius, out_radius, 0.0f, 2.0f * out_radius);
+    lightProjectionMatrix = glm::ortho(-out_radius_, out_radius_, -out_radius_, out_radius_, 0.0f, 2.0f * out_radius_);
 	viewMatrix            = glm::lookAt(view_pos, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
     invViewMatrix         = glm::inverse(viewMatrix);
-    lightViewMatrix       = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+    lightViewMatrix       = glm::lookAt(-out_radius_ * light.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
 	shape_instances         = new unsigned int[config.n_shapes]{};
 	shape_vaos              = new unsigned int[config.n_shapes]{};
@@ -393,8 +386,6 @@ void Scene::load_scene(const SimConfig& config){
         //each frame.
         glBindVertexArray(shape_vaos[shape_id]);
         if(config.shapes[shape_id].type == Shape::MESH){
-            //TODO: Find the maximal vertex here. This will be used for
-            //constructing the cell list.
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
             shape_num_vertices[shape_id] = mesh.n_vertices;
 
@@ -571,23 +562,8 @@ void Scene::wsize_changed(int w, int h){
 }
 
 void Scene::process(void){
-	static uint64_t last_time = 0;
-	uint64_t this_time = perf_mon.get_time_ns();
-    if(m_rotating){
-        glm::mat4 rLocalMatrix = glm::rotate(
-            glm::mat4(1.0),
-            glm::radians(float(((this_time-last_time) / 1000000000.0) * 30.0)),
-            glm::vec3(0.0, 1.0, 0.0)
-        );
-        modelMatrix = rLocalMatrix * modelMatrix;
-    }
-    last_time = this_time;
-
     set_projection();
-    lightViewMatrix = glm::lookAt(-out_radius * light.getDirection(), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-
-    //TODO: Maybe we should update uniforms here? Also maybe have
-    //flags for if stuff has changed so we don't have to do more work.
+    lightViewMatrix = glm::lookAt(-out_radius_ * light.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
     
     glm::mat2 iproj = glm::mat2(invProjMatrix[2][2], invProjMatrix[2][3],
                                 invProjMatrix[3][2], invProjMatrix[3][3]);
@@ -608,12 +584,12 @@ void Scene::process(void){
 
 void Scene::set_projection(void){
     if(projection_type == Projection::ORTHOGRAPHIC){
-        float half_length = glm::length(view_pos) * tan(0.5f * glm::radians(fov + zoom_));
-        projectionMatrix = glm::ortho(-half_length, half_length, -half_length, half_length, znear, zfar);
+        float half_length = glm::length(view_pos) * tan(0.5f * glm::radians(fov_ + zoom_));
+        projectionMatrix = glm::ortho(-half_length, half_length, -half_length, half_length, znear_, zfar_);
         invProjMatrix    = glm::inverse(projectionMatrix);
     }
     else{
-        projectionMatrix = glm::perspective(glm::radians(fov + zoom_), (float)windowWidth/windowHeight, znear, zfar);
+        projectionMatrix = glm::perspective(glm::radians(fov_ + zoom_), (float)windowWidth/windowHeight, znear_, zfar_);
         invProjMatrix    = glm::inverse(projectionMatrix);
     }
 }
@@ -639,13 +615,11 @@ void Scene::drawConfigurationBox(void)const{
 }
 
 void Scene::render(void){
-    perf_mon.sync();
-
 	glDepthMask(GL_TRUE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-    perf_mon.push_query("Shadow Pass");
+    //"Shadow Pass"
     {
         m_shadowmap.Bind();
         glClear(GL_DEPTH_BUFFER_BIT);
@@ -678,9 +652,8 @@ void Scene::render(void){
 
         glViewport(0, 0, windowWidth, windowHeight);
     }
-    perf_mon.pop_query();
 
-    perf_mon.push_query("FBO Pass");
+    //"FBO Pass"
     {
         m_gbuffer.Bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -713,17 +686,16 @@ void Scene::render(void){
             }
         }
     }
-    perf_mon.pop_query();
 
     glBindVertexArray(fullscreen_triangle_vao);
 
-    perf_mon.push_query("SSAO Pass");
+    //"SSAO Pass"
     {
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
         glDepthMask(GL_FALSE);
 
-        perf_mon.push_query("SSAO Calc Pass");
+        //"SSAO Calc Pass"
         m_ssao.Bind();
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -738,9 +710,8 @@ void Scene::render(void){
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
-        perf_mon.pop_query();
 
-        perf_mon.push_query("SSAO Blur Pass");
+        //"SSAO Blur Pass"
 
         glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
         m_gbuffer.Bind();
@@ -753,11 +724,9 @@ void Scene::render(void){
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
         glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-        perf_mon.pop_query();
     }
-    perf_mon.pop_query();
 
-    perf_mon.push_query("Gather Pass");
+    //"Gather Pass"
     {
         //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         m_accumulator.Bind();
@@ -779,16 +748,21 @@ void Scene::render(void){
             glm::mat4 depth_matrix = biasMatrix * lightProjectionMatrix * lightViewMatrix * invViewMatrix;
             sh_accumulator->setUniform("depth_matrix", 1, depth_matrix);
 
-            light.uploadDirection(viewMatrix);
+            glm::vec3 lightViewDirection = glm::mat3(viewMatrix) * light.direction_;
+            sh_accumulator->setUniform("light.direction", 1, lightViewDirection);
+            sh_accumulator->setUniform("light.Si", light.specular_);
+            sh_accumulator->setUniform("light.Di", light.diffuse_);
+            sh_accumulator->setUniform("light.Ai", light.ambient_);
+            sh_accumulator->setUniform("light.intensity", light.intensity_);
+
             glDrawArrays(GL_TRIANGLES, 0, 3);
         }
 
     }
-    perf_mon.pop_query();
 
     if(selected_pid >= 0){
 
-        perf_mon.push_query("Selection Pass");
+        //"Selection Pass"
         {
             int shape_id = particles[selected_pid].shape_id;
 
@@ -843,9 +817,9 @@ void Scene::render(void){
         }
     }
 
-    perf_mon.push_query("SMAA");
+    //"SMAA"
     {
-        perf_mon.push_query("Edge Pass");
+        //"Edge Pass"
         {
             m_edge_buffer.Bind();
             glClear(GL_COLOR_BUFFER_BIT);
@@ -857,9 +831,8 @@ void Scene::render(void){
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
         }
-        perf_mon.pop_query();
 
-        perf_mon.push_query("Blend weight Pass");
+        //"Blend weight Pass"
         {
             m_blend_buffer.Bind();
             glClear(GL_COLOR_BUFFER_BIT);
@@ -877,9 +850,8 @@ void Scene::render(void){
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
         }
-        perf_mon.pop_query();
 
-        perf_mon.push_query("Blend Pass");
+        //"Blend Pass"
         {
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT);
@@ -894,13 +866,10 @@ void Scene::render(void){
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
         }
-        perf_mon.pop_query();
     }
-    perf_mon.pop_query();
 
-    perf_mon.push_query("TwDraw Pass");
+    //"TwDraw Pass"
 	//TwDraw();
-    perf_mon.pop_query();
     glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
