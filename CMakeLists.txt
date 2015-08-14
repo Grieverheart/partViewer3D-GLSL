@@ -18,6 +18,7 @@ set(SOURCE_FILES
     src/grid.cpp
     src/obj_parser.cpp
     src/shader.cpp
+    src/gui.cpp
     src/ssao.cpp)
 
 add_executable(main ${SOURCE_FILES})

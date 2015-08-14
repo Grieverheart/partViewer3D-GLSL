@@ -5,10 +5,9 @@
 --Add some kind of scene class (The renderer will also act as a scenegraph).
 --Add selection outline rendering.
 --Add orthographic projection.
-Cleanup code.
+--Cleanup code 1.
 Add clipping planes.
-Parse configuration in XML instead.
+Add methods to add and remove shapes and particles to the scene.
 Add lua scripting support.
-Add periodic repetition.
 Draw points.
 Draw spheres with proper perspective.

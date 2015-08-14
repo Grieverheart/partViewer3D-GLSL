@@ -177,8 +177,6 @@ Scene::Scene(int width, int height):
 
         fclose(fp);
     }
-
-	//createGui();
 }
 
 Scene::~Scene(void){
@@ -219,47 +217,6 @@ Scene::~Scene(void){
 	glDeleteBuffers(1, &iboBox);
 
 	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
-
-	//TwTerminate();
-}
-
-void Scene::createGui(void){
-	TwInit(TW_OPENGL_CORE, NULL);
-	TwWindowSize(windowWidth, windowHeight);
-	bar = TwNewBar("Parameters");
-
-	TwDefine(
-		"Parameters position='0 0' size='200 250' iconified=true");
-
-	TwAddVarRW(bar, "Direction", TW_TYPE_DIR3F, &light.direction_,"\
-		group=Light");
-
-	TwAddVarRW(bar, "Specular", TW_TYPE_FLOAT, &light.specular_,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-
-	TwAddVarRW(bar, "Diffuse", TW_TYPE_FLOAT, &light.diffuse_,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-
-	TwAddVarRW(bar, "Ambient", TW_TYPE_FLOAT, &light.ambient_,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-
-	TwAddVarRW(bar, "Intensity", TW_TYPE_FLOAT, &light.intensity_,"\
-		min=0.0 max=2.0	step=0.01 group=Light");
-
-	TwAddVarRW(bar, "Blur", TW_TYPE_BOOLCPP, &m_blur, "\
-		group=AO");
-
-	TwAddVarCB(bar, "Radius", TW_TYPE_FLOAT, Cssao::SetRadiusCallback, Cssao::GetRadiusCallback, &m_ssao,"\
-		help='The radius of the ambient occlusion sampling kernel.'\
-		min=0.1 max=30.0 step=0.1 group=AO");
-
-	TwAddVarCB(bar, "Samples", TW_TYPE_UINT32, Cssao::SetSamplesCallback, Cssao::GetSamplesCallback, &m_ssao,"\
-		help='Number of samples for ambient occlusion. Increase for higher quality.'\
-		min=4 max=256 step=2 group=AO");
-
-	TwAddVarRW(bar, "Sky Color", TW_TYPE_COLOR3F, &skycolor," colormode=hls ");
-	TwAddVarRW(bar, "Particle Color", TW_TYPE_COLOR3F, &diffcolor," colormode=hls ");
-	TwAddVarRW(bar, "Background Color", TW_TYPE_COLOR3F, &m_bgColor," colormode=hls ");
 }
 
 void Scene::load_scene(const SimConfig& config){
@@ -534,7 +491,6 @@ void Scene::select_particle(int x, int y){
 void Scene::wsize_changed(int w, int h){
 	windowWidth = w;
 	windowHeight = h;
-	TwWindowSize(w, h);
 	glViewport(0, 0, windowWidth, windowHeight);
 
     set_projection();
@@ -868,8 +824,6 @@ void Scene::render(void){
         }
     }
 
-    //"TwDraw Pass"
-	//TwDraw();
     glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
@@ -882,5 +836,85 @@ void Scene::zoom(float dz){
     zoom_ = zoom_ - 2.0f * dz; // put wheel up and down in one
     if(zoom_ < -58) zoom_ = -58.0f;
     else if(zoom_ > 90) zoom_ = 90.0f;
+}
+
+glm::vec3 Scene::get_light_direction(void)const{
+    return light.direction_;
+}
+
+void Scene::set_light_direction(const glm::vec3& direction){
+    light.direction_ = direction;
+}
+
+float Scene::get_light_specular_intensity(void)const{
+    return light.specular_;
+}
+
+void Scene::set_light_specular_intensity(float specular){
+    light.specular_ = specular;
+}
+
+float Scene::get_light_diffuse_intensity(void)const{
+    return light.diffuse_;
+}
+
+void Scene::set_light_diffuse_intensity(float diffuse){
+    light.diffuse_ = diffuse;
+}
+
+float Scene::get_light_ambient_intensity(void)const{
+    return light.ambient_;
+}
+
+void Scene::set_light_ambient_intensity(float ambient){
+    light.ambient_ = ambient;
+}
+
+float Scene::get_light_intensity(void)const{
+    return light.intensity_;
+}
+
+void Scene::set_light_intensity(float intensity){
+    light.intensity_ = intensity;
+}
+
+void Scene::set_ssao_blur(bool value){
+    m_blur = value;
+}
+
+bool Scene::is_ssao_blur_enabled(void)const{
+    return m_blur;
+}
+
+void Scene::set_ssao_radius(float radius){
+    m_ssao.setRadius(radius);
+}
+
+float Scene::get_ssao_radius(void)const{
+    return m_ssao.getRadius();
+}
+
+void Scene::set_ssao_num_samples(unsigned int n_samples){
+    m_ssao.setSamples(n_samples);
+}
+
+unsigned int Scene::get_ssao_num_samples(void)const{
+    return m_ssao.getSamples();
+}
+
+void Scene::set_sky_color(const glm::vec3& color){
+    skycolor = color;
+}
+
+glm::vec3 Scene::get_sky_color(void)const{
+    return skycolor;
+}
+
+void Scene::set_background_color(const glm::vec3& color){
+    m_bgColor = color;
+}
+
+glm::vec3 Scene::get_background_color(void)const{
+    return m_bgColor;
 }
 

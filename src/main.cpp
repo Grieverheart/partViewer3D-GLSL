@@ -2,6 +2,7 @@
 #include "include/mouse.h"
 #include "include/event_manager.h"
 #include "include/events.h"
+#include "include/gui.h"
 #include <GLFW/glfw3.h>
 #include <AntTweakBar.h>
 #include <cstdio>
@@ -11,6 +12,9 @@ bool running = true;
 Scene* scene          = nullptr;
 EventManager* evt_mgr = nullptr;
 CMouse* mouse         = nullptr;
+
+//TODO: Move TW events to Gui class
+
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     static int mode = 0;
@@ -93,6 +97,8 @@ int main(int argc,char *argv[] ){
     scene   = new Scene(width, height);
     mouse   = new CMouse(evt_mgr, width, height);
 
+    Gui gui(scene, width, height);
+
     evt_mgr->addHandler([=](const Event& event){
         auto rotation_event = static_cast<const ArcballRotateEvent&>(event);
         scene->rotate(rotation_event.angle, rotation_event.axis);
@@ -108,10 +114,11 @@ int main(int argc,char *argv[] ){
         scene->zoom(dz);
     }, EVT_ZOOM);
 
-    evt_mgr->addHandler([=](const Event& event){
+    evt_mgr->addHandler([&gui](const Event& event){
         auto wsize_event = static_cast<const WindowSizeEvent&>(event);
         scene->wsize_changed(wsize_event.width, wsize_event.height);
         mouse->wsize_changed(wsize_event.width, wsize_event.height);
+        gui.resize(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
 
 
@@ -121,6 +128,7 @@ int main(int argc,char *argv[] ){
         evt_mgr->processQueue();
         scene->process();
         scene->render();
+        gui.draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

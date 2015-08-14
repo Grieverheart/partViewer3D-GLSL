@@ -7,7 +7,6 @@
 #include "accumulator.h"
 #include "ssao.h"
 #include "shadowmap.h"
-#include "perfmon.h"
 #include <exception>
 
 #ifdef _MSC_VER
@@ -48,6 +47,27 @@ public:
     //the window resolution which complicates things.
     void select_particle(int x, int y);
     void set_projection_type(Projection);
+
+    glm::vec3 get_light_direction(void)const;
+    void set_light_direction(const glm::vec3&);
+    float get_light_specular_intensity(void)const;
+    void set_light_specular_intensity(float);
+    float get_light_diffuse_intensity(void)const;
+    void set_light_diffuse_intensity(float);
+    float get_light_ambient_intensity(void)const;
+    void set_light_ambient_intensity(float);
+    float get_light_intensity(void)const;
+    void set_light_intensity(float);
+    void set_ssao_blur(bool);
+    bool is_ssao_blur_enabled(void)const;
+    void set_ssao_radius(float);
+    float get_ssao_radius(void)const;
+    void set_ssao_num_samples(unsigned int);
+    unsigned int get_ssao_num_samples(void)const;
+    void set_sky_color(const glm::vec3&);
+    glm::vec3 get_sky_color(void)const;
+    void set_background_color(const glm::vec3&);
+    glm::vec3 get_background_color(void)const;
 
 	bool drawBox;
 
@@ -126,12 +146,8 @@ private:
 
     Grid* grid;
 
-    //TODO: Move gui code outside
-	TwBar *bar;
-
     void set_projection(void);
 	void drawConfigurationBox(void)const;
-	void createGui(void);
 };
 
 
