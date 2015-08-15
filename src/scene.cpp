@@ -27,13 +27,14 @@ Scene::Scene(int width, int height):
 	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
+    clip_plane_{0.0, 0.0, -1.0, 0.0},
 	shape_instances(nullptr), shape_vaos(nullptr), shape_vertex_vbos(nullptr),
 	shape_model_matrix_vbos(nullptr), shape_colors_vbos(nullptr), shape_num_vertices(nullptr),
     shape_single_vaos(nullptr),
     particles(nullptr), shape_types(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     selected_pid(-1),
-    is_scene_loaded(false), m_blur(true),
+    is_scene_loaded(false), is_clip_plane_activated_(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -606,7 +607,19 @@ void Scene::render(void){
     //"Shadow Pass"
     {
         m_shadowmap.Bind();
-        glClear(GL_DEPTH_BUFFER_BIT);
+
+        if(is_clip_plane_activated_){
+            glEnable(GL_STENCIL_TEST);
+            glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
+            glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
+            glStencilFunc(GL_ALWAYS, 0, 0);
+            glStencilMask(0xFF);
+            glEnable(GL_CLIP_DISTANCE0);
+            glDisable(GL_CULL_FACE);
+        }
+
+        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
         glViewport(0, 0, windowWidth * 2, windowHeight * 2);
 
         for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
@@ -614,18 +627,13 @@ void Scene::render(void){
             if(shape_types[shape_id] == Shape::MESH){
                 sh_shadowmap_instanced->bind();
 
-                glm::mat4 vMatrix = lightViewMatrix;
-                glm::mat4 pMatrix = lightProjectionMatrix;
-
                 sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
+                sh_shadowmap_instanced->setUniform("clip_plane", 1, clip_plane_);
 
                 glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
             }
             else{
                 sh_shadowmap_spheres->bind();
-
-                glm::mat4 vMatrix = lightViewMatrix;
-                glm::mat4 pMatrix = lightProjectionMatrix;
 
                 sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
                 sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
@@ -634,26 +642,47 @@ void Scene::render(void){
             }
         }
 
+        if(is_clip_plane_activated_){
+            sh_gbuffer->bind();
+
+            glEnable(GL_STENCIL_TEST);
+            glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+            glm::mat4 MVPMatrix = lightProjectionMatrix * lightViewMatrix * modelMatrix;
+            sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
+
+            glBindVertexArray(plane_vao);
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glDisable(GL_STENCIL_TEST);
+            glDisable(GL_CLIP_DISTANCE0);
+        }
+
         glViewport(0, 0, windowWidth, windowHeight);
     }
 
     //"FBO Pass"
     {
         m_gbuffer.Bind();
-        glEnable(GL_STENCIL_TEST);
-        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
-        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
-        glStencilFunc(GL_ALWAYS, 0, 0);
-        glStencilMask(0xFF);
+
+        if(is_clip_plane_activated_){
+            glEnable(GL_STENCIL_TEST);
+            glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
+            glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
+            glStencilFunc(GL_ALWAYS, 0, 0);
+            glStencilMask(0xFF);
+            glEnable(GL_CLIP_DISTANCE0);
+            glDisable(GL_CULL_FACE);
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        glEnable(GL_CLIP_DISTANCE0);
-        glDisable(GL_CULL_FACE);
+
         for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
             glBindVertexArray(shape_vaos[shape_id]);
             if(shape_types[shape_id] == Shape::MESH){
                 sh_gbuffer_instanced->bind();
 
                 //sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
+                sh_gbuffer_instanced->setUniform("clip_plane", 1, clip_plane_);
                 sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
 
@@ -670,8 +699,9 @@ void Scene::render(void){
             }
         }
 
-        sh_gbuffer->bind();
-        {
+        if(is_clip_plane_activated_){
+            sh_gbuffer->bind();
+
             glEnable(GL_STENCIL_TEST);
             glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
             glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
@@ -681,12 +711,10 @@ void Scene::render(void){
             sh_gbuffer->setUniform("diffColor", 1, diffcolor);
 
             glBindVertexArray(plane_vao);
-
             glDrawArrays(GL_TRIANGLES, 0, 6);
 
-            glBindVertexArray(0);
-
             glDisable(GL_STENCIL_TEST);
+            glDisable(GL_CLIP_DISTANCE0);
         }
 
         if(drawBox){
@@ -890,6 +918,30 @@ void Scene::zoom(float dz){
     zoom_ = zoom_ - 2.0f * dz; // put wheel up and down in one
     if(zoom_ < -58) zoom_ = -58.0f;
     else if(zoom_ > 90) zoom_ = 90.0f;
+}
+
+glm::mat4 Scene::get_view_matrix(void)const{
+    return viewMatrix;
+}
+
+glm::mat4 Scene::get_projection_matrix(void)const{
+    return projectionMatrix;
+}
+
+glm::mat4 Scene::get_model_matrix(void)const{
+    return modelMatrix;
+}
+
+void Scene::set_clip_plane(const glm::vec4& clip_plane){
+    clip_plane_ = clip_plane;
+}
+
+void Scene::enable_clip_plane(void){
+    is_clip_plane_activated_ = true;
+}
+
+void Scene::disable_clip_plane(void){
+    is_clip_plane_activated_ = false;
 }
 
 glm::vec3 Scene::get_light_direction(void)const{

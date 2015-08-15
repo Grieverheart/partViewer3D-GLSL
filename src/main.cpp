@@ -18,6 +18,7 @@ CMouse* mouse         = nullptr;
 ////////////GLUT Keyboard Function Wrappers/////////////
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     static int mode = 0;
+    static int clip = 0;
 	if(!TwEventKeyGLFW(key, action)){
         switch(key){
         case GLFW_KEY_ESCAPE:
@@ -32,6 +33,14 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
                 else scene->set_projection_type(Projection::PERSPECTIVE);
                 mode = !mode;
             }
+            break;
+        case 'C':
+            if(action == GLFW_PRESS){
+                if(clip == 0) scene->enable_clip_plane();
+                else scene->disable_clip_plane();
+                clip = !clip;
+            }
+            break;
         default:
             break;
         }

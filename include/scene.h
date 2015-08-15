@@ -48,6 +48,14 @@ public:
     void select_particle(int x, int y);
     void set_projection_type(Projection);
 
+    glm::mat4 get_view_matrix(void)const;
+    glm::mat4 get_projection_matrix(void)const;
+    glm::mat4 get_model_matrix(void)const;
+
+    void set_clip_plane(const glm::vec4&);
+    void enable_clip_plane(void);
+    void disable_clip_plane(void);
+
     glm::vec3 get_light_direction(void)const;
     void set_light_direction(const glm::vec3&);
     float get_light_specular_intensity(void)const;
@@ -92,6 +100,8 @@ private:
 	glm::vec3 diffcolor;
 	glm::vec3 skycolor;
 
+    glm::vec4 clip_plane_;
+
 	unsigned int* shape_instances;
 	unsigned int* shape_vaos;
 	unsigned int* shape_vertex_vbos;
@@ -118,6 +128,7 @@ private:
     int selected_pid;
 
 	bool is_scene_loaded;
+    bool is_clip_plane_activated_;
 	bool m_blur;
 
     Projection projection_type;
