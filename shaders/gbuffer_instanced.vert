@@ -16,5 +16,6 @@ void main(void){
 	pass_Normal = mat3(transpose(inverse(MVMatrix * ModelMatrix))) * in_Normal; 
 	pass_Color = in_Color;
 	
+    gl_ClipDistance[0] = dot(vec4(0.0, 0.0, -1.0, 0.0), ModelMatrix * vec4(in_Position, 1.0));
 	gl_Position = ProjectionMatrix * MVMatrix * ModelMatrix * vec4(in_Position, 1.0);
 }

@@ -136,6 +136,34 @@ Scene::Scene(int width, int height):
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    {
+        Vertex vertices[] = {
+            {{-10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{ 10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{-10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}},
+
+            {{-10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{ 10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{ 10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}}
+        };
+
+        glGenVertexArrays(1, &plane_vao);
+        glBindVertexArray(plane_vao);
+
+        glGenBuffers(1, &plane_vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, plane_vbo);
+
+        glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(Vertex), vertices, GL_STATIC_DRAW);
+
+        glEnableVertexAttribArray((GLuint)0);
+        glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+
+        glEnableVertexAttribArray((GLuint)1);
+        glVertexAttribPointer((GLuint)1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)sizeof(glm::vec3));
+
+        glBindVertexArray(0);
+    }
+
     //Generate and load smaa textures
     //TODO: Handle read errors!!!
     FILE* fp = fopen("res/smaa_area.raw", "rb");
@@ -612,7 +640,14 @@ void Scene::render(void){
     //"FBO Pass"
     {
         m_gbuffer.Bind();
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glEnable(GL_STENCIL_TEST);
+        glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
+        glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
+        glStencilFunc(GL_ALWAYS, 0, 0);
+        glStencilMask(0xFF);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        glEnable(GL_CLIP_DISTANCE0);
+        glDisable(GL_CULL_FACE);
         for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
             glBindVertexArray(shape_vaos[shape_id]);
             if(shape_types[shape_id] == Shape::MESH){
@@ -633,6 +668,25 @@ void Scene::render(void){
 
                 glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
             }
+        }
+
+        sh_gbuffer->bind();
+        {
+            glEnable(GL_STENCIL_TEST);
+            glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+            glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
+            glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix * modelMatrix)));
+            sh_gbuffer->setUniform("NormalMatrix", 1, NormalMatrix);
+            sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
+            sh_gbuffer->setUniform("diffColor", 1, diffcolor);
+
+            glBindVertexArray(plane_vao);
+
+            glDrawArrays(GL_TRIANGLES, 0, 6);
+
+            glBindVertexArray(0);
+
+            glDisable(GL_STENCIL_TEST);
         }
 
         if(drawBox){

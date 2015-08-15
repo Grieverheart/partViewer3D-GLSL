@@ -108,6 +108,8 @@ private:
 	unsigned int vaoBox;
 	unsigned int vboBox;
 	unsigned int iboBox;
+	unsigned int plane_vao;
+	unsigned int plane_vbo;
 	unsigned int fullscreen_triangle_vao;
 
 	unsigned int area_texture;
