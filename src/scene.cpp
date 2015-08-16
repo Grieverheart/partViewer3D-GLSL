@@ -139,13 +139,13 @@ Scene::Scene(int width, int height):
 
     {
         Vertex vertices[] = {
-            {{-10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}},
-            {{ 10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}},
-            {{-10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{-1.0, -1.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{ 1.0, -1.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{-1.0,  1.0, 0.0}, {0.0, 0.0, 1.0}},
 
-            {{-10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}},
-            {{ 10.0, -10.0, 0.0}, {0.0, 0.0, 1.0}},
-            {{ 10.0,  10.0, 0.0}, {0.0, 0.0, 1.0}}
+            {{-1.0,  1.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{ 1.0, -1.0, 0.0}, {0.0, 0.0, 1.0}},
+            {{ 1.0,  1.0, 0.0}, {0.0, 0.0, 1.0}}
         };
 
         glGenVertexArrays(1, &plane_vao);
@@ -647,7 +647,17 @@ void Scene::render(void){
 
             glEnable(GL_STENCIL_TEST);
             glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-            glm::mat4 MVPMatrix = lightProjectionMatrix * lightViewMatrix * modelMatrix;
+            glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
+            {
+                glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
+                if(glm::dot(axis, axis) > 1e-12f){
+                    axis = glm::normalize(axis);
+                    float angle = acos(-clip_plane_.z);
+                    plane_model_matrix = glm::rotate(plane_model_matrix, angle, axis);
+                }
+
+            }
+            glm::mat4 MVPMatrix = lightProjectionMatrix * lightViewMatrix * modelMatrix * plane_model_matrix;
             sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
 
             glBindVertexArray(plane_vao);
@@ -703,16 +713,27 @@ void Scene::render(void){
             sh_gbuffer->bind();
 
             glEnable(GL_STENCIL_TEST);
+            glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-            glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
-            glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix * modelMatrix)));
+            glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
+            {
+                glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
+                if(glm::dot(axis, axis) > 1e-12f){
+                    axis = glm::normalize(axis);
+                    float angle = acos(-clip_plane_.z);
+                    plane_model_matrix = glm::rotate(plane_model_matrix, angle, axis);
+                }
+
+            }
+            glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix * plane_model_matrix;
+            glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix * modelMatrix * plane_model_matrix)));
             sh_gbuffer->setUniform("NormalMatrix", 1, NormalMatrix);
             sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
-            sh_gbuffer->setUniform("diffColor", 1, diffcolor);
 
             glBindVertexArray(plane_vao);
             glDrawArrays(GL_TRIANGLES, 0, 6);
 
+            glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             glDisable(GL_STENCIL_TEST);
             glDisable(GL_CLIP_DISTANCE0);
         }

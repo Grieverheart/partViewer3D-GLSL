@@ -6,8 +6,12 @@
 --Add selection outline rendering.
 --Add orthographic projection.
 --Cleanup code 1.
-Add clipping planes.
-Add methods to add and remove shapes and particles to the scene.
+**Add methods to add and remove shapes and particles to the scene. (discarded, user can keep two configurations and load)
+--Add clipping plane.
+Draw spheres with proper perspective.
+Fix sphere clipping.
+Fix particle selection with clipping.
+Make load_scene work for multiple calls.
+Add multiple clipping planes.
 Add lua scripting support.
 Draw points.
-Draw spheres with proper perspective.
