@@ -691,7 +691,6 @@ void Scene::render(void){
             if(shape_types[shape_id] == Shape::MESH){
                 sh_gbuffer_instanced->bind();
 
-                //sh_gbuffer_instanced->setUniform("diffColor", 1, diffcolor);
                 sh_gbuffer_instanced->setUniform("clip_plane", 1, clip_plane_);
                 sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
@@ -701,9 +700,17 @@ void Scene::render(void){
             else{
                 sh_spheres->bind();
 
-                //sh_spheres->setUniform("diffColor", 1, diffcolor);
+                //TODO: Move this to a better place
+                if(projection_type == Projection::PERSPECTIVE){
+                    sh_spheres->setUniform("perspective_scale", 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_)));
+                }
+                else{
+                    sh_spheres->setUniform("perspective_scale", 1.0f);
+                }
+                sh_spheres->setUniform("radius", 0.5f);
                 sh_spheres->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_spheres->setUniform("ProjectionMatrix", 1, projectionMatrix);
+                sh_spheres->setUniform("InvProjectionMatrix", 1, invProjMatrix);
 
                 glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
             }
@@ -857,17 +864,22 @@ void Scene::render(void){
 
                 glStencilFunc(GL_ALWAYS, 1, 0xFF);
                 glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+                float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
+
                 glm::mat4 mv_matrix = viewMatrix * modelMatrix * model_matrices[selected_pid];
                 sh_color_sphere->setUniform("mv_matrix", 1, mv_matrix);
                 sh_color_sphere->setUniform("projection_matrix", 1, projectionMatrix);
-                sh_color_sphere->setUniform("scale", 1.0f);
+                sh_color_sphere->setUniform("iprojection_matrix", 1, invProjMatrix);
+                sh_color_sphere->setUniform("perspective_scale", perspective_scale);
+                sh_color_sphere->setUniform("radius", 0.5f);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
                 glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
                 glStencilMask(0x00);
                 glDisable(GL_DEPTH_TEST);
                 glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                sh_color_sphere->setUniform("scale", 1.1f);
+                sh_color_sphere->setUniform("radius", 1.1f * 0.5f);
                 glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
             }
 

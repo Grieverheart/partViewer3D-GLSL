@@ -1,30 +1,56 @@
 #version 330 core
 
 uniform mat4 ProjectionMatrix;
+uniform float radius;
 
-smooth in vec2 TexCoord;
-flat in vec2 depth;
 flat in vec3 pass_Color;
+noperspective in vec3 ray_origin;
+noperspective in vec3 ray_dir;
+flat in vec3 sphere_position;
 
 layout(location = 0) out vec3 outColor;
 layout(location = 1) out vec3 outNormal;
 
-//NOTE: In principle, we have to fully raytrace the sphere because
-//the result is not correct in perspective projection. Or is it?
+//TODO: Improve this
+bool intersect_sphere(in vec3 position, in float radius, in vec3 ray_r0, in vec3 ray_dir, inout float t){
+	vec3 direction = position - ray_r0;
+	float B = dot(ray_dir, direction);
+	float det = B * B - dot(direction, direction) + radius * radius;
+
+	if(det < 0.0) return false;
+
+	float t0 = B + sqrt(det);
+	float t1 = B - sqrt(det);
+
+    bool ret_val = false;
+
+	if((t0 < t) && (t0 > 0.0)){
+		t = t0;
+        ret_val = true;
+	}
+
+	if((t1 < t) && (t1 > 0.0)){
+		t = t1;
+        ret_val = true;
+	}
+
+	return ret_val;
+}
 
 void main(void){
-    vec3 pos = vec3(TexCoord - vec2(0.5), 0.0);
-    //TODO: Change to square
-    if(length(pos) > 0.5) discard;
+    float t = 10000000.0;
+    vec3 ray_dir_ = normalize(ray_dir);
+    if(!intersect_sphere(sphere_position, radius, ray_origin, ray_dir_, t)) discard;
 
-    pos.z = sqrt(0.25 - pos.x * pos.x - pos.y * pos.y);
+    vec3 hit_position = ray_origin + t * ray_dir_;
 
     outColor  = pass_Color;
-	outNormal = normalize(pos);
+	outNormal = normalize(hit_position - sphere_position);
 
-    //NOTE: This works for perspective projection. You will have to change
-    //the -pos.z -> ProjectionMatrix[2][3] * pos.z
-    vec2 a = depth + 2.0 * vec2(ProjectionMatrix[2][2] * pos.z, -pos.z);
+    mat2 proj = mat2(ProjectionMatrix[2][2], ProjectionMatrix[2][3],
+                     ProjectionMatrix[3][2], ProjectionMatrix[3][3]);
+    vec2 pos = proj * vec2(hit_position.z, 1.0);
 
-    gl_FragDepth = 0.5 * (a.x / a.y) + 0.5;
+    gl_FragDepth = 0.5 * (pos.x / pos.y) + 0.5;
 }
+

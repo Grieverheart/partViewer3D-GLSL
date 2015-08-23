@@ -11,7 +11,7 @@ void main(void){
 	TexCoord.y = (gl_VertexID == 1)? 2.0: 0.0;
 
     //Position on far and near planes
-    vec4 p_near = invProjMatrix * vec4(2.0 * TexCoord - 1.0, 0.0, 1.0);
+    vec4 p_near = invProjMatrix * vec4(2.0 * TexCoord - 1.0, -1.0, 1.0);
     vec4 p_far  = invProjMatrix * vec4(2.0 * TexCoord - 1.0, 1.0, 1.0);
     p_near /= p_near.w;
     p_far  /= p_far.w;
