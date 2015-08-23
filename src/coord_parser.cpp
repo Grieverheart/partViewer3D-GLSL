@@ -38,28 +38,33 @@ SimConfig parse_config(const char* file_path){
         if(shape_id > n_shapes) n_shapes = shape_id;
         r.x = glm::radians(r.x);
 	}
-    ++n_shapes;
-    config.n_shapes = n_shapes;
+    config.shapes = new Shape[100];
     //TODO: Fix
-    std::getline(file, line);
-    s.str(line);
-    s.seekg(0);
-    int shape_id;
-    std::string shape_type;
-    std::string shape_name;
-    s >> shape_id >> shape_type >> shape_name;
-    config.shapes = new Shape[n_shapes];
+    for(;;){
+        std::getline(file, line);
+        if(file.eof()) break;
+        s.str(line);
+        s.seekg(0);
+        s.clear();
+        int shape_id;
+        std::string shape_type;
+        std::string shape_name;
+        s >> shape_id >> shape_type >> shape_name;
 
-    if(shape_type == "polyhedron"){
-        config.shapes[shape_id].type = Shape::MESH;
-        parse_obj(("obj/" + shape_name + ".obj").c_str(), config.shapes[shape_id].mesh, "flat");
+        if(shape_type == "polyhedron"){
+            config.shapes[shape_id].type = Shape::MESH;
+            parse_obj(("obj/" + shape_name + ".obj").c_str(), config.shapes[shape_id].mesh, "flat");
+        }
+        else if(shape_type == "sphere"){
+            config.shapes[shape_id].type = Shape::SPHERE;
+        }
+        else{
+            config.shapes[shape_id].type = Shape::OTHER;
+        }
+
+        ++n_shapes;
     }
-    else if(shape_type == "sphere"){
-        config.shapes[shape_id].type = Shape::SPHERE;
-    }
-    else{
-        config.shapes[shape_id].type = Shape::OTHER;
-    }
+    config.n_shapes = n_shapes;
 
     return config;
 }
