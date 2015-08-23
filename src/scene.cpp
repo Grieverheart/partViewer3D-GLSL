@@ -608,63 +608,67 @@ void Scene::render(void){
     {
         m_shadowmap.Bind();
 
-        if(is_clip_plane_activated_){
-            glEnable(GL_STENCIL_TEST);
-            glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
-            glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
-            glStencilFunc(GL_ALWAYS, 0, 0);
-            glStencilMask(0xFF);
-            glEnable(GL_CLIP_DISTANCE0);
-            glDisable(GL_CULL_FACE);
-        }
-
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         glViewport(0, 0, windowWidth * 2, windowHeight * 2);
 
         for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
             glBindVertexArray(shape_vaos[shape_id]);
+
             if(shape_types[shape_id] == Shape::MESH){
+                if(is_clip_plane_activated_){
+                    glEnable(GL_STENCIL_TEST);
+                    glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
+                    glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
+                    glStencilFunc(GL_ALWAYS, 0, 0);
+                    glStencilMask(0xFF);
+                    glEnable(GL_CLIP_DISTANCE0);
+                    glDisable(GL_CULL_FACE);
+                }
+
                 sh_shadowmap_instanced->bind();
 
                 sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
                 sh_shadowmap_instanced->setUniform("clip_plane", 1, clip_plane_);
 
                 glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
+
+                if(is_clip_plane_activated_){
+                    sh_gbuffer->bind();
+
+                    glEnable(GL_STENCIL_TEST);
+                    glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+                    glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
+                    {
+                        glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
+                        if(glm::dot(axis, axis) > 1e-12f){
+                            axis = glm::normalize(axis);
+                            float angle = acos(-clip_plane_.z);
+                            plane_model_matrix = glm::rotate(plane_model_matrix, angle, axis);
+                        }
+
+                    }
+                    glm::mat4 MVPMatrix = lightProjectionMatrix * lightViewMatrix * modelMatrix * plane_model_matrix;
+                    sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
+
+                    glBindVertexArray(plane_vao);
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                    glDisable(GL_STENCIL_TEST);
+                    glDisable(GL_CLIP_DISTANCE0);
+                }
             }
             else{
                 sh_shadowmap_spheres->bind();
 
+                sh_shadowmap_spheres->setUniform("clip", is_clip_plane_activated_);
+                sh_shadowmap_spheres->setUniform("radius", 0.5f);
+                sh_shadowmap_spheres->setUniform("clip_plane", 1, clip_plane_);
                 sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
                 sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
 
                 glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
             }
-        }
-
-        if(is_clip_plane_activated_){
-            sh_gbuffer->bind();
-
-            glEnable(GL_STENCIL_TEST);
-            glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-            glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
-            {
-                glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
-                if(glm::dot(axis, axis) > 1e-12f){
-                    axis = glm::normalize(axis);
-                    float angle = acos(-clip_plane_.z);
-                    plane_model_matrix = glm::rotate(plane_model_matrix, angle, axis);
-                }
-
-            }
-            glm::mat4 MVPMatrix = lightProjectionMatrix * lightViewMatrix * modelMatrix * plane_model_matrix;
-            sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
-
-            glBindVertexArray(plane_vao);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-
-            glDisable(GL_STENCIL_TEST);
-            glDisable(GL_CLIP_DISTANCE0);
         }
 
         glViewport(0, 0, windowWidth, windowHeight);
@@ -674,21 +678,21 @@ void Scene::render(void){
     {
         m_gbuffer.Bind();
 
-        if(is_clip_plane_activated_){
-            glEnable(GL_STENCIL_TEST);
-            glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
-            glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
-            glStencilFunc(GL_ALWAYS, 0, 0);
-            glStencilMask(0xFF);
-            glEnable(GL_CLIP_DISTANCE0);
-            glDisable(GL_CULL_FACE);
-        }
-
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
         for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
             glBindVertexArray(shape_vaos[shape_id]);
             if(shape_types[shape_id] == Shape::MESH){
+                if(is_clip_plane_activated_){
+                    glEnable(GL_STENCIL_TEST);
+                    glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
+                    glStencilOpSeparate(GL_BACK, GL_KEEP, GL_DECR_WRAP, GL_DECR_WRAP);
+                    glStencilFunc(GL_ALWAYS, 0, 0);
+                    glStencilMask(0xFF);
+                    glEnable(GL_CLIP_DISTANCE0);
+                    glDisable(GL_CULL_FACE);
+                }
+
                 sh_gbuffer_instanced->bind();
 
                 sh_gbuffer_instanced->setUniform("clip_plane", 1, clip_plane_);
@@ -696,9 +700,40 @@ void Scene::render(void){
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
 
                 glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
+
+                if(is_clip_plane_activated_){
+                    sh_gbuffer->bind();
+
+                    glEnable(GL_STENCIL_TEST);
+                    glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+                    glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
+                    glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
+                    {
+                        glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
+                        if(glm::dot(axis, axis) > 1e-12f){
+                            axis = glm::normalize(axis);
+                            float angle = acos(-clip_plane_.z);
+                            plane_model_matrix = glm::rotate(plane_model_matrix, angle, axis);
+                        }
+
+                    }
+                    glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix * plane_model_matrix;
+                    glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix * modelMatrix * plane_model_matrix)));
+                    sh_gbuffer->setUniform("NormalMatrix", 1, NormalMatrix);
+                    sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
+
+                    glBindVertexArray(plane_vao);
+                    glDrawArrays(GL_TRIANGLES, 0, 6);
+
+                    glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+                    glDisable(GL_STENCIL_TEST);
+                    glDisable(GL_CLIP_DISTANCE0);
+                }
             }
             else{
                 sh_spheres->bind();
+                sh_spheres->setUniform("clip", is_clip_plane_activated_);
+                sh_spheres->setUniform("clip_plane", 1, clip_plane_);
 
                 //TODO: Move this to a better place
                 if(projection_type == Projection::PERSPECTIVE){
@@ -714,35 +749,6 @@ void Scene::render(void){
 
                 glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
             }
-        }
-
-        if(is_clip_plane_activated_){
-            sh_gbuffer->bind();
-
-            glEnable(GL_STENCIL_TEST);
-            glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-            glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-            glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
-            {
-                glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
-                if(glm::dot(axis, axis) > 1e-12f){
-                    axis = glm::normalize(axis);
-                    float angle = acos(-clip_plane_.z);
-                    plane_model_matrix = glm::rotate(plane_model_matrix, angle, axis);
-                }
-
-            }
-            glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix * plane_model_matrix;
-            glm::mat3 NormalMatrix = glm::mat3(glm::transpose(glm::inverse(viewMatrix * modelMatrix * plane_model_matrix)));
-            sh_gbuffer->setUniform("NormalMatrix", 1, NormalMatrix);
-            sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
-
-            glBindVertexArray(plane_vao);
-            glDrawArrays(GL_TRIANGLES, 0, 6);
-
-            glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            glDisable(GL_STENCIL_TEST);
-            glDisable(GL_CLIP_DISTANCE0);
         }
 
         if(drawBox){
