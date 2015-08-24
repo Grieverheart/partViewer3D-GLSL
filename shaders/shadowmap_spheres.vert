@@ -32,11 +32,7 @@ void main(void){
 	gl_Position = ProjectionMatrix * gl_Position;
 
     if(clip){
-        vec4 clip_view_pos = MVMatrix * vec4(clip_plane.w * clip_plane.xyz, 1.0);
-        vec3 clip_view_dir = normalize(mat3(transpose(inverse(MVMatrix))) * clip_plane.xyz);
-        float clip_view_dist = -dot(clip_view_dir, (clip_view_pos.xyz / clip_view_pos.w));
-        view_clip_plane = vec4(clip_view_dir, clip_view_dist);
-
+        view_clip_plane = transpose(inverse(MVMatrix)) * clip_plane;
         float t = -(dot(view_position.xy, view_clip_plane.xy) + view_clip_plane.w) / view_clip_plane.z;
         clip_position = vec3(view_position.xy, t);
     }

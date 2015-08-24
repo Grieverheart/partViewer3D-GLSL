@@ -646,7 +646,7 @@ void Scene::render(void){
 
                     glEnable(GL_STENCIL_TEST);
                     glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-                    glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
+                    glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), -clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
                     {
                         glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
                         if(glm::dot(axis, axis) > 1e-12f){
@@ -715,7 +715,7 @@ void Scene::render(void){
                     glEnable(GL_STENCIL_TEST);
                     glColorMaski(0, GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
                     glStencilFunc(GL_NOTEQUAL, 0, 0xFF);
-                    glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
+                    glm::mat4 plane_model_matrix = glm::scale(glm::translate(glm::mat4(1.0), -clip_plane_.w * glm::vec3(clip_plane_)), glm::vec3(out_radius_));
                     {
                         glm::vec3 axis = -glm::cross(glm::vec3(clip_plane_), glm::vec3(0.0, 0.0, -1.0));
                         if(glm::dot(axis, axis) > 1e-12f){
