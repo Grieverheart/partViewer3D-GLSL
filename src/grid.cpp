@@ -135,24 +135,48 @@ public:
         mAABB = {min, max};
     }
 
+#if 0 //This culls back-facing triangles
 	bool raycast(glm::vec3 o, glm::vec3 ray_dir, float &t){
         glm::vec3 AC = vertices_[2] - vertices_[0];
         glm::vec3 AB = vertices_[1] - vertices_[0];
         glm::vec3 P = glm::cross(ray_dir, AC);
         float det = glm::dot(AB, P);
         if(det < 0.0f) return false;
-        float invDet = 1.0f / det;
         glm::vec3 T = o - vertices_[0];
+        float u = glm::dot(T, P);
+        if(u < 0.0f || u > det) return false;
         glm::vec3 Q = glm::cross(T, AB);
-        float t1 = glm::dot(AC, Q) * invDet;
-        if(t1 > t || t1 < 0.0f) return false;
-        float u = glm::dot(T, P) * invDet;
-        if(u < 0.0f || u > 1.0f) return false;
-        float v = glm::dot(ray_dir, Q) * invDet;
+        float v = glm::dot(ray_dir, Q);
         if(v < 0.0f || u + v > 1.0f) return false;
+        float t1 = glm::dot(AC, Q);
+        float invDet = 1.0f / det;
+        t1 *= invDet;
+        u  *= invDet;
+        v  *= invDet;
+        if(t1 > t || t1 < 0.0f) return false;
         t = t1;
         return true;
     }
+#else
+	bool raycast(glm::vec3 o, glm::vec3 ray_dir, float &t){
+        glm::vec3 AC = vertices_[2] - vertices_[0];
+        glm::vec3 AB = vertices_[1] - vertices_[0];
+        glm::vec3 P = glm::cross(ray_dir, AC);
+        float det = glm::dot(AB, P);
+        if(det == 0.0f) return false; //TODO: This shoud test if det is close to zero instead
+        float invDet = 1.0f / det;
+        glm::vec3 T = o - vertices_[0];
+        float u = glm::dot(T, P) * invDet;
+        if(u < 0.0f || u > 1.0f) return false;
+        glm::vec3 Q = glm::cross(T, AB);
+        float v = glm::dot(ray_dir, Q) * invDet;
+        if(v < 0.0f || u + v > 1.0f) return false;
+        float t1 = glm::dot(AC, Q) * invDet;
+        if(t1 > t || t1 < 0.0f) return false;
+        t = t1;
+        return true;
+    }
+#endif
 
     const AABB& get_AABB(void)const{
         return mAABB;
@@ -311,9 +335,11 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
 	
 	//Traverse the cells using 3d-DDA
 	float retValue = false;
+    int n_tests = 0;
 	while(1){
 		int index = cell[0] + cell[1] * n_cells_[0] + cell[2] * n_cells_[0] * n_cells_[1];
         for(auto item: cells_[index]){
+            ++n_tests;
 			if(item->object_->raycast(o, ray_dir, t)){
                 retValue = true;
                 pid = item->pid_;
@@ -331,6 +357,7 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
 		nextCrossingT[axis] += deltaT[axis];
 	}
 
+    printf("Tested %d triangles\n", n_tests);
 	return retValue;
 }
 

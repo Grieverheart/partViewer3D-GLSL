@@ -509,8 +509,16 @@ void Scene::select_particle(int x, int y){
     glm::vec4 dir = imodel_matrix * invViewMatrix * invProjMatrix * mouse_clip;
     dir /= dir.w;
 
+    glm::vec3 ray_origin = o;
+    glm::vec3 ray_dir = glm::normalize(glm::vec3(dir) - o);
+
+    if(is_clip_plane_activated_){
+        float t = -(glm::dot(ray_origin, glm::vec3(clip_plane_)) + clip_plane_.w) / glm::dot(ray_dir, glm::vec3(clip_plane_));
+        ray_origin += ray_dir * t;
+    }
+
     int pid;
-    if(grid->raycast(o, glm::normalize(glm::vec3(dir) - o), pid)){
+    if(grid->raycast(ray_origin, ray_dir, pid)){
         if(selected_pid == pid) selected_pid = -1;
         else selected_pid = pid;
     }
