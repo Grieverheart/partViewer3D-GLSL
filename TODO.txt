@@ -11,7 +11,7 @@
 --Draw spheres with proper perspective.
 --Fix sphere clipping.
 --Fix particle selection with clipping.
-Make load_scene work for multiple calls.
-Draw points.
+--Make load_scene work for multiple calls.
 Add lua scripting support.
+Draw points.
 Add multiple clipping planes.

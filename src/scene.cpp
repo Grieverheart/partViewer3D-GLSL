@@ -249,6 +249,24 @@ Scene::~Scene(void){
 }
 
 void Scene::load_scene(const SimConfig& config){
+    if(is_scene_loaded){
+        glDeleteBuffers(n_shapes, shape_vertex_vbos);
+        glDeleteBuffers(n_shapes, shape_model_matrix_vbos);
+        glDeleteBuffers(n_shapes, shape_colors_vbos);
+        glDeleteVertexArrays(n_shapes, shape_vaos);
+        glDeleteVertexArrays(n_shapes, shape_single_vaos);
+        delete grid;
+        delete[] particles;
+        delete[] shape_instances;
+        delete[] shape_vaos;
+        delete[] shape_single_vaos;
+        delete[] shape_vertex_vbos;
+        delete[] shape_model_matrix_vbos;
+        delete[] shape_colors_vbos;
+        delete[] shape_num_vertices;
+        delete[] model_matrices;
+    }
+
     is_scene_loaded = true;
 
     grid = new Grid(config);
@@ -608,6 +626,8 @@ void Scene::drawConfigurationBox(void)const{
 }
 
 void Scene::render(void){
+    if(!is_scene_loaded) return;
+
 	glDepthMask(GL_TRUE);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
