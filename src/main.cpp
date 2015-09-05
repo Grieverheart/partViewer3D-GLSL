@@ -3,9 +3,15 @@
 #include "include/event_manager.h"
 #include "include/events.h"
 #include "include/gui.h"
+#include "include/register_lua_bindings.h"
 #include <GLFW/glfw3.h>
 #include <AntTweakBar.h>
 #include <cstdio>
+extern "C"{
+#include <lua.h>
+#include <lauxlib.h>
+#include <lualib.h>
+}
 
 bool running = true;
 
@@ -130,6 +136,13 @@ int main(int argc,char *argv[] ){
         gui.resize(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
 
+	
+	lua_State* L = luaL_newstate();
+	luaL_openlibs(L);
+
+    register_lua_bindings(L, scene);
+	
+	luaL_dofile(L, "test.lua");
 
 	scene->load_scene(parse_config(argv[1]));
 
@@ -142,6 +155,8 @@ int main(int argc,char *argv[] ){
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+	
+	lua_close(L);
 
     delete evt_mgr;
     delete mouse;

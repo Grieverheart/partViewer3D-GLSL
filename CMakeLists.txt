@@ -19,6 +19,7 @@ set(SOURCE_FILES
     src/obj_parser.cpp
     src/shader.cpp
     src/gui.cpp
+    src/register_lua_bindings.cpp
     src/ssao.cpp)
 
 add_executable(main ${SOURCE_FILES})
@@ -39,6 +40,7 @@ set(BUILD_SHARED_LIBS ON)
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw-3.1.1")
 
 find_package(OpenGL REQUIRED)
+find_package(Lua REQUIRED)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
@@ -52,6 +54,6 @@ set(EXTERNAL_LIBS
     glfw
     GLEW_shared)
 
-target_link_libraries(main ${OPENGL_gl_LIBRARY} ${EXTERNAL_LIBS})
+target_link_libraries(main ${OPENGL_gl_LIBRARY} ${LUA_LIBRARIES} ${EXTERNAL_LIBS})
 
 install(TARGETS main DESTINATION ${CMAKE_SOURCE_DIR})
