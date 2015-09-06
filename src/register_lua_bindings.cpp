@@ -6,6 +6,8 @@ extern "C"{
 #include <lualib.h>
 }
 
+#include <maan/class_.hpp>
+
 //box[], shapes[], particles[]
 static int luaScene_load_scene(lua_State* L){
 
@@ -175,7 +177,11 @@ static int luaScene_set_light_intensity(lua_State* L){
 //}
 
 bool register_lua_bindings(lua_State* L, Scene* scene){
+    using namespace maan;
     //Register vec3
+    class_<glm::vec3>(L, "vec3")
+        .def_constructor<float, float, float>();
+
     //Register quat
     //Register Particle
     //Register shape
