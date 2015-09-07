@@ -42,6 +42,10 @@ namespace maan{
             lua_pushcfunction(L, detail::__gc<T>);
             lua_rawset(L, -3);
 
+            lua_pushstring(L_, "__class_id");
+            lua_pushlightuserdata(L_, const_cast<void*>(detail::ClassInfo<T>::get_metatable_key()));
+            lua_rawset(L_, -3);
+
             lua_pushstring(L_, "__name");
             lua_pushstring(L_, name_);
             lua_rawset(L_, -3);
@@ -91,6 +95,57 @@ namespace maan{
 
             return *this;
         }
+
+#define DEF_BINARY_OPERATOR(name, _op_)\
+        class_& def_##name(void){\
+            lua_pushstring(L_, "__"#name);\
+            lua_pushcfunction(L_, __##name);\
+            lua_rawset(L_, -3);\
+            return *this;\
+        }\
+        static int __##name(lua_State* L){\
+            /*TODO: You should use get_LuaValue for type safety.*/\
+            type_* object1 = static_cast<type_*>(lua_touserdata(L, 1));\
+            type_* object2 = static_cast<type_*>(lua_touserdata(L, 2));\
+            push_LuaValue(L, *object1 _op_ *object2);\
+            return 1;\
+        }
+
+        //TODO: Implement overloading of operators based on argument types.
+        //We will probably use a table to index the various operator overloads
+        //based on the class index.
+
+        //template<class O>\
+        //class_& def_##name(void){\
+        //    lua_pushstring(L_, "__"#name);\
+        //    lua_pushcfunction(L_, __##name<O>);\
+        //    lua_rawset(L_, -3);\
+        //    return *this;\
+        //}\
+        //template<class O>\
+        //static int __##name(lua_State* L){\
+        //    if(lua_isnumber(L, 1)){\
+        //        type_& a = get_LuaValue<type_>(L);\
+        //        O b = get_LuaValue<O>(L);\
+        //        push_LuaValue(L, b _op_ a);\
+        //    }\
+        //    else{\
+        //        O b = get_LuaValue<O>(L);\
+        //        type_& a = get_LuaValue<type_>(L);\
+        //        push_LuaValue(L, a _op_ b);\
+        //    }\
+        //    return 1;\
+        //}
+
+        DEF_BINARY_OPERATOR(add, +);
+        DEF_BINARY_OPERATOR(sub, -);
+        DEF_BINARY_OPERATOR(mul, *);
+        DEF_BINARY_OPERATOR(div, /);
+        DEF_BINARY_OPERATOR(eq, ==);
+        DEF_BINARY_OPERATOR(lt, <);
+        DEF_BINARY_OPERATOR(gt, >);
+        DEF_BINARY_OPERATOR(le, <=);
+        DEF_BINARY_OPERATOR(ge, >=);
 
         template<class M>
         class_& def_readwrite(const char* name, M type_::*var_ptr){
