@@ -1,5 +1,8 @@
 #include "include/register_lua_bindings.h"
+#include "include/particle.h"
+#include "include/shape.h"
 #include "include/scene.h"
+#include <vector>
 
 extern "C"{
 #include <lauxlib.h>
@@ -176,15 +179,66 @@ static int luaScene_set_light_intensity(lua_State* L){
 //    return 0;
 //}
 
+namespace{
+    struct Sphere{};
+
+    class Mesh{
+    public:
+        //TODO: Perhaps we add a lua function as the constructor.
+        void add_vertex(const Vertex& v){
+            vertices_.push_back(v);
+        }
+
+        Vertex get_vertex(size_t vi)const{
+            return vertices_[vi];
+        }
+
+        size_t get_num_vertices(void)const{
+            return vertices_.size();
+        }
+    private:
+        std::vector<Vertex> vertices_;
+    };
+};
+
 bool register_lua_bindings(lua_State* L, Scene* scene){
     using namespace maan;
     //Register vec3
     class_<glm::vec3>(L, "vec3")
-        .def_constructor<float, float, float>();
+        .def_constructor<float, float, float>()
+        .def_add().def_sub().def_eq()
+        .def_readwrite("x", &glm::vec3::x)
+        .def_readwrite("y", &glm::vec3::y)
+        .def_readwrite("z", &glm::vec3::z);
 
-    //Register quat
+    //Register vec4
+    class_<glm::vec4>(L, "vec4")
+        .def_constructor<float, float, float, float>()
+        .def_add().def_sub().def_eq()
+        .def_readwrite("x", &glm::vec4::x)
+        .def_readwrite("y", &glm::vec4::y)
+        .def_readwrite("z", &glm::vec4::z)
+        .def_readwrite("z", &glm::vec4::w);
+
     //Register Particle
+    class_<Particle>(L, "Particle")
+        .def_constructor<>()
+        .def_readwrite("shape_id", &Particle::shape_id)
+        .def_readwrite("rot", &Particle::rot)
+        .def_readwrite("pos", &Particle::pos)
+        .def_readwrite("size", &Particle::size);
+
     //Register shape
+    class_<Sphere>(L, "Sphere")
+        .def_constructor<>();
+
+    class_<Mesh>(L, "Mesh")
+        .def_constructor<>()
+        .def("add_vertex", &Mesh::add_vertex)
+        .def("get_vertex", &Mesh::get_vertex)
+        .def("get_num_vertices", &Mesh::get_num_vertices);
+
+    //Register box/mat3
 
     //Register scene
 

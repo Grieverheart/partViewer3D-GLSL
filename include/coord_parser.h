@@ -3,16 +3,7 @@
 
 #include <glm/glm.hpp>
 #include "shape.h"
-
-//TODO: Move these structures to separate header.
-
-//TODO: Might need recosidering
-struct Particle{
-    int shape_id;
-    glm::vec4 rot;
-    glm::vec3 pos;
-    float size;
-};
+#include "particle.h"
 
 //TODO: Destructor/Constructor!!
 struct SimConfig{

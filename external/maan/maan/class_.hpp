@@ -67,7 +67,7 @@ namespace maan{
             };
 
             luaL_Reg funcs[] = {
-                {name, call_member<R, ArgsT...>},
+                {name, call_member<R, ArgsT...>::func},
                 {NULL, NULL}
             };
 
@@ -86,7 +86,7 @@ namespace maan{
             };
 
             luaL_Reg funcs[] = {
-                {name, call_member<R, ArgsT...>},
+                {name, call_member<R, ArgsT...>::func},
                 {NULL, NULL}
             };
 
@@ -195,15 +195,29 @@ namespace maan{
 
 
         template<typename R, typename ...ArgsT>
-        static int call_member(lua_State* L){
-            type_* object = static_cast<type_*>(lua_touserdata(L, 1));
-            auto func = *static_cast<std::function<std::function<R(ArgsT...)>(type_*)>*>(
-                lua_touserdata(L, lua_upvalueindex(1))
-            );
-            auto result = detail::lift(func(object), detail::get_args<ArgsT...>(L));
-            push_LuaValue(L, result);
-            return 1;
-        }
+        struct call_member{
+            static int func(lua_State* L){
+                type_* object = static_cast<type_*>(lua_touserdata(L, 1));
+                auto func = *static_cast<std::function<std::function<R(ArgsT...)>(type_*)>*>(
+                    lua_touserdata(L, lua_upvalueindex(1))
+                );
+                auto result = detail::lift(func(object), detail::get_args<ArgsT...>(L));
+                push_LuaValue(L, result);
+                return 1;
+            }
+        };
+
+        template<typename ...ArgsT>
+        struct call_member<void, ArgsT...>{
+            static int func(lua_State* L){
+                type_* object = static_cast<type_*>(lua_touserdata(L, 1));
+                auto func = *static_cast<std::function<std::function<void(ArgsT...)>(type_*)>*>(
+                    lua_touserdata(L, lua_upvalueindex(1))
+                );
+                detail::lift(func(object), detail::get_args<ArgsT...>(L));
+                return 0;
+            }
+        };
 
         template<class M>
         static int get_var(lua_State* L){
