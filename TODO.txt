@@ -14,4 +14,6 @@
 --Make load_scene work for multiple calls.
 Add lua scripting support.
 Draw points.
+Add suport for multiple windows.
+Add font drawing.
 Add multiple clipping planes.

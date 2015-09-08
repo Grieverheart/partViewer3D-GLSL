@@ -153,7 +153,7 @@ int main(int argc,char *argv[] ){
         lua_pushstring(L, argv[i]);
         lua_rawset(L, -3);
     }
-    if(lua_pcall(L, 1, 0, 0)){
+    if(lua_pcall(L, 1, 1, 0)){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));
     }
 
