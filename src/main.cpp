@@ -144,7 +144,7 @@ int main(int argc,char *argv[] ){
 	
 	luaL_dofile(L, "test.lua");
 
-	scene->load_scene(parse_config(argv[1]));
+	if(argc > 1) scene->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){
         evt_mgr->processQueue();
