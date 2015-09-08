@@ -146,6 +146,7 @@ int main(int argc,char *argv[] ){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));
     }
 
+    //TODO: Check if function really exists
     lua_getglobal(L, "OnInit");
     lua_createtable(L, argc, 0);
     for(int i = 0; i < argc; ++i){
@@ -156,8 +157,6 @@ int main(int argc,char *argv[] ){
     if(lua_pcall(L, 1, 1, 0)){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));
     }
-
-	if(argc > 1) scene->load_scene(parse_config(argv[1]));
 
     while(!glfwWindowShouldClose(window) && running){
         evt_mgr->processQueue();

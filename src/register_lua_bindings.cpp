@@ -11,6 +11,35 @@ extern "C"{
 
 #include <maan/class_.hpp>
 
+//TODO: Perhaps use these to avoid repeating code.
+//namespace{
+//    template<typename T>
+//    struct function_traits;
+//
+//    template<typename R, typename U, typename C>
+//    struct function_traits<R(C::*)(U)>{
+//        using type = U;
+//    };
+//}
+//
+//#define DEF_SET_FUNCTION(name)\
+//    template<typename T = function_traits<decltype(&Scene::name)>::type>\
+//    static int luaScene_##name(lua_State* L){\
+//        auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));\
+//        scene->name(maan::get_LuaValue<T>(L));\
+//        return 0;\
+//    }
+//
+//#define DEF_GET_FUNCTION(name)\
+//    static int luaScene_##name(lua_State* L){\
+//        auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));\
+//        maan::push_LuaValue(L, scene->name());\
+//        return 1;\
+//    }
+
+#define ADD_FUNCTION(name)\
+    {"scene_"#name, luaScene_##name},
+
 //double dz
 static int luaScene_zoom(lua_State* L){
     auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -27,23 +56,6 @@ static int luaScene_select_particle(lua_State* L){
     scene->select_particle(x, y);
     return 0;
 }
-
-//static int luaScene_set_projection_type(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_view_matrix(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_projection_matrix(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_model_matrix(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
 
 static int luaScene_set_clip_plane(lua_State* L){
     auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -63,16 +75,6 @@ static int luaScene_disable_clip_plane(lua_State* L){
     scene->disable_clip_plane();
     return 0;
 }
-
-//static int luaScene_get_light_direction(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//
-//static int luaScene_set_light_direction(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
 
 static int luaScene_get_light_specular_intensity(lua_State* L){
     auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
@@ -143,22 +145,31 @@ static int luaScene_is_ssao_blur_enabled(lua_State* L){
     return 1;
 }
 
-//static int luaScene_set_ssao_radius(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_ssao_radius(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_set_ssao_num_samples(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_ssao_num_samples(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
+static int luaScene_set_ssao_num_samples(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    scene->set_ssao_num_samples(lua_tointeger(L, 1));
+    return 0;
+}
+
+static int luaScene_get_ssao_num_samples(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    lua_pushinteger(L, scene->get_ssao_num_samples());
+    return 1;
+}
+
+static int luaScene_set_ssao_radius(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    scene->set_ssao_radius(lua_tonumber(L, 1));
+    return 0;
+}
+
+static int luaScene_get_ssao_radius(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    lua_pushnumber(L, scene->get_ssao_radius());
+    return 1;
+}
+
+//TODO: Implement these.
 //static int luaScene_set_sky_color(lua_State* L){
 //    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 //    return 0;
@@ -172,6 +183,31 @@ static int luaScene_is_ssao_blur_enabled(lua_State* L){
 //    return 0;
 //}
 //static int luaScene_get_background_color(lua_State* L){
+//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+//    return 0;
+//}
+//static int luaScene_set_projection_type(lua_State* L){
+//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+//    return 0;
+//}
+//static int luaScene_get_view_matrix(lua_State* L){
+//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+//    return 0;
+//}
+//static int luaScene_get_projection_matrix(lua_State* L){
+//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+//    return 0;
+//}
+//static int luaScene_get_model_matrix(lua_State* L){
+//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+//    return 0;
+//}
+//static int luaScene_get_light_direction(lua_State* L){
+//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+//    return 0;
+//}
+//
+//static int luaScene_set_light_direction(lua_State* L){
 //    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 //    return 0;
 //}
@@ -199,8 +235,7 @@ namespace{
 
 //TODO: Add type safety
 //box[], particles[], shapes[]
-static int luaScene_load_scene(lua_State* L){
-
+static int luaScene_load(lua_State* L){
     glm::mat3 box;
     for(lua_pushnil(L); lua_next(L, 1); lua_pop(L, 1)){
         long long int i = lua_tointeger(L, -2) - 1;
@@ -306,22 +341,26 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
 
     //Register scene
     luaL_Reg funcs[] = {
-        {"scene_load", luaScene_load_scene},
-        {"scene_zoom", luaScene_zoom},
-        {"scene_select_particle", luaScene_select_particle},
-        {"scene_enable_clip_plane", luaScene_enable_clip_plane},
-        {"scene_disable_clip_plane", luaScene_disable_clip_plane},
-        {"scene_is_ssao_enabled", luaScene_is_ssao_blur_enabled},
-        {"scene_set_ssao_blur", luaScene_set_ssao_blur},
-        {"scene_set_clip_plane", luaScene_set_clip_plane},
-        {"scene_get_light_intensity", luaScene_get_light_intensity},
-        {"scene_set_light_intensity", luaScene_set_light_intensity},
-        {"scene_get_light_ambient_intensity", luaScene_get_light_ambient_intensity},
-        {"scene_set_light_ambient_intensity", luaScene_set_light_ambient_intensity},
-        {"scene_get_light_diffuse_intensity", luaScene_get_light_diffuse_intensity},
-        {"scene_set_light_diffuse_intensity", luaScene_set_light_diffuse_intensity},
-        {"scene_get_light_specular_intensity", luaScene_get_light_specular_intensity},
-        {"scene_set_light_specular_intensity", luaScene_set_light_specular_intensity},
+        ADD_FUNCTION(load)
+        ADD_FUNCTION(zoom)
+        ADD_FUNCTION(select_particle)
+        ADD_FUNCTION(enable_clip_plane)
+        ADD_FUNCTION(disable_clip_plane)
+        ADD_FUNCTION(is_ssao_blur_enabled)
+        ADD_FUNCTION(set_ssao_blur)
+        ADD_FUNCTION(set_ssao_num_samples)
+        ADD_FUNCTION(get_ssao_num_samples)
+        ADD_FUNCTION(set_ssao_radius)
+        ADD_FUNCTION(get_ssao_radius)
+        ADD_FUNCTION(set_clip_plane)
+        ADD_FUNCTION(get_light_intensity)
+        ADD_FUNCTION(set_light_intensity)
+        ADD_FUNCTION(get_light_ambient_intensity)
+        ADD_FUNCTION(set_light_ambient_intensity)
+        ADD_FUNCTION(get_light_diffuse_intensity)
+        ADD_FUNCTION(set_light_diffuse_intensity)
+        ADD_FUNCTION(get_light_specular_intensity)
+        ADD_FUNCTION(set_light_specular_intensity)
         {NULL, NULL}
     };
 

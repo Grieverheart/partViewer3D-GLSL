@@ -1,15 +1,7 @@
 #include "include/ssao.h"
 #include <GL/glew.h>
 #include <cstdio>
-#include <cstdlib>
-#include <ctime>
 #include "include/shader.h"
-
-static inline float random(float x, float y){
-	float one = (float)rand() / RAND_MAX;
-	float dx = y - x;
-	return dx * one + x;
-}
 
 static inline float lerp(float start, float end, float perc){
 	return start + perc * (end - start);
@@ -19,9 +11,7 @@ Cssao::Cssao(void):
 	m_kernel_size(10), m_noise_size(3), m_RADIUS(2.0f),
 	m_update(false), m_update_kernel(false),
     m_kernel(NULL), m_noise(NULL)
-{
-	srand(2);
-}
+{}
 
 Cssao::~Cssao(void){
 	delete[] m_kernel;
@@ -29,13 +19,15 @@ Cssao::~Cssao(void){
 }
 
 void Cssao::CreateKernel(void){	
+    std::uniform_real_distribution<float> rnd(0.0f, 1.0f);
+
 	m_kernel = new glm::vec3[m_kernel_size];
 	
 	for(unsigned int i = 0; i < m_kernel_size; i++){ //Create a bigger kernel so we can freely change it later
 		m_kernel[i] = glm::vec3(
-			random(-1.0f, 1.0f),
-			random(-1.0f, 1.0f),
-			random(0.0f, 1.0f)
+			2.0f * rnd(rng_) - 1.0f,
+			2.0f * rnd(rng_) - 1.0f,
+			rnd(rng_)
 		);
 		float scale = (float)(i + 1) / (float)m_kernel_size;
 		scale = lerp(0.1f, 1.0f, scale * scale);
@@ -44,14 +36,12 @@ void Cssao::CreateKernel(void){
 }
 
 void Cssao::CreateNoise(void){
+    std::uniform_real_distribution<float> rnd(-1.0f, 1.0f);
+
 	m_noise = new glm::vec3[m_noise_size * m_noise_size];
 	
 	for(unsigned int i = 0; i < m_noise_size * m_noise_size; i++){
-		m_noise[i] = glm::vec3(
-			random(-1.0f, 1.0f),
-			random(-1.0f, 1.0f),
-			0.0f
-		);
+		m_noise[i] = glm::vec3(rnd(rng_), rnd(rng_), 0.0f);
 		m_noise[i] = glm::normalize(m_noise[i]);
 	}
 	

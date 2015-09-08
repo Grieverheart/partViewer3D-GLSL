@@ -335,11 +335,9 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
 	
 	//Traverse the cells using 3d-DDA
 	float retValue = false;
-    int n_tests = 0;
 	while(1){
 		int index = cell[0] + cell[1] * n_cells_[0] + cell[2] * n_cells_[0] * n_cells_[1];
         for(auto item: cells_[index]){
-            ++n_tests;
 			if(item->object_->raycast(o, ray_dir, t)){
                 retValue = true;
                 pid = item->pid_;
@@ -357,7 +355,6 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
 		nextCrossingT[axis] += deltaT[axis];
 	}
 
-    printf("Tested %d triangles\n", n_tests);
 	return retValue;
 }
 

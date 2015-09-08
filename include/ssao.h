@@ -2,6 +2,7 @@
 #define __SSAO_H
 
 #include <glm/glm.hpp>
+#include <random>
 
 class Shader;
 
@@ -48,6 +49,8 @@ private:
 	glm::ivec2 m_noiseScale;
 	glm::vec3 *m_kernel;
 	glm::vec3 *m_noise;
+
+    std::mt19937 rng_;
 };
 
 #endif
