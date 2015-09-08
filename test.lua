@@ -1,24 +1,33 @@
 
+function OnInit(argv)
+    for key, value in pairs(argv) do
+        print(key, value)
+    end
+end
+
 print("Hello World!");
-local a = {}
-local b = {}
-local c = {}
-for i=1,9 do a[i] = 0.0 end
-a[1] = 9.0
-a[5] = 9.0
-a[9] = 9.0
+local box = {}
+local particles = {}
+local shapes = {}
+for i=1,9 do box[i] = 0.0 end
+box[1] = 9.0
+box[5] = 9.0
+box[9] = 9.0
 for i=1,9 do
     local particle = Particle()
     particle.size = 1.0
     particle.shape_id = 0
     particle.pos = vec3(i, i, i)
     particle.rot = vec4(0.0, 1.0, 0.0, 0.0)
-    b[i] = particle
+    particles[i] = particle
 end
-for i=1,9 do
-    local sphere = Sphere()
-    c[i] = sphere
-end
-scene_load(a, b, c)
-scene_zoom(1.5)
+
+local triangle = Mesh()
+triangle:add_vertex(Vertex(vec3(-1.0, -0.5, -0.5), vec3(0.0, 0.0, 1.0)))
+triangle:add_vertex(Vertex(vec3( 1.0, -0.5, -0.5), vec3(0.0, 0.0, 1.0)))
+triangle:add_vertex(Vertex(vec3( 0.0,  0.8, -0.5), vec3(0.0, 0.0, 1.0)))
+shapes[1] = triangle
+
+scene_load(box, particles, shapes)
+scene_zoom(12.5)
 

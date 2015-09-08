@@ -195,7 +195,7 @@ namespace{
 
         std::vector<Vertex> vertices_;
     };
-};
+}
 
 //TODO: Add type safety
 //box[], particles[], shapes[]
@@ -226,13 +226,14 @@ static int luaScene_load_scene(lua_State* L){
             lua_pop(L, 1);
         }
         else{
-            auto shape = Shape();
             shape.type = Shape::MESH;
             auto mesh = maan::get_LuaValue<Mesh>(L);
             shape.mesh.n_vertices = mesh.vertices_.size();
             shape.mesh.vertices = new Vertex[shape.mesh.n_vertices];
             int i = 0;
-            for(auto vertex: mesh.vertices_) shape.mesh.vertices[i++] = vertex;
+            for(auto vertex: mesh.vertices_){
+                shape.mesh.vertices[i++] = vertex;
+            }
         }
         shapes.push_back(shape);
     }
@@ -248,15 +249,11 @@ static int luaScene_load_scene(lua_State* L){
 
     {//Set particles
         int i = 0;
-        for(auto particle: particles){
-            config.particles[i++] = particle;
-        }
+        for(auto particle: particles) config.particles[i++] = particle;
     }
     {//Set shapes
         int i = 0;
-        for(auto shape: shapes){
-            config.shapes[i++] = shape;
-        }
+        for(auto shape: shapes) config.shapes[i++] = shape;
     }
 
     scene->load_scene(config);
@@ -293,7 +290,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
 
     //Register Vertex
     class_<Vertex>(L, "Vertex")
-        .def_constructor<glm::vec3, glm::vec3>()
+        .def_constructor<const glm::vec3&, const glm::vec3&>()
         .def_readwrite("coord", &Vertex::_coord)
         .def_readwrite("normal", &Vertex::_normal);
 
@@ -331,6 +328,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
     lua_pushglobaltable(L);
     lua_pushlightuserdata(L, static_cast<void*>(scene));
     luaL_setfuncs(L, funcs, 1);
+    lua_pop(L, 1);
 
     return true;
 }

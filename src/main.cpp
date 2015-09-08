@@ -142,7 +142,20 @@ int main(int argc,char *argv[] ){
 
     register_lua_bindings(L, scene);
 	
-	luaL_dofile(L, "test.lua");
+    if(luaL_dofile(L, "test.lua")){
+        printf("There was an error.\n %s\n", lua_tostring(L, -1));
+    }
+
+    lua_getglobal(L, "OnInit");
+    lua_createtable(L, argc, 0);
+    for(int i = 0; i < argc; ++i){
+        lua_pushinteger(L, i + 1);
+        lua_pushstring(L, argv[i]);
+        lua_rawset(L, -3);
+    }
+    if(lua_pcall(L, 1, 0, 0)){
+        printf("There was an error.\n %s\n", lua_tostring(L, -1));
+    }
 
 	if(argc > 1) scene->load_scene(parse_config(argv[1]));
 
