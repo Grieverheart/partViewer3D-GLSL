@@ -38,7 +38,7 @@ extern "C"{
 //    }
 
 #define ADD_FUNCTION(name)\
-    {"scene_"#name, luaScene_##name},
+    {#name, luaScene_##name},
 
 //double dz
 static int luaScene_zoom(lua_State* L){
@@ -169,27 +169,59 @@ static int luaScene_get_ssao_radius(lua_State* L){
     return 1;
 }
 
+static int luaScene_set_background_color(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    scene->set_background_color(maan::get_LuaValue<glm::vec3>(L));
+    return 0;
+}
+
+static int luaScene_get_background_color(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    maan::push_LuaValue(L, scene->get_background_color());
+    return 1;
+}
+static int luaScene_set_sky_color(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    scene->set_sky_color(maan::get_LuaValue<glm::vec3>(L));
+    return 0;
+}
+
+static int luaScene_get_sky_color(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    maan::push_LuaValue(L, scene->get_sky_color());
+    return 1;
+}
+
+static int luaScene_set_light_direction(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    scene->set_light_direction(maan::get_LuaValue<glm::vec3>(L));
+    return 0;
+}
+
+static int luaScene_get_light_direction(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    maan::push_LuaValue(L, scene->get_light_direction());
+    return 1;
+}
+
+static int luaScene_set_projection_type(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    lua_pushstring(L, "perspective");
+    lua_pushstring(L, "orthographic");
+    if(lua_rawequal(L, 1, 2)){
+        scene->set_projection_type(Projection::PERSPECTIVE);
+    }
+    else if(lua_rawequal(L, 1, 3)){
+        scene->set_projection_type(Projection::ORTHOGRAPHIC);
+    }
+    else{
+        lua_pop(L, 2);
+        printf("Projection type, '%s', not supported\n", lua_tostring(L, 1));
+    }
+    return 0;
+}
+
 //TODO: Implement these.
-//static int luaScene_set_sky_color(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_sky_color(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_set_background_color(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_background_color(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_set_projection_type(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
 //static int luaScene_get_view_matrix(lua_State* L){
 //    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 //    return 0;
@@ -202,21 +234,11 @@ static int luaScene_get_ssao_radius(lua_State* L){
 //    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 //    return 0;
 //}
-//static int luaScene_get_light_direction(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//
-//static int luaScene_set_light_direction(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
 
 namespace{
     struct Sphere{};
 
     struct Mesh{
-        //TODO: Perhaps we add a lua function as the constructor.
         void add_vertex(const Vertex& v){
             vertices_.push_back(v);
         }
@@ -361,13 +383,20 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
         ADD_FUNCTION(set_light_diffuse_intensity)
         ADD_FUNCTION(get_light_specular_intensity)
         ADD_FUNCTION(set_light_specular_intensity)
+        ADD_FUNCTION(get_background_color)
+        ADD_FUNCTION(set_background_color)
+        ADD_FUNCTION(get_sky_color)
+        ADD_FUNCTION(set_sky_color)
+        ADD_FUNCTION(get_light_direction)
+        ADD_FUNCTION(set_light_direction)
+        ADD_FUNCTION(set_projection_type)
         {NULL, NULL}
     };
 
-    lua_pushglobaltable(L);
+    luaL_newlibtable(L, funcs);
     lua_pushlightuserdata(L, static_cast<void*>(scene));
     luaL_setfuncs(L, funcs, 1);
-    lua_pop(L, 1);
+    lua_setglobal(L, "scene");
 
     return true;
 }

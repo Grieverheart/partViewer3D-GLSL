@@ -1,3 +1,4 @@
+
 local function load_obj(filepath)
     local vertices = {}
     local vertex_normals = {}
@@ -76,17 +77,19 @@ local function load_scene(filepath)
 
     fp:close()
 
-    scene_load(box, particles, shapes)
+    scene.load(box, particles, shapes)
 
     return true
 end
 
 function OnInit(argv)
-    for key, value in pairs(argv) do
-        print(key, value)
+    scene.zoom(12.5)
+    if argv[2] ~= nil then
+        print("Loading "..argv[2])
+        return load_scene(argv[2])
+    else
+        print("Configuration not provided!")
+        return false
     end
-    print("Loading "..argv[2])
-    scene_zoom(12.5)
-    return load_scene(argv[2])
 end
 
