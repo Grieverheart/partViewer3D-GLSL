@@ -4,6 +4,7 @@
 #include "detail/lift.hpp"
 #include "detail/class_info.hpp"
 #include "detail/__gc.hpp"
+#include "detail/score_args.hpp"
 #include "create.hpp"
 #include "function_.hpp"
 
@@ -11,6 +12,46 @@ namespace maan{
     int lua_ClassProperty(lua_State* L){
         return 0;
     }
+
+    namespace detail{
+        template<class T, typename...ArgsT>
+        struct OverloadableConstructor: Functor{
+            OverloadableConstructor(void):
+                Functor()
+            {}
+
+            int call(lua_State* L){
+                lift(create_LuaObject<T, ArgsT...>, L, detail::get_args<ArgsT...>(L));
+                return 1;
+            }
+
+            int score(lua_State* L){
+                return detail::score_args<ArgsT...>(L);
+            }
+
+            static const int n_args_ = sizeof...(ArgsT);
+        };
+    }
+
+#define DEF_BINARY_OPERATOR(name_, _op_)\
+    struct name_{\
+        template<class T, class U>\
+        static auto execute(T&& a, U&& b) -> decltype(a _op_ b) {\
+            return a _op_ b;\
+        }\
+\
+        static constexpr const char* name = "__"#name_;\
+    }
+
+    DEF_BINARY_OPERATOR(add, +);
+    DEF_BINARY_OPERATOR(sub, -);
+    DEF_BINARY_OPERATOR(mul, *);
+    DEF_BINARY_OPERATOR(div, /);
+    DEF_BINARY_OPERATOR(eq, ==);
+    DEF_BINARY_OPERATOR(lt, <);
+    DEF_BINARY_OPERATOR(gt, >);
+    DEF_BINARY_OPERATOR(le, <=);
+    DEF_BINARY_OPERATOR(ge, >=);
 
     template<class T>
     class class_{
@@ -53,8 +94,25 @@ namespace maan{
 
         template<typename ...ArgsT>
         class_& def_constructor(void){
-            lua_pushcfunction(L_, (constructor<ArgsT...>));
-            lua_setglobal(L_, name_);
+            using F = detail::OverloadableConstructor<type_, ArgsT...>;
+
+            lua_getglobal(L_, name_);
+            if(!lua_isnil(L_, -1)){
+                lua_getupvalue(L_, -1, 1);
+                auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L_, -1));
+                lua_pop(L_, 2);
+                while(base_functor->get_next()){
+                    base_functor = base_functor->get_next();
+                }
+                base_functor->set_next(new F());
+            }
+            else{
+                lua_pop(L_, 1);
+                create_LuaGCObject<F>(L_);
+                lua_pushcclosure(L_, detail::call_overloadable_functor, 1);
+                lua_setglobal(L_, name_);
+            }
+
             return *this;
         }
 
@@ -71,7 +129,7 @@ namespace maan{
                 {NULL, NULL}
             };
 
-            detail::create_LuaFunction(L_, temp);
+            create_LuaGCObject(L_, temp);
             luaL_setfuncs(L_, funcs, 1);
 
             return *this;
@@ -90,62 +148,40 @@ namespace maan{
                 {NULL, NULL}
             };
 
-            detail::create_LuaFunction(L_, temp);
+            create_LuaGCObject(L_, temp);
             luaL_setfuncs(L_, funcs, 1);
 
             return *this;
         }
 
-#define DEF_BINARY_OPERATOR(name, _op_)\
-        class_& def_##name(void){\
-            lua_pushstring(L_, "__"#name);\
-            lua_pushcfunction(L_, __##name);\
-            lua_rawset(L_, -3);\
-            return *this;\
-        }\
-        static int __##name(lua_State* L){\
-            /*TODO: You should use get_LuaValue for type safety.*/\
-            type_* object1 = static_cast<type_*>(lua_touserdata(L, 1));\
-            type_* object2 = static_cast<type_*>(lua_touserdata(L, 2));\
-            push_LuaValue(L, *object1 _op_ *object2);\
-            return 1;\
+
+        template<typename op, typename U>
+        class_& def_operator(void){
+            using F = OverloadableBinaryOperator<op, U>;
+
+            lua_pushstring(L_, op::name);
+            lua_rawget(L_, 1);
+            if(!lua_isnil(L_, -1)){
+                lua_getupvalue(L_, -1, 1);
+                auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L_, -1));
+                lua_pop(L_, 2);
+                while(base_functor->get_next()){
+                    base_functor = base_functor->get_next();
+                }
+                base_functor->set_next(new F());
+            }
+            else{
+                lua_pop(L_, 1);
+                create_LuaGCObject<F>(L_);
+                lua_pushcclosure(L_, detail::call_overloadable_functor, 1);
+                lua_pushstring(L_, op::name);
+                lua_pushvalue(L_, -2);
+                lua_rawset(L_, 1);
+                lua_pop(L_, 1);
+            }
+
+            return *this;
         }
-
-        //TODO: Implement overloading of operators based on argument types.
-        //We will probably use a table to index the various operator overloads
-        //based on the class index.
-
-        //template<class O>\
-        //class_& def_##name(void){\
-        //    lua_pushstring(L_, "__"#name);\
-        //    lua_pushcfunction(L_, __##name<O>);\
-        //    lua_rawset(L_, -3);\
-        //    return *this;\
-        //}\
-        //template<class O>\
-        //static int __##name(lua_State* L){\
-        //    if(lua_isnumber(L, 1)){\
-        //        type_& a = get_LuaValue<type_>(L);\
-        //        O b = get_LuaValue<O>(L);\
-        //        push_LuaValue(L, b _op_ a);\
-        //    }\
-        //    else{\
-        //        O b = get_LuaValue<O>(L);\
-        //        type_& a = get_LuaValue<type_>(L);\
-        //        push_LuaValue(L, a _op_ b);\
-        //    }\
-        //    return 1;\
-        //}
-
-        DEF_BINARY_OPERATOR(add, +);
-        DEF_BINARY_OPERATOR(sub, -);
-        DEF_BINARY_OPERATOR(mul, *);
-        DEF_BINARY_OPERATOR(div, /);
-        DEF_BINARY_OPERATOR(eq, ==);
-        DEF_BINARY_OPERATOR(lt, <);
-        DEF_BINARY_OPERATOR(gt, >);
-        DEF_BINARY_OPERATOR(le, <=);
-        DEF_BINARY_OPERATOR(ge, >=);
 
         template<class M>
         class_& def_readwrite(const char* name, M type_::*var_ptr){
@@ -159,10 +195,10 @@ namespace maan{
                 object->*var_ptr = val;
             });
 
-            detail::create_LuaFunction(L_, getter);
+            create_LuaGCObject(L_, getter);
             lua_pushcclosure(L_, get_var<M>, 1);
 
-            detail::create_LuaFunction(L_, setter);
+            create_LuaGCObject(L_, setter);
             lua_pushcclosure(L_, set_var<M>, 1);
 
             lua_pushcclosure(L_, lua_ClassProperty, 2);
@@ -179,18 +215,12 @@ namespace maan{
                 return object->*var_ptr;
             });
 
-            detail::create_LuaFunction(L_, getter);
+            create_LuaGCObject(L_, getter);
             lua_pushcclosure(L_, get_var<M>, 1);
 
             lua_pushcclosure(L_, lua_ClassProperty, 1);
             lua_rawset(L_, -3);
             return *this;
-        }
-
-        template<typename ...ArgsT>
-        static int constructor(lua_State* L){
-            detail::lift(create_LuaObject<type_, ArgsT...>, L, detail::get_args<ArgsT...>(L));
-            return 1;
         }
 
 
@@ -281,6 +311,39 @@ namespace maan{
         }
 
     private:
+        template<typename op, class U>
+        struct OverloadableBinaryOperator: detail::Functor{
+            OverloadableBinaryOperator(void):
+                Functor()
+            {}
+
+            int call(lua_State* L){
+                if(lua_isuserdata(L, 1)){
+                    lua_getmetatable(L, 1);
+                    lua_rawgetp(L, LUA_REGISTRYINDEX, detail::ClassInfo<type_>::get_metatable_key());
+                    bool is_type = lua_rawequal(L, -1, -2);
+                    lua_pop(L, 2);
+                    if(is_type){
+                        U b      = get_LuaValue<U>(L);
+                        type_& a = *get_LuaValue<type_*>(L);
+                        push_LuaValue(L, op::execute(a, b));
+                        return 1;
+                    }
+                }
+
+                type_ a = get_LuaValue<type_>(L);
+                U b     = get_LuaValue<U>(L);
+                push_LuaValue(L, op::execute(a, b));
+                return 1;
+            }
+
+            int score(lua_State* L){
+                return detail::score_args<type_, U>(L);
+            }
+
+            static const int n_args_ = 2;
+        };
+
         const char* name_;
         lua_State* L_;
     };

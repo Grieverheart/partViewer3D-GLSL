@@ -12,7 +12,7 @@
 --Fix sphere clipping.
 --Fix particle selection with clipping.
 --Make load_scene work for multiple calls.
-Add lua scripting support.
+--Add lua scripting support.
 Draw points.
 Add suport for multiple windows.
 Add font drawing.

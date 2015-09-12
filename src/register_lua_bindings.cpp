@@ -221,7 +221,10 @@ static int luaScene_set_projection_type(lua_State* L){
     return 0;
 }
 
-//TODO: Implement these.
+//TODO: Implement these. We first need to register glm::mat4, but it's a bit of
+//a pain in the ass to do properly because we first need to be able to overload
+//operators based on argument types.
+
 //static int luaScene_get_view_matrix(lua_State* L){
 //    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 //    return 0;
@@ -319,26 +322,36 @@ static int luaScene_load(lua_State* L){
 }
 
 bool register_lua_bindings(lua_State* L, Scene* scene){
-    using namespace maan;
     //Register vec3
-    class_<glm::vec3>(L, "vec3")
+    maan::class_<glm::vec3>(L, "vec3")
         .def_constructor<float, float, float>()
-        .def_add().def_sub().def_eq()
+        .def_constructor<float>()
+        .def_operator<maan::add, glm::vec3>()
+        .def_operator<maan::sub, glm::vec3>()
+        .def_operator<maan::mul, glm::vec3>()
+        .def_operator<maan::add, float>()
+        .def_operator<maan::sub, float>()
+        .def_operator<maan::mul, float>()
         .def_readwrite("x", &glm::vec3::x)
         .def_readwrite("y", &glm::vec3::y)
         .def_readwrite("z", &glm::vec3::z);
 
     //Register vec4
-    class_<glm::vec4>(L, "vec4")
+    maan::class_<glm::vec4>(L, "vec4")
         .def_constructor<float, float, float, float>()
-        .def_add().def_sub().def_eq()
+        .def_operator<maan::add, glm::vec4>()
+        .def_operator<maan::sub, glm::vec4>()
+        .def_operator<maan::mul, glm::vec4>()
+        .def_operator<maan::add, float>()
+        .def_operator<maan::sub, float>()
+        .def_operator<maan::mul, float>()
         .def_readwrite("x", &glm::vec4::x)
         .def_readwrite("y", &glm::vec4::y)
         .def_readwrite("z", &glm::vec4::z)
         .def_readwrite("z", &glm::vec4::w);
 
     //Register Particle
-    class_<Particle>(L, "Particle")
+    maan::class_<Particle>(L, "Particle")
         .def_constructor<>()
         .def_readwrite("shape_id", &Particle::shape_id)
         .def_readwrite("rot", &Particle::rot)
@@ -346,16 +359,16 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
         .def_readwrite("size", &Particle::size);
 
     //Register Vertex
-    class_<Vertex>(L, "Vertex")
+    maan::class_<Vertex>(L, "Vertex")
         .def_constructor<const glm::vec3&, const glm::vec3&>()
         .def_readwrite("coord", &Vertex::_coord)
         .def_readwrite("normal", &Vertex::_normal);
 
     //Register shape
-    class_<Sphere>(L, "Sphere")
+    maan::class_<Sphere>(L, "Sphere")
         .def_constructor<>();
 
-    class_<Mesh>(L, "Mesh")
+    maan::class_<Mesh>(L, "Mesh")
         .def_constructor<>()
         .def("add_vertex", &Mesh::add_vertex)
         .def("get_vertex", &Mesh::get_vertex)
