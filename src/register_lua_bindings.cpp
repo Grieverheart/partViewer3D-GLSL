@@ -326,6 +326,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
     maan::class_<glm::vec3>(L, "vec3")
         .def_constructor<float, float, float>()
         .def_constructor<float>()
+        .def_constructor<glm::vec3>()
         .def_operator<maan::add, glm::vec3>()
         .def_operator<maan::sub, glm::vec3>()
         .def_operator<maan::mul, glm::vec3>()
@@ -339,6 +340,8 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
     //Register vec4
     maan::class_<glm::vec4>(L, "vec4")
         .def_constructor<float, float, float, float>()
+        .def_constructor<float>()
+        .def_constructor<glm::vec4>()
         .def_operator<maan::add, glm::vec4>()
         .def_operator<maan::sub, glm::vec4>()
         .def_operator<maan::mul, glm::vec4>()
@@ -348,7 +351,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
         .def_readwrite("x", &glm::vec4::x)
         .def_readwrite("y", &glm::vec4::y)
         .def_readwrite("z", &glm::vec4::z)
-        .def_readwrite("z", &glm::vec4::w);
+        .def_readwrite("w", &glm::vec4::w);
 
     //Register Particle
     maan::class_<Particle>(L, "Particle")
