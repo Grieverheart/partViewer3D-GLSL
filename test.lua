@@ -8,10 +8,10 @@ local function load_obj(filepath)
     for line in fp:lines() do
         if string.sub(line, 1, 2) == 'v ' then
             local match = string.gmatch(line, '([%d.-]+)')
-            table.insert(vertices, vec3(tonumber(match()), tonumber(match()), tonumber(match())))
+            table.insert(vertices, glm.vec3(tonumber(match()), tonumber(match()), tonumber(match())))
         elseif string.sub(line, 1, 2) == 'vn' then
             local match = string.gmatch(line, '([%d.-]+)')
-            table.insert(vertex_normals, vec3(tonumber(match()), tonumber(match()), tonumber(match())))
+            table.insert(vertex_normals, glm.vec3(tonumber(match()), tonumber(match()), tonumber(match())))
         elseif string.sub(line, 1, 2) == 'f ' then
             local face = {}
             for match in string.gmatch(line, '([%d/]+)') do
@@ -55,8 +55,8 @@ local function load_scene(filepath)
     for pid = 1, n_part do
         local match = string.gmatch(fp:read(), '([%d.-]+)')
         local particle = Particle()
-        particle.pos = vec3(tonumber(match()), tonumber(match()), tonumber(match()))
-        particle.rot = vec4(tonumber(match()), tonumber(match()), tonumber(match()), tonumber(match()))
+        particle.pos = glm.vec3(tonumber(match()), tonumber(match()), tonumber(match()))
+        particle.rot = glm.vec4(tonumber(match()), tonumber(match()), tonumber(match()), tonumber(match()))
         particle.shape_id = tonumber(match())
         particle.size = 1.0
         particles[pid] = particle

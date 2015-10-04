@@ -58,14 +58,8 @@ namespace maan{
     public:
         using type_ = T;
 
-        ~class_(void){
-            //Since we had the metatable on top of the stack all the time,
-            //we have to pop it
-            lua_pop(L_, 1);
-        }
-
-        class_(lua_State* L, const char* name):
-            name_(name), L_(L)
+        class_(module_* mod, const char* name):
+            name_(name), mod_(mod), L_(mod->L_)
         {
             lua_newtable(L_);
             lua_pushvalue(L_, -1);
@@ -79,9 +73,9 @@ namespace maan{
             lua_pushcfunction(L_, __newindex);
             lua_rawset(L_, -3);
 
-            lua_pushstring(L, "__gc");
-            lua_pushcfunction(L, detail::__gc<T>);
-            lua_rawset(L, -3);
+            lua_pushstring(L_, "__gc");
+            lua_pushcfunction(L_, detail::__gc<T>);
+            lua_rawset(L_, -3);
 
             lua_pushstring(L_, "__class_id");
             lua_pushlightuserdata(L_, const_cast<void*>(detail::ClassInfo<T>::get_metatable_key()));
@@ -96,7 +90,7 @@ namespace maan{
         class_& def_constructor(void){
             using F = detail::OverloadableConstructor<type_, ArgsT...>;
 
-            lua_getglobal(L_, name_);
+            lua_getfield(L_, -2, name_);
             if(!lua_isnil(L_, -1)){
                 lua_getupvalue(L_, -1, 1);
                 auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L_, -1));
@@ -110,7 +104,7 @@ namespace maan{
                 lua_pop(L_, 1);
                 create_LuaGCObject<F>(L_);
                 lua_pushcclosure(L_, detail::call_overloadable_functor, 1);
-                lua_setglobal(L_, name_);
+                lua_setfield(L_, -3, name_);
             }
 
             return *this;
@@ -160,7 +154,7 @@ namespace maan{
             using F = OverloadableBinaryOperator<op, U>;
 
             lua_pushstring(L_, op::name);
-            lua_rawget(L_, 1);
+            lua_rawget(L_, -2);
             if(!lua_isnil(L_, -1)){
                 lua_getupvalue(L_, -1, 1);
                 auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L_, -1));
@@ -176,7 +170,7 @@ namespace maan{
                 lua_pushcclosure(L_, detail::call_overloadable_functor, 1);
                 lua_pushstring(L_, op::name);
                 lua_pushvalue(L_, -2);
-                lua_rawset(L_, 1);
+                lua_rawset(L_, -4);
                 lua_pop(L_, 1);
             }
 
@@ -221,6 +215,13 @@ namespace maan{
             lua_pushcclosure(L_, lua_ClassProperty, 1);
             lua_rawset(L_, -3);
             return *this;
+        }
+
+        module_& endef(void){
+            //Since we had the metatable on top of the stack all the time,
+            //we have to pop it
+            lua_pop(L_, 1);
+            return *mod_;
         }
 
 
@@ -345,6 +346,7 @@ namespace maan{
         };
 
         const char* name_;
+        module_* mod_;
         lua_State* L_;
     };
 }

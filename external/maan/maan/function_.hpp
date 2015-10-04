@@ -1,8 +1,6 @@
 #ifndef __FUNCTION__HPP
 #define __FUNCTION__HPP
 
-#include <functional>
-
 #include "detail/lift.hpp"
 #include "detail/__gc.hpp"
 #include "create.hpp"
@@ -121,7 +119,7 @@ namespace maan{
     }
 
     template<class R, typename...ArgsT, typename T = R(ArgsT...)>
-    void function_(lua_State* L, const char* name, R (&func)(ArgsT...)){
+    void function_(lua_State* L, const char* name, R (*func)(ArgsT...)){
         using F = detail::OverloadableFunctor<T>;
 
         lua_getglobal(L, name);

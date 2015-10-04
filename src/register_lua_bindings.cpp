@@ -9,7 +9,7 @@ extern "C"{
 #include <lualib.h>
 }
 
-#include <maan/class_.hpp>
+#include <maan/maan.hpp>
 
 //TODO: Perhaps use these to avoid repeating code.
 //namespace{
@@ -322,62 +322,69 @@ static int luaScene_load(lua_State* L){
 }
 
 bool register_lua_bindings(lua_State* L, Scene* scene){
-    //Register vec3
-    maan::class_<glm::vec3>(L, "vec3")
-        .def_constructor<float, float, float>()
-        .def_constructor<float>()
-        .def_constructor<glm::vec3>()
-        .def_operator<maan::add, glm::vec3>()
-        .def_operator<maan::sub, glm::vec3>()
-        .def_operator<maan::mul, glm::vec3>()
-        .def_operator<maan::add, float>()
-        .def_operator<maan::sub, float>()
-        .def_operator<maan::mul, float>()
-        .def_readwrite("x", &glm::vec3::x)
-        .def_readwrite("y", &glm::vec3::y)
-        .def_readwrite("z", &glm::vec3::z);
 
-    //Register vec4
-    maan::class_<glm::vec4>(L, "vec4")
-        .def_constructor<float, float, float, float>()
-        .def_constructor<float>()
-        .def_constructor<glm::vec4>()
-        .def_operator<maan::add, glm::vec4>()
-        .def_operator<maan::sub, glm::vec4>()
-        .def_operator<maan::mul, glm::vec4>()
-        .def_operator<maan::add, float>()
-        .def_operator<maan::sub, float>()
-        .def_operator<maan::mul, float>()
-        .def_readwrite("x", &glm::vec4::x)
-        .def_readwrite("y", &glm::vec4::y)
-        .def_readwrite("z", &glm::vec4::z)
-        .def_readwrite("w", &glm::vec4::w);
-
-    //Register Particle
-    maan::class_<Particle>(L, "Particle")
-        .def_constructor<>()
-        .def_readwrite("shape_id", &Particle::shape_id)
-        .def_readwrite("rot", &Particle::rot)
-        .def_readwrite("pos", &Particle::pos)
-        .def_readwrite("size", &Particle::size);
-
-    //Register Vertex
-    maan::class_<Vertex>(L, "Vertex")
-        .def_constructor<const glm::vec3&, const glm::vec3&>()
-        .def_readwrite("coord", &Vertex::_coord)
-        .def_readwrite("normal", &Vertex::_normal);
-
-    //Register shape
-    maan::class_<Sphere>(L, "Sphere")
-        .def_constructor<>();
-
-    maan::class_<Mesh>(L, "Mesh")
-        .def_constructor<>()
-        .def("add_vertex", &Mesh::add_vertex)
-        .def("get_vertex", &Mesh::get_vertex)
-        .def("get_num_vertices", &Mesh::get_num_vertices);
+    maan::module_(L)
+        .class_<Particle>("Particle")
+            .def_constructor<>()
+            .def_readwrite("shape_id", &Particle::shape_id)
+            .def_readwrite("rot", &Particle::rot)
+            .def_readwrite("pos", &Particle::pos)
+            .def_readwrite("size", &Particle::size)
+            .endef()
+        //Register Vertex
+        .class_<Vertex>("Vertex")
+            .def_constructor<const glm::vec3&, const glm::vec3&>()
+            .def_readwrite("coord", &Vertex::_coord)
+            .def_readwrite("normal", &Vertex::_normal)
+            .endef()
+        //Register shape
+        .class_<Sphere>("Sphere")
+            .def_constructor<>()
+            .endef()
+        //Register Mesh
+        .class_<Mesh>("Mesh")
+            .def_constructor<>()
+            .def("add_vertex", &Mesh::add_vertex)
+            .def("get_vertex", &Mesh::get_vertex)
+            .def("get_num_vertices", &Mesh::get_num_vertices)
+            .endef()
+        .namespace_("glm")
+            //Register vec3
+            .class_<glm::vec3>("vec3")
+                .def_constructor<float, float, float>()
+                .def_constructor<float>()
+                .def_constructor<glm::vec3>()
+                .def_operator<maan::add, glm::vec3>()
+                .def_operator<maan::sub, glm::vec3>()
+                .def_operator<maan::mul, glm::vec3>()
+                .def_operator<maan::add, float>()
+                .def_operator<maan::sub, float>()
+                .def_operator<maan::mul, float>()
+                .def_readwrite("x", &glm::vec3::x)
+                .def_readwrite("y", &glm::vec3::y)
+                .def_readwrite("z", &glm::vec3::z)
+                .endef()
+            //Register vec4
+            .class_<glm::vec4>("vec4")
+                .def_constructor<float, float, float, float>()
+                .def_constructor<float>()
+                .def_constructor<glm::vec4>()
+                .def_operator<maan::add, glm::vec4>()
+                .def_operator<maan::sub, glm::vec4>()
+                .def_operator<maan::mul, glm::vec4>()
+                .def_operator<maan::add, float>()
+                .def_operator<maan::sub, float>()
+                .def_operator<maan::mul, float>()
+                .def_readwrite("x", &glm::vec4::x)
+                .def_readwrite("y", &glm::vec4::y)
+                .def_readwrite("z", &glm::vec4::z)
+                .def_readwrite("w", &glm::vec4::w)
+                .endef();
 
     //Register scene
+    //TODO: Perhaps add a function_ in lua that takes a member
+    //function pointer along with a pointer to the object. Then,
+    //we can easily register the functions below.
     luaL_Reg funcs[] = {
         ADD_FUNCTION(load)
         ADD_FUNCTION(zoom)
