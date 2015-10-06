@@ -118,11 +118,12 @@ namespace maan{
         };
     }
 
+    //TODO: function_ should write to current table instead of global one.
     template<class R, typename...ArgsT, typename T = R(ArgsT...)>
     void function_(lua_State* L, const char* name, R (*func)(ArgsT...)){
         using F = detail::OverloadableFunctor<T>;
 
-        lua_getglobal(L, name);
+        lua_getfield(L, -1, name);
         if(!lua_isnil(L, -1)){
             lua_getupvalue(L, -1, 1);
             auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L, -1));
@@ -136,7 +137,7 @@ namespace maan{
             lua_pop(L, 1);
             create_LuaGCObject<F>(L, std::function<T>(func));
             lua_pushcclosure(L, detail::call_overloadable_functor, 1);
-            lua_setglobal(L, name);
+            lua_setfield(L, -2, name);
         }
     }
 
@@ -144,7 +145,7 @@ namespace maan{
     void function_(lua_State* L, const char* name, std::function<R(ArgsT...)> func){
         using F = detail::OverloadableFunctor<T>;
 
-        lua_getglobal(L, name);
+        lua_getfield(L, -1, name);
         if(!lua_isnil(L, -1)){
             lua_getupvalue(L, -1, 1);
             auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L, -1));
@@ -158,7 +159,51 @@ namespace maan{
             lua_pop(L, 1);
             create_LuaGCObject<F>(L, func);
             lua_pushcclosure(L, detail::call_overloadable_functor, 1);
-            lua_setglobal(L, name);
+            lua_setfield(L, -2, name);
+        }
+    }
+
+    template<class C, class R, typename...ArgsT, typename T = R(ArgsT...)>
+    void function_(lua_State* L, const char* name, R (C::*func)(ArgsT...)const, const C* singleton){
+        using F = detail::OverloadableFunctor<T>;
+
+        lua_getfield(L, -1, name);
+        if(!lua_isnil(L, -1)){
+            lua_getupvalue(L, -1, 1);
+            auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L, -1));
+            lua_pop(L, 2);
+            while(base_functor->get_next()){
+                base_functor = base_functor->get_next();
+            }
+            base_functor->set_next(new F(std::function<T>([singleton, func](ArgsT... args) -> R {return (singleton->*func)(args...);})));
+        }
+        else{
+            lua_pop(L, 1);
+            create_LuaGCObject<F>(L, std::function<T>([singleton, func](ArgsT... args) -> R {return (singleton->*func)(args...);}));
+            lua_pushcclosure(L, detail::call_overloadable_functor, 1);
+            lua_setfield(L, -2, name);
+        }
+    }
+
+    template<class C, class R, typename...ArgsT, typename T = R(ArgsT...)>
+    void function_(lua_State* L, const char* name, R (C::*func)(ArgsT...), C* singleton){
+        using F = detail::OverloadableFunctor<T>;
+
+        lua_getfield(L, -1, name);
+        if(!lua_isnil(L, -1)){
+            lua_getupvalue(L, -1, 1);
+            auto base_functor = static_cast<detail::Functor*>(lua_touserdata(L, -1));
+            lua_pop(L, 2);
+            while(base_functor->get_next()){
+                base_functor = base_functor->get_next();
+            }
+            base_functor->set_next(new F(std::function<T>([singleton, func](ArgsT... args) -> R {return (singleton->*func)(args...);})));
+        }
+        else{
+            lua_pop(L, 1);
+            create_LuaGCObject<F>(L, std::function<T>([singleton, func](ArgsT... args) -> R {return (singleton->*func)(args...);}));
+            lua_pushcclosure(L, detail::call_overloadable_functor, 1);
+            lua_setfield(L, -2, name);
         }
     }
 }
