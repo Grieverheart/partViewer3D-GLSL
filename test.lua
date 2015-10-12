@@ -93,6 +93,10 @@ function OnInit(argv)
     end
 end
 
+function OnKey(key, action, mods)
+    print(key, action, mods)
+end
+
 --frame_id = 0
 --function OnFrame()
 --    frame_id = frame_id + 1

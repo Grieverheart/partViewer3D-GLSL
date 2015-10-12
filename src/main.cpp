@@ -13,19 +13,60 @@ extern "C"{
 #include <lualib.h>
 }
 
-bool running = true;
+static bool running = true;
 
-Scene* scene          = nullptr;
-EventManager* evt_mgr = nullptr;
-CMouse* mouse         = nullptr;
+static Scene* scene          = nullptr;
+static EventManager* evt_mgr = nullptr;
+static CMouse* mouse         = nullptr;
+static lua_State* L          = nullptr;
+
+static void call_lua_OnInit(lua_State* L, int argc, char* argv[]){
+    lua_getglobal(L, "OnInit");
+    if(!lua_isnil(L, -1)){
+        lua_createtable(L, argc, 0);
+        for(int i = 0; i < argc; ++i){
+            lua_pushinteger(L, i + 1);
+            lua_pushstring(L, argv[i]);
+            lua_rawset(L, -3);
+        }
+        if(lua_pcall(L, 1, 1, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
+static void call_lua_OnFrame(lua_State* L){
+    lua_getglobal(L, "OnFrame");
+    if(!lua_isnil(L, -1)){
+        if(lua_pcall(L, 0, 0, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
+static void call_lua_OnKey(lua_State* L, int key, int action, int mods){
+    lua_getglobal(L, "OnKey");
+    if(!lua_isnil(L, -1)){
+        lua_pushinteger(L, key);
+        lua_pushinteger(L, action);
+        lua_pushinteger(L, mods);
+        if(lua_pcall(L, 3, 0, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
 
 //TODO: Move TW events to Gui class
 
 ////////////GLUT Keyboard Function Wrappers/////////////
-void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
+static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     static int mode = 0;
     static int clip = 0;
 	if(!TwEventKeyGLFW(key, action)){
+        call_lua_OnKey(L, key, action, mods);
         switch(key){
         case GLFW_KEY_ESCAPE:
             if(action == GLFW_PRESS) running = false;
@@ -55,7 +96,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 ////////////////GLUT Mouse Function Wrappers////////////////
 
-void on_mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+static void on_mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 	if(!TwEventMouseButtonGLFW(button, action)){
@@ -63,48 +104,22 @@ void on_mouse_button_callback(GLFWwindow* window, int button, int action, int mo
     }
 }
 
-void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
+static void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
 	if(!TwEventMousePosGLFW(x, y)) mouse->onMotion((int)x, (int)y);
 }
 
-void scroll_callback(GLFWwindow* window, double x, double y){
+static void scroll_callback(GLFWwindow* window, double x, double y){
 	mouse->onScroll(y);
 }
 
 ////////////////////////////////////////////////////////
 
-void reshape(GLFWwindow* window, int width, int height){
+static void reshape(GLFWwindow* window, int width, int height){
     if(evt_mgr) evt_mgr->queueEvent(new WindowSizeEvent(width, height));
 }
 
-void glfw_error_callback(int error, const char* description){
+static void glfw_error_callback(int error, const char* description){
     fputs(description, stderr);
-}
-
-void call_lua_OnInit(lua_State* L, int argc, char* argv[]){
-    lua_getglobal(L, "OnInit");
-    if(!lua_isnil(L, -1)){
-        lua_createtable(L, argc, 0);
-        for(int i = 0; i < argc; ++i){
-            lua_pushinteger(L, i + 1);
-            lua_pushstring(L, argv[i]);
-            lua_rawset(L, -3);
-        }
-        if(lua_pcall(L, 1, 1, 0)){
-            printf("There was an error.\n %s\n", lua_tostring(L, -1));
-        }
-    }
-    else lua_pop(L, 1);
-}
-
-void call_lua_OnFrame(lua_State* L){
-    lua_getglobal(L, "OnFrame");
-    if(!lua_isnil(L, -1)){
-        if(lua_pcall(L, 0, 0, 0)){
-            printf("There was an error.\n %s\n", lua_tostring(L, -1));
-        }
-    }
-    else lua_pop(L, 1);
 }
 
 int main(int argc,char *argv[] ){
@@ -133,9 +148,9 @@ int main(int argc,char *argv[] ){
 
     glfwMakeContextCurrent(window);
 
-    evt_mgr = new EventManager();
     //TODO: Add try catch for Scene construction
     scene   = new Scene(width, height);
+    evt_mgr = new EventManager();
     mouse   = new CMouse(evt_mgr, width, height);
 
     Gui gui(scene, width, height);
@@ -163,7 +178,7 @@ int main(int argc,char *argv[] ){
     }, EVT_WINDOW_SIZE_CHANGED);
 
 	
-	lua_State* L = luaL_newstate();
+    L = luaL_newstate();
 	luaL_openlibs(L);
 
     register_lua_bindings(L, scene);
