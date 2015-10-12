@@ -81,6 +81,32 @@ void glfw_error_callback(int error, const char* description){
     fputs(description, stderr);
 }
 
+void call_lua_OnInit(lua_State* L, int argc, char* argv[]){
+    lua_getglobal(L, "OnInit");
+    if(!lua_isnil(L, -1)){
+        lua_createtable(L, argc, 0);
+        for(int i = 0; i < argc; ++i){
+            lua_pushinteger(L, i + 1);
+            lua_pushstring(L, argv[i]);
+            lua_rawset(L, -3);
+        }
+        if(lua_pcall(L, 1, 1, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
+void call_lua_OnFrame(lua_State* L){
+    lua_getglobal(L, "OnFrame");
+    if(!lua_isnil(L, -1)){
+        if(lua_pcall(L, 0, 0, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
 int main(int argc,char *argv[] ){
 
     int width  = 600;
@@ -146,21 +172,13 @@ int main(int argc,char *argv[] ){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));
     }
 
-    //TODO: Check if function really exists
-    lua_getglobal(L, "OnInit");
-    lua_createtable(L, argc, 0);
-    for(int i = 0; i < argc; ++i){
-        lua_pushinteger(L, i + 1);
-        lua_pushstring(L, argv[i]);
-        lua_rawset(L, -3);
-    }
-    if(lua_pcall(L, 1, 1, 0)){
-        printf("There was an error.\n %s\n", lua_tostring(L, -1));
-    }
+    call_lua_OnInit(L, argc, argv);
 
     while(!glfwWindowShouldClose(window) && running){
         evt_mgr->processQueue();
         scene->process();
+        call_lua_OnFrame(L);
+
         scene->render();
         gui.draw();
 
@@ -170,6 +188,7 @@ int main(int argc,char *argv[] ){
 	
 	lua_close(L);
 
+    //TODO: Make these unique pointers.
     delete evt_mgr;
     delete mouse;
     delete scene;

@@ -93,3 +93,8 @@ function OnInit(argv)
     end
 end
 
+--frame_id = 0
+--function OnFrame()
+--    frame_id = frame_id + 1
+--    print(frame_id)
+--end

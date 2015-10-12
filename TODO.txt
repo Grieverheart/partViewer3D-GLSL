@@ -13,7 +13,7 @@
 --Fix particle selection with clipping.
 --Make load_scene work for multiple calls.
 --Add lua scripting support.
-Add lua OnFrame call.
+--Add lua OnFrame call.
 Add lua OnKey call.
 Perhaps add lua OnMouse call.
 Draw points.
