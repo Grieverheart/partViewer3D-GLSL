@@ -15,7 +15,11 @@
 --Add lua scripting support.
 --Add lua OnFrame call.
 --Add lua OnKey call.
-Perhaps add lua OnMouse call.
+--Add lua mouse callbacks.
+Add lua window functions.
+Remove AntTweakBar.
+Mouse mouse code to lua.
+Handle particle selection from script.
 Draw points.
 Add suport for multiple windows.
 Add font drawing.

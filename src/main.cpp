@@ -59,6 +59,44 @@ static void call_lua_OnKey(lua_State* L, int key, int action, int mods){
     else lua_pop(L, 1);
 }
 
+static void call_lua_OnMouseClick(lua_State* L, float x, float y, int button, int action, int mods){
+    lua_getglobal(L, "OnMouseClick");
+    if(!lua_isnil(L, -1)){
+        lua_pushnumber(L, x);
+        lua_pushnumber(L, y);
+        lua_pushinteger(L, button);
+        lua_pushinteger(L, action);
+        lua_pushinteger(L, mods);
+        if(lua_pcall(L, 5, 0, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
+static void call_lua_OnMouseMotion(lua_State* L, float x, float y){
+    lua_getglobal(L, "OnMouseMotion");
+    if(!lua_isnil(L, -1)){
+        lua_pushnumber(L, x);
+        lua_pushnumber(L, y);
+        if(lua_pcall(L, 2, 0, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
+static void call_lua_OnMouseScroll(lua_State* L, float dz){
+    lua_getglobal(L, "OnMouseScroll");
+    if(!lua_isnil(L, -1)){
+        lua_pushnumber(L, dz);
+        if(lua_pcall(L, 1, 0, 0)){
+            printf("There was an error.\n %s\n", lua_tostring(L, -1));
+        }
+    }
+    else lua_pop(L, 1);
+}
+
 //TODO: Move TW events to Gui class
 
 ////////////GLUT Keyboard Function Wrappers/////////////
@@ -100,16 +138,21 @@ static void on_mouse_button_callback(GLFWwindow* window, int button, int action,
     double x, y;
     glfwGetCursorPos(window, &x, &y);
 	if(!TwEventMouseButtonGLFW(button, action)){
+        evt_mgr->queueEvent(new MouseClickEvent(x, y, button, action, mods));
         mouse->onButton(button, action, (int)x, (int)y);
     }
 }
 
 static void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
-	if(!TwEventMousePosGLFW(x, y)) mouse->onMotion((int)x, (int)y);
+	if(!TwEventMousePosGLFW(x, y)){
+        evt_mgr->queueEvent(new MouseMotionEvent(x, y));
+        mouse->onMotion((int)x, (int)y);
+    }
 }
 
 static void scroll_callback(GLFWwindow* window, double x, double y){
 	mouse->onScroll(y);
+    evt_mgr->queueEvent(new MouseScrollEvent(y));
 }
 
 ////////////////////////////////////////////////////////
@@ -176,6 +219,21 @@ int main(int argc,char *argv[] ){
         mouse->wsize_changed(wsize_event.width, wsize_event.height);
         gui.resize(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
+
+    evt_mgr->addHandler([=](const Event& event){
+        auto click_event = static_cast<const MouseClickEvent&>(event);
+        call_lua_OnMouseClick(L, click_event.x, click_event.y, click_event.button, click_event.action, click_event.mods);
+    }, EVT_MOUSE_CLICK);
+
+    evt_mgr->addHandler([=](const Event& event){
+        auto motion_event = static_cast<const MouseMotionEvent&>(event);
+        call_lua_OnMouseMotion(L, motion_event.x, motion_event.y);
+    }, EVT_MOUSE_MOTION);
+
+    evt_mgr->addHandler([=](const Event& event){
+        auto scroll_event = static_cast<const MouseScrollEvent&>(event);
+        call_lua_OnMouseScroll(L, scroll_event.dz);
+    }, EVT_MOUSE_SCROLL);
 
 	
     L = luaL_newstate();

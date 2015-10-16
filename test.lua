@@ -97,6 +97,19 @@ function OnKey(key, action, mods)
     print(key, action, mods)
 end
 
+function OnMouseClick(x, y, button, action, mods)
+    print(x, y)
+    print(button, action, mods)
+end
+
+function OnMouseScroll(y)
+    print(y)
+end
+
+--function OnMouseMotion(x, y)
+--    print(x, y)
+--end
+
 --frame_id = 0
 --function OnFrame()
 --    frame_id = frame_id + 1
