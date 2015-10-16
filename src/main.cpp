@@ -99,30 +99,10 @@ static void call_lua_OnMouseScroll(lua_State* L, float dz){
 
 ////////////GLUT Keyboard Function Wrappers/////////////
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
-    static int mode = 0;
-    static int clip = 0;
-
     call_lua_OnKey(L, key, action, mods);
     switch(key){
     case GLFW_KEY_ESCAPE:
         if(action == GLFW_PRESS) running = false;
-        break;
-    case 'B':
-        if(action == GLFW_PRESS) scene->drawBox = !scene->drawBox;
-        break;
-    case 'O':
-        if(action == GLFW_PRESS){
-            if(mode == 0) scene->set_projection_type(Projection::ORTHOGRAPHIC);
-            else scene->set_projection_type(Projection::PERSPECTIVE);
-            mode = !mode;
-        }
-        break;
-    case 'C':
-        if(action == GLFW_PRESS){
-            if(clip == 0) scene->enable_clip_plane();
-            else scene->disable_clip_plane();
-            clip = !clip;
-        }
         break;
     default:
         break;

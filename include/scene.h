@@ -55,6 +55,7 @@ public:
     void set_clip_plane(const glm::vec4&);
     void enable_clip_plane(void);
     void disable_clip_plane(void);
+    void toggle_box(void);
 
     glm::vec3 get_light_direction(void)const;
     void set_light_direction(const glm::vec3&);
@@ -76,8 +77,6 @@ public:
     glm::vec3 get_sky_color(void)const;
     void set_background_color(const glm::vec3&);
     glm::vec3 get_background_color(void)const;
-
-	bool drawBox;
 
 private:
 	int windowWidth;
@@ -129,6 +128,7 @@ private:
 
 	bool is_scene_loaded;
     bool is_clip_plane_activated_;
+	bool drawBox;
 	bool m_blur;
 
     Projection projection_type;

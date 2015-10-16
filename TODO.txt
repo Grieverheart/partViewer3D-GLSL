@@ -18,6 +18,7 @@
 --Add lua mouse callbacks.
 --Add lua window functions.
 --Remove AntTweakBar.
+--Move keyboard code to lua.
 Move mouse code to lua.
 Draw points.
 Add font drawing.

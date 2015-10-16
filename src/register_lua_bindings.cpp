@@ -235,6 +235,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("select_particle", &Scene::select_particle, scene)
         .function_("enable_clip_plane", &Scene::enable_clip_plane, scene)
         .function_("disable_clip_plane", &Scene::disable_clip_plane, scene)
+        .function_("toggle_box", &Scene::toggle_box, scene)
         .function_("is_ssao_blur_enabled", &Scene::is_ssao_blur_enabled, scene)
         .function_("set_ssao_blur", &Scene::set_ssao_blur, scene)
         .function_("set_ssao_num_samples", &Scene::set_ssao_num_samples, scene)

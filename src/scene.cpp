@@ -20,7 +20,6 @@ static const glm::mat4 biasMatrix(
 );
 
 Scene::Scene(int width, int height):
-    drawBox(false),
     windowWidth(width), windowHeight(height),
     fov_(60.0f), zoom_(0.0f),
 	modelMatrix(1.0),
@@ -34,7 +33,7 @@ Scene::Scene(int width, int height):
     particles(nullptr), shape_types(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     selected_pid(-1),
-    is_scene_loaded(false), is_clip_plane_activated_(false), m_blur(true),
+    is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -1009,6 +1008,10 @@ void Scene::enable_clip_plane(void){
 
 void Scene::disable_clip_plane(void){
     is_clip_plane_activated_ = false;
+}
+
+void Scene::toggle_box(void){
+    drawBox = !drawBox;
 }
 
 glm::vec3 Scene::get_light_direction(void)const{

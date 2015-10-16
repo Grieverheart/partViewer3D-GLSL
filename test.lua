@@ -93,8 +93,32 @@ function OnInit(argv)
     end
 end
 
+projection_toggle = 0
+clip_toggle = 0
 function OnKey(key, action, mods)
-    print(key, action, mods)
+    if key == 66 then -- B
+        if action == 0 then
+            scene.toggle_box()
+        end
+    elseif key == 79 then -- O
+        if action == 0 then
+            if projection_toggle == 0 then
+                scene.set_projection_type('orthographic')
+            else
+                scene.set_projection_type('perspective')
+            end
+            projection_toggle = not projection_toggle;
+        end
+    elseif key == 67 then -- C
+        if action == 0 then
+            if clip_toggle == 0 then
+                scene.enable_clip_plane();
+            else
+                scene.disable_clip_plane();
+            end
+            clip_toggle = not clip_toggle;
+        end
+    end
 end
 
 function OnMouseClick(x, y, button, action, mods)
