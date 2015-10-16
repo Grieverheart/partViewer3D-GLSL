@@ -8,7 +8,6 @@ project(partviewer3D-GLSL)
 set(SOURCE_FILES
     src/main.cpp
     src/coord_parser.cpp
-    src/mouse.cpp
     src/scene.cpp
     src/event_manager.cpp
     src/shadowmap.cpp

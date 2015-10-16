@@ -213,6 +213,9 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
             .def_readwrite("y", &glm::vec3::y)
             .def_readwrite("z", &glm::vec3::z)
             .endef()
+        .function_("cross", (glm::vec3 (*)(const glm::vec3&, const glm::vec3&)) glm::cross)
+        .function_("dot", (float (*)(const glm::vec3&, const glm::vec3&)) glm::dot)
+        .function_("normalize", (glm::vec3 (*)(const glm::vec3&)) glm::normalize)
         //Register vec4
         .class_<glm::vec4>("vec4")
             .def_constructor<float, float, float, float>()

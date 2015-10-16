@@ -1,5 +1,4 @@
 #include "include/scene.h"
-#include "include/mouse.h"
 #include "include/event_manager.h"
 #include "include/events.h"
 #include "include/register_lua_bindings.h"
@@ -15,7 +14,6 @@ static bool running = true;
 
 static Scene* scene          = nullptr;
 static EventManager* evt_mgr = nullptr;
-static CMouse* mouse         = nullptr;
 static lua_State* L          = nullptr;
 
 static void call_lua_OnInit(lua_State* L, int argc, char* argv[]){
@@ -116,16 +114,13 @@ static void on_mouse_button_callback(GLFWwindow* window, int button, int action,
     glfwGetCursorPos(window, &x, &y);
 
     evt_mgr->queueEvent(new MouseClickEvent(x, y, button, action, mods));
-    mouse->onButton(button, action, (int)x, (int)y);
 }
 
 static void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
     evt_mgr->queueEvent(new MouseMotionEvent(x, y));
-    mouse->onMotion((int)x, (int)y);
 }
 
 static void scroll_callback(GLFWwindow* window, double x, double y){
-	mouse->onScroll(y);
     evt_mgr->queueEvent(new MouseScrollEvent(y));
 }
 
@@ -168,27 +163,10 @@ int main(int argc,char *argv[] ){
     //TODO: Add try catch for Scene construction
     scene   = new Scene(width, height);
     evt_mgr = new EventManager();
-    mouse   = new CMouse(evt_mgr, width, height);
-
-    evt_mgr->addHandler([=](const Event& event){
-        auto rotation_event = static_cast<const ArcballRotateEvent&>(event);
-        scene->rotate(rotation_event.angle, rotation_event.axis);
-    }, EVT_ARCBALL_ROTATE);
-
-    evt_mgr->addHandler([=](const Event& event){
-        auto selection_event = static_cast<const SelectionEvent&>(event);
-        scene->select_particle(selection_event.x, selection_event.y);
-    }, EVT_SELECTION);
-
-    evt_mgr->addHandler([=](const Event& event){
-        float dz = static_cast<const ZoomEvent&>(event).dz;
-        scene->zoom(dz);
-    }, EVT_ZOOM);
 
     evt_mgr->addHandler([=](const Event& event){
         auto wsize_event = static_cast<const WindowSizeEvent&>(event);
         scene->wsize_changed(wsize_event.width, wsize_event.height);
-        mouse->wsize_changed(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
 
     evt_mgr->addHandler([=](const Event& event){
@@ -233,7 +211,6 @@ int main(int argc,char *argv[] ){
 
     //TODO: Make these unique pointers.
     delete evt_mgr;
-    delete mouse;
     delete scene;
 
     glfwDestroyWindow(window);

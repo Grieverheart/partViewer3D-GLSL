@@ -98,8 +98,8 @@ function OnInit(argv)
     end
 end
 
-projection_toggle = 0
-clip_toggle = 0
+local projection_toggle = 0
+local clip_toggle = 0
 function OnKey(key, action, mods)
     if key == 66 then -- B
         if action == 0 then
@@ -126,18 +126,84 @@ function OnKey(key, action, mods)
     end
 end
 
+local function getArcballVec3(x, y)
+    width, height = window.size()
+    screen_min = height
+    if width < screen_min then
+        screen_min = width
+    end
+
+    P = glm.vec3((2.0 * x - width) / screen_min,
+                 (height - 2.0 * y) / screen_min,
+                 0.0);
+
+    OP_squared = P.x * P.x + P.y * P.y;
+    if OP_squared <= 0.5 then
+        P.z = math.sqrt(1.0 - OP_squared)
+    else
+        P.z = 0.5 / math.sqrt(OP_squared)
+        P = glm.normalize(P)
+    end
+
+    return P
+end
+
+
+local mouse = {
+    last_mx = 0, last_my = 0,
+    curr_mx = 0, curr_my = 0,
+    -- TODO: Make these per button, i.e. mouse.button[btn].is_pressed
+    dragging = false, pressed = false
+}
+
 function OnMouseClick(x, y, button, action, mods)
-    print(x, y)
-    print(button, action, mods)
+    if button == 0 then -- GLFW_MOUSE_BUTTON_LEFT
+        if action == 1 then
+            mouse.pressed = true
+            mouse.last_mx = mouse.curr_mx
+            mouse.last_my = mouse.curr_my
+        else
+            mouse.pressed = false
+            if mouse.dragging == true then
+                mouse.dragging = false
+            else -- Normal clicks go here
+                scene.select_particle(x, y)
+            end
+        end
+    end
+end
+
+function OnMouseMotion(x, y)
+    mouse.curr_mx = x
+    mouse.curr_my = y
+
+    if (mouse.curr_mx ~= mouse.last_mx) or (mouse.curr_my ~= mouse.last_my) then
+        if (mouse.pressed == true) and (mouse.dragging == false) then
+            mouse.dragging = true
+        end
+        if mouse.dragging == true then
+            a = getArcballVec3(mouse.last_mx, mouse.last_my)
+            b = getArcballVec3(mouse.curr_mx, mouse.curr_my)
+            axis = glm.cross(a, b)
+
+            dot = glm.dot(a, b)
+            if dot > 1.0 then
+                dot = 1.0
+            end
+
+            angle = math.acos(dot)
+
+            scene.rotate(angle, axis)
+
+            mouse.last_mx = mouse.curr_mx
+            mouse.last_my = mouse.curr_my
+        end
+    end
 end
 
 function OnMouseScroll(y)
-    print(y)
+    scene.zoom(y)
 end
-
---function OnMouseMotion(x, y)
---    print(x, y)
---end
 
 --frame_id = 0
 --function OnFrame()

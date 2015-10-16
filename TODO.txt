@@ -19,7 +19,8 @@
 --Add lua window functions.
 --Remove AntTweakBar.
 --Move keyboard code to lua.
-Move mouse code to lua.
+--Move mouse code to lua.
+Improve particle selection api.
 Draw points.
 Add font drawing.
 Add suport for multiple windows.
