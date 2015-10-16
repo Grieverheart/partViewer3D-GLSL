@@ -2,10 +2,8 @@
 #include "include/mouse.h"
 #include "include/event_manager.h"
 #include "include/events.h"
-#include "include/gui.h"
 #include "include/register_lua_bindings.h"
 #include <GLFW/glfw3.h>
-#include <AntTweakBar.h>
 #include <cstdio>
 extern "C"{
 #include <lua.h>
@@ -103,33 +101,32 @@ static void call_lua_OnMouseScroll(lua_State* L, float dz){
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     static int mode = 0;
     static int clip = 0;
-	if(!TwEventKeyGLFW(key, action)){
-        call_lua_OnKey(L, key, action, mods);
-        switch(key){
-        case GLFW_KEY_ESCAPE:
-            if(action == GLFW_PRESS) running = false;
-            break;
-        case 'B':
-            if(action == GLFW_PRESS) scene->drawBox = !scene->drawBox;
-            break;
-        case 'O':
-            if(action == GLFW_PRESS){
-                if(mode == 0) scene->set_projection_type(Projection::ORTHOGRAPHIC);
-                else scene->set_projection_type(Projection::PERSPECTIVE);
-                mode = !mode;
-            }
-            break;
-        case 'C':
-            if(action == GLFW_PRESS){
-                if(clip == 0) scene->enable_clip_plane();
-                else scene->disable_clip_plane();
-                clip = !clip;
-            }
-            break;
-        default:
-            break;
+
+    call_lua_OnKey(L, key, action, mods);
+    switch(key){
+    case GLFW_KEY_ESCAPE:
+        if(action == GLFW_PRESS) running = false;
+        break;
+    case 'B':
+        if(action == GLFW_PRESS) scene->drawBox = !scene->drawBox;
+        break;
+    case 'O':
+        if(action == GLFW_PRESS){
+            if(mode == 0) scene->set_projection_type(Projection::ORTHOGRAPHIC);
+            else scene->set_projection_type(Projection::PERSPECTIVE);
+            mode = !mode;
         }
-	}
+        break;
+    case 'C':
+        if(action == GLFW_PRESS){
+            if(clip == 0) scene->enable_clip_plane();
+            else scene->disable_clip_plane();
+            clip = !clip;
+        }
+        break;
+    default:
+        break;
+    }
 }
 
 ////////////////GLUT Mouse Function Wrappers////////////////
@@ -137,17 +134,14 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
 static void on_mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
     double x, y;
     glfwGetCursorPos(window, &x, &y);
-	if(!TwEventMouseButtonGLFW(button, action)){
-        evt_mgr->queueEvent(new MouseClickEvent(x, y, button, action, mods));
-        mouse->onButton(button, action, (int)x, (int)y);
-    }
+
+    evt_mgr->queueEvent(new MouseClickEvent(x, y, button, action, mods));
+    mouse->onButton(button, action, (int)x, (int)y);
 }
 
 static void on_mouse_motion_callback(GLFWwindow* window, double x, double y){
-	if(!TwEventMousePosGLFW(x, y)){
-        evt_mgr->queueEvent(new MouseMotionEvent(x, y));
-        mouse->onMotion((int)x, (int)y);
-    }
+    evt_mgr->queueEvent(new MouseMotionEvent(x, y));
+    mouse->onMotion((int)x, (int)y);
 }
 
 static void scroll_callback(GLFWwindow* window, double x, double y){
@@ -196,8 +190,6 @@ int main(int argc,char *argv[] ){
     evt_mgr = new EventManager();
     mouse   = new CMouse(evt_mgr, width, height);
 
-    Gui gui(scene, width, height);
-
     evt_mgr->addHandler([=](const Event& event){
         auto rotation_event = static_cast<const ArcballRotateEvent&>(event);
         scene->rotate(rotation_event.angle, rotation_event.axis);
@@ -213,11 +205,10 @@ int main(int argc,char *argv[] ){
         scene->zoom(dz);
     }, EVT_ZOOM);
 
-    evt_mgr->addHandler([&gui](const Event& event){
+    evt_mgr->addHandler([=](const Event& event){
         auto wsize_event = static_cast<const WindowSizeEvent&>(event);
         scene->wsize_changed(wsize_event.width, wsize_event.height);
         mouse->wsize_changed(wsize_event.width, wsize_event.height);
-        gui.resize(wsize_event.width, wsize_event.height);
     }, EVT_WINDOW_SIZE_CHANGED);
 
     evt_mgr->addHandler([=](const Event& event){
@@ -253,7 +244,6 @@ int main(int argc,char *argv[] ){
         call_lua_OnFrame(L);
 
         scene->render();
-        gui.draw();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

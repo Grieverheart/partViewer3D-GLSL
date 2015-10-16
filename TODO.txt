@@ -17,10 +17,8 @@
 --Add lua OnKey call.
 --Add lua mouse callbacks.
 --Add lua window functions.
-Remove AntTweakBar.
-Mouse mouse code to lua.
-Handle particle selection from script.
+--Remove AntTweakBar.
+Move mouse code to lua.
 Draw points.
-Add suport for multiple windows.
 Add font drawing.
-Add multiple clipping planes.
+Add suport for multiple windows.

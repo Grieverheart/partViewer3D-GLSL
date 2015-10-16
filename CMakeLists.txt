@@ -18,7 +18,6 @@ set(SOURCE_FILES
     src/grid.cpp
     src/obj_parser.cpp
     src/shader.cpp
-    src/gui.cpp
     src/register_lua_bindings.cpp
     src/ssao.cpp)
 
@@ -33,7 +32,6 @@ if(UNIX)
         INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/")
 endif()
 
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/AntTweakBar")
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.12.0")
 #set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
 set(BUILD_SHARED_LIBS ON)
@@ -44,14 +42,12 @@ find_package(OpenGL REQUIRED)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
-    "${CMAKE_SOURCE_DIR}/external/AntTweakBar/include"
     "${CMAKE_SOURCE_DIR}/external/glfw-3.1.1/include"
     "${CMAKE_SOURCE_DIR}/external/glm-0.9.6.3"
     "${CMAKE_SOURCE_DIR}/external/maan"
     "${CMAKE_SOURCE_DIR}/external/glew-1.12.0/include")
 
 set(EXTERNAL_LIBS
-    AntTweakBar
     glfw
     GLEW_shared)
 
