@@ -316,12 +316,14 @@ void Scene::load_scene(const SimConfig& config){
     zfar_  = -init_zoom + 2.0 * out_radius_;
 
 
+    //TODO: Move these to constructor with some other default values
     view_pos = glm::vec3(0.0, 0.0, -init_zoom);
+    view_dir = -view_pos;
 
     set_projection();
 
     lightProjectionMatrix = glm::ortho(-out_radius_, out_radius_, -out_radius_, out_radius_, 0.0f, 2.0f * out_radius_);
-	viewMatrix            = glm::lookAt(view_pos, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+	viewMatrix            = glm::lookAt(view_pos, view_pos + view_dir, glm::vec3(0.0, 1.0, 0.0));
     invViewMatrix         = glm::inverse(viewMatrix);
     lightViewMatrix       = glm::lookAt(-out_radius_ * light.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
@@ -1012,6 +1014,26 @@ void Scene::disable_clip_plane(void){
 
 void Scene::toggle_box(void){
     drawBox = !drawBox;
+}
+
+void Scene::set_view_position(const glm::vec3& pos){
+    view_pos = pos;
+	viewMatrix    = glm::lookAt(view_pos, view_pos + view_dir, glm::vec3(0.0, 1.0, 0.0));
+    invViewMatrix = glm::inverse(viewMatrix);
+}
+
+const glm::vec3& Scene::get_view_position(void)const{
+    return view_pos;
+}
+
+void Scene::set_view_direction(const glm::vec3& dir){
+    view_dir = dir;
+	viewMatrix    = glm::lookAt(view_pos, view_pos + view_dir, glm::vec3(0.0, 1.0, 0.0));
+    invViewMatrix = glm::inverse(viewMatrix);
+}
+
+const glm::vec3& Scene::get_view_direction(void)const{
+    return view_dir;
 }
 
 glm::vec3 Scene::get_light_direction(void)const{

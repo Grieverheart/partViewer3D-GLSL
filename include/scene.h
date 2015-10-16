@@ -57,6 +57,12 @@ public:
     void disable_clip_plane(void);
     void toggle_box(void);
 
+    void set_view_position(const glm::vec3&);
+    const glm::vec3& get_view_position(void)const;
+
+    void set_view_direction(const glm::vec3&);
+    const glm::vec3& get_view_direction(void)const;
+
     glm::vec3 get_light_direction(void)const;
     void set_light_direction(const glm::vec3&);
     float get_light_specular_intensity(void)const;
@@ -94,6 +100,7 @@ private:
     glm::mat4 lightViewMatrix;
     glm::mat4* model_matrices;
     glm::vec3 view_pos;
+    glm::vec3 view_dir;
 
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;

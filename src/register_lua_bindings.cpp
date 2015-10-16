@@ -232,6 +232,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
 
     maan::module_(L, "scene")
         .function_("zoom", &Scene::zoom, scene)
+        .function_("rotate", &Scene::rotate, scene)
         .function_("select_particle", &Scene::select_particle, scene)
         .function_("enable_clip_plane", &Scene::enable_clip_plane, scene)
         .function_("disable_clip_plane", &Scene::disable_clip_plane, scene)
@@ -243,6 +244,10 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("set_ssao_radius", &Scene::set_ssao_radius, scene)
         .function_("get_ssao_radius", &Scene::get_ssao_radius, scene)
         .function_("set_clip_plane", &Scene::set_clip_plane, scene)
+        .function_("get_view_position", &Scene::get_view_position, scene)
+        .function_("set_view_position", &Scene::set_view_position, scene)
+        .function_("get_view_direction", &Scene::get_view_direction, scene)
+        .function_("set_view_direction", &Scene::set_view_direction, scene)
         .function_("get_light_intensity", &Scene::get_light_intensity, scene)
         .function_("set_light_intensity", &Scene::set_light_intensity, scene)
         .function_("get_light_ambient_intensity", &Scene::get_light_ambient_intensity, scene)
@@ -261,13 +266,13 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
     //maan::module_(L, "window")
     //    .function_("size", &Scene::zoom, scene);
 
-#define ADD_FUNCTION(cls, name)\
+#define ADD_CLASS_FUNCTION(cls, name)\
     {#name, lua ##cls##_##name},
 
     {
         luaL_Reg funcs[] = {
-            ADD_FUNCTION(Scene, load)
-            ADD_FUNCTION(Scene, set_projection_type)
+            ADD_CLASS_FUNCTION(Scene, load)
+            ADD_CLASS_FUNCTION(Scene, set_projection_type)
             {NULL, NULL}
         };
 
@@ -279,11 +284,11 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
 
     {
         luaL_Reg funcs[] = {
-            ADD_FUNCTION(Window, size)
-            ADD_FUNCTION(Window, position)
-            ADD_FUNCTION(Window, set_size)
-            ADD_FUNCTION(Window, set_position)
-            ADD_FUNCTION(Window, set_title)
+            ADD_CLASS_FUNCTION(Window, size)
+            ADD_CLASS_FUNCTION(Window, position)
+            ADD_CLASS_FUNCTION(Window, set_size)
+            ADD_CLASS_FUNCTION(Window, set_position)
+            ADD_CLASS_FUNCTION(Window, set_title)
             {NULL, NULL}
         };
 

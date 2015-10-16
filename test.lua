@@ -79,11 +79,16 @@ local function load_scene(filepath)
 
     scene.load(box, particles, shapes)
 
+    --pos = scene.get_view_position()
+    --pos.x = pos.x + 12.0
+    --scene.set_view_position(pos)
+
     return true
 end
 
 function OnInit(argv)
     scene.zoom(12.5)
+
     if argv[2] ~= nil then
         print("Loading "..argv[2])
         return load_scene(argv[2])
