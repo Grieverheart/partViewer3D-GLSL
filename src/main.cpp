@@ -239,7 +239,7 @@ int main(int argc,char *argv[] ){
     L = luaL_newstate();
 	luaL_openlibs(L);
 
-    register_lua_bindings(L, scene);
+    register_lua_bindings(L, scene, window);
 	
     if(luaL_dofile(L, "test.lua")){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));

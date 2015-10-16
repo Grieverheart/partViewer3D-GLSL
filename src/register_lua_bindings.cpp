@@ -128,7 +128,48 @@ static int luaScene_load(lua_State* L){
     return 0;
 }
 
-bool register_lua_bindings(lua_State* L, Scene* scene){
+static int luaWindow_size(lua_State* L){
+    int width, height;
+    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    glfwGetWindowSize(window, &width, &height);
+    lua_pushinteger(L, width);
+    lua_pushinteger(L, height);
+    return 2;
+}
+
+static int luaWindow_position(lua_State* L){
+    int x, y;
+    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    glfwGetWindowPos(window, &x, &y);
+    lua_pushinteger(L, x);
+    lua_pushinteger(L, y);
+    return 2;
+}
+
+static int luaWindow_set_size(lua_State* L){
+    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    int width = lua_tointeger(L, 1);
+    int height = lua_tointeger(L, 2);
+    glfwSetWindowSize(window, width, height);
+    return 0;
+}
+
+static int luaWindow_set_position(lua_State* L){
+    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    int x = lua_tointeger(L, 1);
+    int y = lua_tointeger(L, 2);
+    glfwSetWindowPos(window, x, y);
+    return 0;
+}
+
+static int luaWindow_set_title(lua_State* L){
+    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    const char* title = lua_tostring(L, 1);
+    glfwSetWindowTitle(window, title);
+    return 0;
+}
+
+bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
 
     maan::module_(L)
         .class_<Particle>("Particle")
@@ -216,18 +257,43 @@ bool register_lua_bindings(lua_State* L, Scene* scene){
         .function_("get_light_direction", &Scene::get_light_direction, scene)
         .function_("set_light_direction", &Scene::set_light_direction, scene);
 
-#define ADD_FUNCTION(name)\
-    {#name, luaScene_##name},
+    //maan::module_(L, "window")
+    //    .function_("size", &Scene::zoom, scene);
 
-    luaL_Reg funcs[] = {
-        ADD_FUNCTION(load)
-        ADD_FUNCTION(set_projection_type)
-        {NULL, NULL}
-    };
+#define ADD_FUNCTION(cls, name)\
+    {#name, lua ##cls##_##name},
 
-    lua_getglobal(L, "scene");
-    lua_pushlightuserdata(L, static_cast<void*>(scene));
-    luaL_setfuncs(L, funcs, 1);
+    {
+        luaL_Reg funcs[] = {
+            ADD_FUNCTION(Scene, load)
+            ADD_FUNCTION(Scene, set_projection_type)
+            {NULL, NULL}
+        };
+
+        lua_getglobal(L, "scene");
+        lua_pushlightuserdata(L, static_cast<void*>(scene));
+        luaL_setfuncs(L, funcs, 1);
+        lua_pop(L, 1);
+    }
+
+    {
+        luaL_Reg funcs[] = {
+            ADD_FUNCTION(Window, size)
+            ADD_FUNCTION(Window, position)
+            ADD_FUNCTION(Window, set_size)
+            ADD_FUNCTION(Window, set_position)
+            ADD_FUNCTION(Window, set_title)
+            {NULL, NULL}
+        };
+
+        lua_newtable(L);
+        lua_pushvalue(L, -1);
+        lua_setglobal(L, "window");
+
+        lua_pushlightuserdata(L, window);
+        luaL_setfuncs(L, funcs, 1);
+        lua_pop(L, 1);
+    }
 
     return true;
 }
