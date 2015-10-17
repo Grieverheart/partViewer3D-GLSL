@@ -167,7 +167,15 @@ function OnMouseClick(x, y, button, action, mods)
             if mouse.dragging == true then
                 mouse.dragging = false
             else -- Normal clicks go here
-                scene.select_particle(x, y)
+                pid = scene.raytrace(x, y)
+                if pid and (mods == 1) then
+                    scene.select_particle(pid)
+                elseif pid and (not scene.is_selected(pid)) then
+                    scene.clear_selection()
+                    scene.select_particle(pid)
+                else
+                    scene.clear_selection()
+                end
             end
         end
     end

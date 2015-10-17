@@ -7,6 +7,7 @@
 #include <GL/glxew.h>
 #endif
 
+#include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
 #include "include/gl_utils.h"
 #include "include/shader.h"
@@ -32,7 +33,6 @@ Scene::Scene(int width, int height):
     shape_single_vaos(nullptr),
     particles(nullptr), shape_types(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
-    selected_pid(-1),
     is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
@@ -521,7 +521,7 @@ void Scene::load_scene(const SimConfig& config){
 	}
 }
 
-void Scene::select_particle(int x, int y){
+bool Scene::raytrace(int x, int y, int& pid){
     glm::mat4 imodel_matrix = glm::inverse(modelMatrix);
     glm::vec3 o = glm::vec3(imodel_matrix * invViewMatrix * glm::vec4(glm::vec3(0.0), 1.0));
     glm::vec4 mouse_clip = glm::vec4(2.0f * x / windowWidth - 1.0f, 1.0f - 2.0f * y / windowHeight, 0.0, 1.0);
@@ -536,12 +536,23 @@ void Scene::select_particle(int x, int y){
         ray_origin += ray_dir * t;
     }
 
-    int pid;
-    if(grid->raycast(ray_origin, ray_dir, pid)){
-        if(selected_pid == pid) selected_pid = -1;
-        else selected_pid = pid;
+    return grid->raycast(ray_origin, ray_dir, pid);
+}
+
+void Scene::select_particle(int pid){
+    auto iter = std::find(selected_pids.begin(), selected_pids.end(), pid);
+    if(iter != selected_pids.end()){
+        selected_pids.erase(iter);
     }
-    else selected_pid = -1;
+    else selected_pids.push_back(pid);
+}
+
+bool Scene::is_selected(int pid)const{
+    return std::any_of(selected_pids.begin(), selected_pids.end(), [pid](int id) -> bool {return id == pid;});
+}
+
+void Scene::clear_selection(void){
+    selected_pids.clear();
 }
 
 void Scene::wsize_changed(int w, int h){
@@ -861,66 +872,63 @@ void Scene::render(void){
 
     }
 
-    if(selected_pid >= 0){
+    //"Selection Pass"
+    for(auto selected_pid: selected_pids){
+        int shape_id = particles[selected_pid].shape_id;
 
-        //"Selection Pass"
-        {
-            int shape_id = particles[selected_pid].shape_id;
+        m_accumulator.Bind();
 
-            m_accumulator.Bind();
+        glBindVertexArray(shape_single_vaos[shape_id]);
+        glDepthMask(GL_TRUE);
+        glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+        glStencilMask(0xFF);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-            glBindVertexArray(shape_single_vaos[shape_id]);
-            glDepthMask(GL_TRUE);
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilMask(0xFF);
-            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+        if(shape_types[shape_id] == Shape::MESH){
+            sh_color->bind();
 
-            if(shape_types[shape_id] == Shape::MESH){
-                sh_color->bind();
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
+            sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
+            glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[shape_id]);
 
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
-                sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
-                glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[shape_id]);
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
-                glDisable(GL_DEPTH_TEST);
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
-                sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
-                glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[shape_id]);
-            }
-            else{
-                sh_color_sphere->bind();
-
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-                float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
-
-                glm::mat4 mv_matrix = viewMatrix * modelMatrix * model_matrices[selected_pid];
-                sh_color_sphere->setUniform("mv_matrix", 1, mv_matrix);
-                sh_color_sphere->setUniform("projection_matrix", 1, projectionMatrix);
-                sh_color_sphere->setUniform("iprojection_matrix", 1, invProjMatrix);
-                sh_color_sphere->setUniform("perspective_scale", perspective_scale);
-                sh_color_sphere->setUniform("radius", 0.5f);
-                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
-                glDisable(GL_DEPTH_TEST);
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                sh_color_sphere->setUniform("radius", 1.1f * 0.5f);
-                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-            }
-
-            glDisable(GL_STENCIL_TEST);
-            glDepthMask(GL_FALSE);
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDisable(GL_DEPTH_TEST);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
+            sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
+            glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[shape_id]);
         }
+        else{
+            sh_color_sphere->bind();
+
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+            float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
+
+            glm::mat4 mv_matrix = viewMatrix * modelMatrix * model_matrices[selected_pid];
+            sh_color_sphere->setUniform("mv_matrix", 1, mv_matrix);
+            sh_color_sphere->setUniform("projection_matrix", 1, projectionMatrix);
+            sh_color_sphere->setUniform("iprojection_matrix", 1, invProjMatrix);
+            sh_color_sphere->setUniform("perspective_scale", perspective_scale);
+            sh_color_sphere->setUniform("radius", 0.5f);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDisable(GL_DEPTH_TEST);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            sh_color_sphere->setUniform("radius", 1.1f * 0.5f);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+
+        glDisable(GL_STENCIL_TEST);
+        glDepthMask(GL_FALSE);
     }
 
     //"SMAA"

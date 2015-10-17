@@ -20,7 +20,8 @@
 --Remove AntTweakBar.
 --Move keyboard code to lua.
 --Move mouse code to lua.
-Improve particle selection api.
+--Improve particle selection api.
+Add functionality for changing particle color.
 Draw points.
 Add font drawing.
 Add suport for multiple windows.

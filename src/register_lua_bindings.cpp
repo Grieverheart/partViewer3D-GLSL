@@ -28,6 +28,23 @@ static int luaScene_set_projection_type(lua_State* L){
     return 0;
 }
 
+static int luaScene_raytrace(lua_State* L){
+    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+
+    int x = lua_tointeger(L, 1);
+    int y = lua_tointeger(L, 2);
+    int pid;
+
+    if(scene->raytrace(x, y, pid)){
+        lua_pushinteger(L, pid);
+    }
+    else{
+        lua_pushnil(L);
+    }
+
+    return 1;
+}
+
 //TODO: Implement these. We first need to register glm::mat4, but it's a bit of
 //a pain in the ass to do properly because we first need to be able to overload
 //operators based on argument types.
@@ -237,6 +254,8 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("zoom", &Scene::zoom, scene)
         .function_("rotate", &Scene::rotate, scene)
         .function_("select_particle", &Scene::select_particle, scene)
+        .function_("is_selected", &Scene::is_selected, scene)
+        .function_("clear_selection", &Scene::clear_selection, scene)
         .function_("enable_clip_plane", &Scene::enable_clip_plane, scene)
         .function_("disable_clip_plane", &Scene::disable_clip_plane, scene)
         .function_("toggle_box", &Scene::toggle_box, scene)
@@ -276,6 +295,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         luaL_Reg funcs[] = {
             ADD_CLASS_FUNCTION(Scene, load)
             ADD_CLASS_FUNCTION(Scene, set_projection_type)
+            ADD_CLASS_FUNCTION(Scene, raytrace)
             {NULL, NULL}
         };
 

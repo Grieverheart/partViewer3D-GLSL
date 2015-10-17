@@ -8,6 +8,7 @@
 #include "ssao.h"
 #include "shadowmap.h"
 #include <exception>
+#include <vector>
 
 #ifdef _MSC_VER
 #define noexcept
@@ -41,11 +42,12 @@ public:
     void rotate(float angle, const glm::vec3& axis);
 
 	void zoom(float dz);
-    //TODO: Make this a raycast, and add a separate select_particle function
-    //that takes the particle id. We also need a separate camera class that
-    //will shoot rays. The problem is that both camera and renderer need
-    //the window resolution which complicates things.
-    void select_particle(int x, int y);
+
+    bool raytrace(int x, int y, int& pid);
+    void select_particle(int pid);
+    bool is_selected(int pid)const;
+    void clear_selection(void);
+
     void set_projection_type(Projection);
 
     glm::mat4 get_view_matrix(void)const;
@@ -131,7 +133,7 @@ private:
 	unsigned int area_texture;
 	unsigned int search_texture;
 
-    int selected_pid;
+    std::vector<int> selected_pids;
 
 	bool is_scene_loaded;
     bool is_clip_plane_activated_;
