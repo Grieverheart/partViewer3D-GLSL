@@ -256,6 +256,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("select_particle", &Scene::select_particle, scene)
         .function_("hide_particle", &Scene::hide_particle, scene)
         .function_("unhide_particle", &Scene::unhide_particle, scene)
+        .function_("set_particle_color", &Scene::set_particle_color, scene)
         .function_("is_selected", &Scene::is_selected, scene)
         .function_("clear_selection", &Scene::clear_selection, scene)
         .function_("enable_clip_plane", &Scene::enable_clip_plane, scene)

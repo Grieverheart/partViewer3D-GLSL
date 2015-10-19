@@ -590,6 +590,12 @@ void Scene::unhide_particle(int pid){
     }
 }
 
+void Scene::set_particle_color(int pid, const glm::vec3& color){
+    auto shape_id = particles[pid].shape_id;
+    glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
+    glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::vec3), sizeof(glm::vec3), &color);
+}
+
 void Scene::wsize_changed(int w, int h){
 	windowWidth = w;
 	windowHeight = h;

@@ -51,6 +51,8 @@ public:
     void hide_particle(int pid);
     void unhide_particle(int pid);
 
+    void set_particle_color(int pid, const glm::vec3& color);
+
     void set_projection_type(Projection);
 
     glm::mat4 get_view_matrix(void)const;

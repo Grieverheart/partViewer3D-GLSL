@@ -22,7 +22,7 @@
 --Move mouse code to lua.
 --Improve particle selection api.
 --Add functionality for hiding particles? Note: this needs to also propagate to the grid.
-Add functionality for changing particle color.
+--Add functionality for changing particle color.
 Draw points.
 Add font drawing.
 Add suport for multiple windows.
