@@ -31,6 +31,36 @@ local function load_obj(filepath)
         end
     end
 
+    ---- Generate a cone mesh
+
+    --local mesh = Mesh()
+
+    --local subdivision = 50
+    --for i = 1, subdivision do
+    --    local theta1 = 2.0 * math.pi * i / subdivision
+    --    local theta2 = 2.0 * math.pi * (i + 1) / subdivision
+    --    local x1 = math.sin(theta1)
+    --    local z1 = math.cos(theta1)
+    --    local x2 = math.sin(theta2)
+    --    local z2 = math.cos(theta2)
+
+    --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), glm.vec3(0.0, -1.0, 0.0)))
+    --    mesh:add_vertex(Vertex(glm.vec3(0.0, 0.0, 0.0), glm.vec3(0.0, -1.0, 0.0)))
+    --    mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2), glm.vec3(0.0, -1.0, 0.0)))
+
+    --    local theta3 = 2.0 * math.pi * (i - 0.5) / subdivision
+    --    local theta4 = 2.0 * math.pi * (i + 0.5) / subdivision
+    --    local theta5 = 2.0 * math.pi * (i + 1.5) / subdivision
+    --    local normal1 = glm.normalize(glm.vec3(math.sin(math.pi * 0.25) * math.sin(theta3), math.cos(math.pi * 0.25), math.sin(math.pi * 0.25) * math.cos(theta3)))
+    --    local normal2 = glm.normalize(glm.vec3(math.sin(math.pi * 0.25) * math.sin(theta4), math.cos(math.pi * 0.25), math.sin(math.pi * 0.25) * math.cos(theta4)))
+    --    local normal3 = glm.normalize(glm.vec3(math.sin(math.pi * 0.25) * math.sin(theta5), math.cos(math.pi * 0.25), math.sin(math.pi * 0.25) * math.cos(theta5)))
+    --    normal1 = glm.vec3(0.5) * (normal1 + normal2)
+    --    normal3 = glm.vec3(0.5) * (normal2 + normal3)
+    --    mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2), normal3))
+    --    mesh:add_vertex(Vertex(glm.vec3(0.0, 1.0, 0.0), normal2))
+    --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), normal1))
+    --end
+
     return mesh
 end
 

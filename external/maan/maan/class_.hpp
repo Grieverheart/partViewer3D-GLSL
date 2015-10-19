@@ -312,6 +312,8 @@ namespace maan{
         }
 
     private:
+        //TODO: Score args makes it difficult to call function with
+        //reverse order of operands.
         template<typename op, class U>
         struct OverloadableBinaryOperator: detail::Functor{
             OverloadableBinaryOperator(void):
@@ -339,7 +341,10 @@ namespace maan{
             }
 
             int score(lua_State* L){
-                return detail::score_args<type_, U>(L);
+                return std::max(
+                    detail::score_args<type_, U>(L),
+                    detail::score_args<U, type_>(L)
+                );
             }
 
             static const int n_args_ = 2;
