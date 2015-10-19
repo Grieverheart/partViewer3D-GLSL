@@ -20,6 +20,10 @@ static const glm::mat4 biasMatrix(
     0.5, 0.5, 0.5, 1.0
 );
 
+enum ParticleFlags{
+    Hidden = 0x01
+};
+
 Scene::Scene(int width, int height):
     windowWidth(width), windowHeight(height),
     fov_(60.0f), zoom_(0.0f),
@@ -31,6 +35,7 @@ Scene::Scene(int width, int height):
 	shape_instances(nullptr), shape_vaos(nullptr), shape_vertex_vbos(nullptr),
 	shape_model_matrix_vbos(nullptr), shape_colors_vbos(nullptr), shape_num_vertices(nullptr),
     shape_single_vaos(nullptr),
+    instance_ids(nullptr), particle_flags(nullptr),
     particles(nullptr), shape_types(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), m_blur(true),
@@ -237,6 +242,8 @@ Scene::~Scene(void){
     delete[] shape_types;
     delete[] shape_num_vertices;
     delete[] model_matrices;
+    delete[] instance_ids;
+    delete[] particle_flags;
 
     delete grid;
 
@@ -264,6 +271,8 @@ void Scene::load_scene(const SimConfig& config){
         delete[] shape_colors_vbos;
         delete[] shape_num_vertices;
         delete[] model_matrices;
+        delete[] instance_ids;
+        delete[] particle_flags;
     }
 
     is_scene_loaded = true;
@@ -337,6 +346,8 @@ void Scene::load_scene(const SimConfig& config){
 
     n_shapes = config.n_shapes;
     shape_types = new Shape::Type[n_shapes];
+	instance_ids = new unsigned int[config.n_part];
+	particle_flags = new unsigned int[config.n_part]{};
 
     glGenVertexArrays(config.n_shapes, shape_vaos);
     glGenBuffers(config.n_shapes, shape_vertex_vbos);
@@ -375,8 +386,10 @@ void Scene::load_scene(const SimConfig& config){
                     glm::vec3(config.particles[pid].rot.y, config.particles[pid].rot.z, config.particles[pid].rot.w)
                 );
 
-                ModelArray[i++] = tLocalMatrix * rLocalMatrix;
-                model_matrices[pid] = ModelArray[i - 1];
+                ModelArray[i] = tLocalMatrix * rLocalMatrix;
+                model_matrices[pid] = ModelArray[i];
+                instance_ids[pid] = i;
+                ++i;
             }
         }
 
@@ -536,7 +549,8 @@ bool Scene::raytrace(int x, int y, int& pid){
         ray_origin += ray_dir * t;
     }
 
-    return grid->raycast(ray_origin, ray_dir, pid);
+    float t = FLT_MAX;
+    return grid->raycast(ray_origin, ray_dir, t, pid);
 }
 
 void Scene::select_particle(int pid){
@@ -553,6 +567,27 @@ bool Scene::is_selected(int pid)const{
 
 void Scene::clear_selection(void){
     selected_pids.clear();
+}
+
+void Scene::hide_particle(int pid){
+    if(!(particle_flags[pid] & ParticleFlags::Hidden)){
+        auto shape_id = particles[pid].shape_id;
+        glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
+        glm::mat4 hide_mat = glm::scale(glm::mat4(1.0), glm::vec3(0.0));
+        glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::mat4), sizeof(glm::mat4), &hide_mat);
+        particle_flags[pid] |= ParticleFlags::Hidden;
+        grid->ignore_id(pid);
+    }
+}
+
+void Scene::unhide_particle(int pid){
+    if(particle_flags[pid] & ParticleFlags::Hidden){
+        auto shape_id = particles[pid].shape_id;
+        glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
+        glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::mat4), sizeof(glm::mat4), &model_matrices[pid]);
+        particle_flags[pid] &= ~ParticleFlags::Hidden;
+        grid->unignore_id(pid);
+    }
 }
 
 void Scene::wsize_changed(int w, int h){

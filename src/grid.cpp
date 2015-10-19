@@ -196,6 +196,7 @@ private:
 Grid::Grid(const SimConfig& config):
     cells_(nullptr)
 {
+    is_ignored = new bool[config.n_part]{};
     // Find shape out_radius
     float out_radii[config.n_shapes]{};
     for(int shape_id = 0; shape_id < config.n_shapes; ++shape_id){
@@ -293,8 +294,17 @@ Grid::Grid(const SimConfig& config):
 }
 
 Grid::~Grid(void){
+    delete[] is_ignored;
     delete[] cells_;
     for(auto item: items_) delete item.object_;
+}
+
+void Grid::ignore_id(int pid){
+    is_ignored[pid] = true;
+}
+
+void Grid::unignore_id(int pid){
+    is_ignored[pid] = false;
 }
 
 template<typename T>
@@ -302,8 +312,7 @@ inline T clamp(T input, T min, T max){
 	return std::max(min, std::min(input, max));
 }
 
-bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
-    float t = FLT_MAX;
+bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, float& t, int& pid){
 	glm::vec3 invDir = 1.0f / ray_dir;
 	glm::vec3 deltaT, nextCrossingT;
 	glm::ivec3 exitCell, step;
@@ -338,9 +347,13 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, int& pid){
 	while(1){
 		int index = cell[0] + cell[1] * n_cells_[0] + cell[2] * n_cells_[0] * n_cells_[1];
         for(auto item: cells_[index]){
-			if(item->object_->raycast(o, ray_dir, t)){
-                retValue = true;
-                pid = item->pid_;
+            float temp_t = t;
+			if(item->object_->raycast(o, ray_dir, temp_t)){
+                if(!is_ignored[item->pid_]){
+                    pid = item->pid_;
+                    retValue = true;
+                    t = temp_t;
+                }
             }
 		}
 		unsigned char k = 

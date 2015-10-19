@@ -48,6 +48,9 @@ public:
     bool is_selected(int pid)const;
     void clear_selection(void);
 
+    void hide_particle(int pid);
+    void unhide_particle(int pid);
+
     void set_projection_type(Projection);
 
     glm::mat4 get_view_matrix(void)const;
@@ -117,6 +120,8 @@ private:
 	unsigned int* shape_colors_vbos;
 	unsigned int* shape_num_vertices;
 	unsigned int* shape_single_vaos;
+	unsigned int* instance_ids;
+	unsigned int* particle_flags;
 
     Particle* particles;
     Shape::Type* shape_types;

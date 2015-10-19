@@ -16,7 +16,9 @@ class Grid{
 public:
     Grid(const SimConfig& config);
     ~Grid(void);
-    bool raycast(glm::vec3 o, glm::vec3 dir, int& pid);
+    bool raycast(glm::vec3 o, glm::vec3 dir, float& t, int& pid);
+    void ignore_id(int pid);
+    void unignore_id(int pid);
 private:
     struct Item{
         IntersectionObject* object_;
@@ -29,6 +31,7 @@ private:
     AABB scene_bounds_;
     glm::vec3 cell_size_;
     int n_cells_[3];
+    bool* is_ignored;
 };
 
 #endif
