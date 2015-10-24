@@ -32,11 +32,9 @@ Scene::Scene(int width, int height):
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
     clip_plane_{0.0, 0.0, -1.0, 0.0},
-	shape_instances(nullptr), shape_vaos(nullptr), shape_vertex_vbos(nullptr),
-	shape_model_matrix_vbos(nullptr), shape_colors_vbos(nullptr), shape_num_vertices(nullptr),
-    shape_single_vaos(nullptr),
-    instance_ids(nullptr), particle_flags(nullptr),
-    particles(nullptr), shape_types(nullptr), n_shapes(0), n_particles(0),
+	shape_vaos(nullptr), shape_vbos(nullptr),
+    particle_flags(nullptr),
+    particles(nullptr), shapes(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
@@ -228,21 +226,12 @@ Scene::~Scene(void){
 	delete sh_color_sphere;
 
 	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
-	if(n_shapes) glDeleteBuffers(n_shapes, shape_vertex_vbos);
-	if(n_shapes) glDeleteBuffers(n_shapes, shape_model_matrix_vbos);
-	if(n_shapes) glDeleteBuffers(n_shapes, shape_colors_vbos);
-	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_single_vaos);
+	if(n_shapes) glDeleteBuffers(n_shapes, shape_vbos);
 
     delete[] shape_vaos;
-    delete[] shape_single_vaos;
-    delete[] shape_vertex_vbos;
-    delete[] shape_model_matrix_vbos;
-    delete[] shape_colors_vbos;
-    delete[] shape_instances;
-    delete[] shape_types;
-    delete[] shape_num_vertices;
+    delete[] shape_vbos;
+    delete[] shapes;
     delete[] model_matrices;
-    delete[] instance_ids;
     delete[] particle_flags;
 
     delete grid;
@@ -256,22 +245,14 @@ Scene::~Scene(void){
 
 void Scene::load_scene(const SimConfig& config){
     if(is_scene_loaded){
-        glDeleteBuffers(n_shapes, shape_vertex_vbos);
-        glDeleteBuffers(n_shapes, shape_model_matrix_vbos);
-        glDeleteBuffers(n_shapes, shape_colors_vbos);
+        glDeleteBuffers(n_shapes, shape_vbos);
         glDeleteVertexArrays(n_shapes, shape_vaos);
-        glDeleteVertexArrays(n_shapes, shape_single_vaos);
         delete grid;
         delete[] particles;
-        delete[] shape_instances;
         delete[] shape_vaos;
-        delete[] shape_single_vaos;
-        delete[] shape_vertex_vbos;
-        delete[] shape_model_matrix_vbos;
-        delete[] shape_colors_vbos;
-        delete[] shape_num_vertices;
+        delete[] shape_vbos;
+        delete[] shapes;
         delete[] model_matrices;
-        delete[] instance_ids;
         delete[] particle_flags;
     }
 
@@ -316,7 +297,7 @@ void Scene::load_scene(const SimConfig& config){
     )) + 1.0;
 
     float init_zoom = -4.0;
-    for(int i=0;i<3;i++){
+    for(int i = 0; i < 3; i++){
         GLfloat max_zoom = -3.5f*glm::length(glm::transpose(config.box)[i]);
         if(max_zoom < init_zoom) init_zoom = max_zoom;
     }
@@ -336,78 +317,49 @@ void Scene::load_scene(const SimConfig& config){
     invViewMatrix         = glm::inverse(viewMatrix);
     lightViewMatrix       = glm::lookAt(-out_radius_ * light.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-	shape_instances         = new unsigned int[config.n_shapes]{};
-	shape_vaos              = new unsigned int[config.n_shapes]{};
-	shape_single_vaos       = new unsigned int[config.n_shapes]{};
-	shape_vertex_vbos       = new unsigned int[config.n_shapes]{};
-	shape_model_matrix_vbos = new unsigned int[config.n_shapes]{};
-	shape_colors_vbos       = new unsigned int[config.n_shapes]{};
-	shape_num_vertices      = new unsigned int[config.n_shapes]{};
-
     n_shapes = config.n_shapes;
-    shape_types = new Shape::Type[n_shapes];
-	instance_ids = new unsigned int[config.n_part];
+
+	shape_vaos = new unsigned int[config.n_shapes]{};
+	shape_vbos = new unsigned int[config.n_shapes]{};
+
+    shapes         = new Shape[config.n_shapes];
 	particle_flags = new unsigned int[config.n_part]{};
-
-    glGenVertexArrays(config.n_shapes, shape_vaos);
-    glGenBuffers(config.n_shapes, shape_vertex_vbos);
-    glGenBuffers(config.n_shapes, shape_model_matrix_vbos);
-    glGenBuffers(config.n_shapes, shape_colors_vbos);
-    glGenVertexArrays(config.n_shapes, shape_single_vaos);
-
     model_matrices = new glm::mat4[config.n_part];
+
+    glm::mat4 tMatrix = glm::translate(
+        glm::mat4(1.0),
+        glm::vec3(
+            -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
+            -(config.box[1][1] + config.box[1][2]) / 2.0,
+            -config.box[2][2] / 2.0
+        )
+    );
 
     //Count shape instances and copy particles
     for(int i = 0; i < config.n_part; ++i){
         particles[i] = config.particles[i];
-        ++shape_instances[config.particles[i].shape_id];
-    }
 
-    for(int shape_id = 0; shape_id < config.n_shapes; ++shape_id){
-        shape_types[shape_id] = config.shapes[shape_id].type;
-
-        glm::mat4* ModelArray = new glm::mat4[shape_instances[shape_id]];
-
-        glm::mat4 tMatrix = glm::translate(
+        glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[i].pos);
+        glm::mat4 rLocalMatrix = glm::rotate(
             glm::mat4(1.0),
-            glm::vec3(
-                -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
-                -(config.box[1][1] + config.box[1][2]) / 2.0,
-                -config.box[2][2] / 2.0
-            )
+            config.particles[i].rot.x,
+            glm::vec3(config.particles[i].rot.y, config.particles[i].rot.z, config.particles[i].rot.w)
         );
 
-        for(int pid = 0, i = 0; pid < config.n_part; ++pid){
-            if(config.particles[pid].shape_id == shape_id){
-                glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[pid].pos);
-                glm::mat4 rLocalMatrix = glm::rotate(
-                    glm::mat4(1.0),
-                    config.particles[pid].rot.x,
-                    glm::vec3(config.particles[pid].rot.y, config.particles[pid].rot.z, config.particles[pid].rot.w)
-                );
+        model_matrices[i] = tLocalMatrix * rLocalMatrix;
+    }
 
-                ModelArray[i] = tLocalMatrix * rLocalMatrix;
-                model_matrices[pid] = ModelArray[i];
-                instance_ids[pid] = i;
-                ++i;
-            }
-        }
+    glGenVertexArrays(config.n_shapes, shape_vaos);
+    glGenBuffers(config.n_shapes, shape_vbos);
 
-        glm::vec3* shape_colors = new glm::vec3[shape_instances[shape_id]];
-        for(unsigned int pid = 0; pid < shape_instances[shape_id]; ++pid){
-            shape_colors[pid] = diffcolor;
-        }
+    for(int shape_id = 0; shape_id < config.n_shapes; ++shape_id){
+        shapes[shape_id] = config.shapes[shape_id];
 
-        //Build instanced vao
-        //TODO: Buffer data filling will be deferred until rendering.
-        //We will have a needs_update kind of variable that will be checked
-        //each frame.
         glBindVertexArray(shape_vaos[shape_id]);
         if(config.shapes[shape_id].type == Shape::MESH){
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
-            shape_num_vertices[shape_id] = mesh.n_vertices;
 
-            glBindBuffer(GL_ARRAY_BUFFER, shape_vertex_vbos[shape_id]);
+            glBindBuffer(GL_ARRAY_BUFFER, shape_vbos[shape_id]);
             glBufferData(GL_ARRAY_BUFFER, mesh.n_vertices * sizeof(Vertex), mesh.vertices, GL_STATIC_DRAW);
 
             glEnableVertexAttribArray(0);
@@ -415,64 +367,19 @@ void Scene::load_scene(const SimConfig& config){
 
             glEnableVertexAttribArray(1);
             glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)sizeof(glm::vec3));
-
-            glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
-            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::vec3), shape_colors, GL_STATIC_DRAW);
-
-            glEnableVertexAttribArray(2);
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-            glVertexAttribDivisor(2, 1);
-
-            glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
-            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
-
-            for(int i = 0; i < 4; i++){ //MVP Matrices
-                glEnableVertexAttribArray(3 + i);
-                glVertexAttribPointer(3 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-                glVertexAttribDivisor(3 + i, 1);
-            }
         }
         else if(config.shapes[shape_id].type == Shape::SPHERE){
             glm::vec3 vertices[] = {
                 glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0), glm::vec3(0.0)
             };
-            glBindBuffer(GL_ARRAY_BUFFER, shape_vertex_vbos[shape_id]);
+            glBindBuffer(GL_ARRAY_BUFFER, shape_vbos[shape_id]);
             glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(glm::vec3), &vertices[0], GL_STATIC_DRAW);
 
             glEnableVertexAttribArray(0);
             glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-
-            glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
-            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::vec3), shape_colors, GL_STATIC_DRAW);
-
-            glEnableVertexAttribArray(1);
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (const GLvoid*)0);
-            glVertexAttribDivisor(1, 1);
-
-            glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
-            glBufferData(GL_ARRAY_BUFFER, shape_instances[shape_id] * sizeof(glm::mat4), ModelArray, GL_STATIC_DRAW);
-
-            for(int i = 0; i < 4; i++){ //MVP Matrices
-                glEnableVertexAttribArray(2 + i);
-                glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (const GLvoid*)(sizeof(float) * i * 4));
-                glVertexAttribDivisor(2 + i, 1);
-            }
         }
-        glBindVertexArray(0);
-
-        delete[] shape_colors;
-        delete[] ModelArray;
-
-        //Generate single instance vaos
-        glBindVertexArray(shape_single_vaos[shape_id]);
-
-        glBindBuffer(GL_ARRAY_BUFFER, shape_vertex_vbos[shape_id]);
-
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const GLvoid*)0);
-
-        glBindVertexArray(0);
     }
+    glBindVertexArray(0);
 
     //TODO: Move shader uniform initialization to constructor
 
@@ -571,10 +478,6 @@ void Scene::clear_selection(void){
 
 void Scene::hide_particle(int pid){
     if(!(particle_flags[pid] & ParticleFlags::Hidden)){
-        auto shape_id = particles[pid].shape_id;
-        glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
-        glm::mat4 hide_mat = glm::scale(glm::mat4(1.0), glm::vec3(0.0));
-        glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::mat4), sizeof(glm::mat4), &hide_mat);
         particle_flags[pid] |= ParticleFlags::Hidden;
         grid->ignore_id(pid);
     }
@@ -582,18 +485,16 @@ void Scene::hide_particle(int pid){
 
 void Scene::unhide_particle(int pid){
     if(particle_flags[pid] & ParticleFlags::Hidden){
-        auto shape_id = particles[pid].shape_id;
-        glBindBuffer(GL_ARRAY_BUFFER, shape_model_matrix_vbos[shape_id]);
-        glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::mat4), sizeof(glm::mat4), &model_matrices[pid]);
         particle_flags[pid] &= ~ParticleFlags::Hidden;
         grid->unignore_id(pid);
     }
 }
 
 void Scene::set_particle_color(int pid, const glm::vec3& color){
-    auto shape_id = particles[pid].shape_id;
-    glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
-    glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::vec3), sizeof(glm::vec3), &color);
+    //TODO: Update
+    //auto shape_id = particles[pid].shape_id;
+    //glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
+    //glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::vec3), sizeof(glm::vec3), &color);
 }
 
 void Scene::wsize_changed(int w, int h){
@@ -628,7 +529,7 @@ void Scene::wsize_changed(int w, int h){
 void Scene::process(void){
     set_projection();
     lightViewMatrix = glm::lookAt(-out_radius_ * light.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-    
+
     glm::mat2 iproj = glm::mat2(invProjMatrix[2][2], invProjMatrix[2][3],
                                 invProjMatrix[3][2], invProjMatrix[3][3]);
 
@@ -693,10 +594,11 @@ void Scene::render(void){
 
         glViewport(0, 0, windowWidth * 2, windowHeight * 2);
 
-        for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
+        for(int shape_id = 0; shape_id < n_shapes; ++shape_id){
             glBindVertexArray(shape_vaos[shape_id]);
 
-            if(shape_types[shape_id] == Shape::MESH){
+            if(shapes[shape_id].type == Shape::MESH){
+                int n_vertices = shapes[shape_id].mesh.n_vertices;
                 if(is_clip_plane_activated_){
                     glEnable(GL_STENCIL_TEST);
                     glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
@@ -712,7 +614,12 @@ void Scene::render(void){
                 sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
                 sh_shadowmap_instanced->setUniform("clip_plane", 1, clip_plane_);
 
-                glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
+                for(int pid = 0; pid < n_particles; ++pid){
+                    if((particles[pid].shape_id != shape_id) ||
+                       (particle_flags[pid] & ParticleFlags::Hidden)) continue;
+                    sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
+                    glDrawArrays(GL_TRIANGLES, 0, n_vertices);
+                }
 
                 if(is_clip_plane_activated_){
                     sh_gbuffer->bind();
@@ -748,7 +655,12 @@ void Scene::render(void){
                 sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
                 sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
 
-                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
+                for(int pid = 0; pid < n_particles; ++pid){
+                    if((particles[pid].shape_id != shape_id) ||
+                       (particle_flags[pid] & ParticleFlags::Hidden)) continue;
+                    sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
+                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+                }
             }
         }
 
@@ -761,9 +673,10 @@ void Scene::render(void){
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        for(unsigned int shape_id = 0; shape_id < n_shapes; ++shape_id){
+        for(int shape_id = 0; shape_id < n_shapes; ++shape_id){
             glBindVertexArray(shape_vaos[shape_id]);
-            if(shape_types[shape_id] == Shape::MESH){
+            if(shapes[shape_id].type == Shape::MESH){
+                int n_vertices = shapes[shape_id].mesh.n_vertices;
                 if(is_clip_plane_activated_){
                     glEnable(GL_STENCIL_TEST);
                     glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
@@ -779,8 +692,14 @@ void Scene::render(void){
                 sh_gbuffer_instanced->setUniform("clip_plane", 1, clip_plane_);
                 sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
+                sh_gbuffer_instanced->setUniform("in_Color", 1, diffcolor);
 
-                glDrawArraysInstanced(GL_TRIANGLES, 0, shape_num_vertices[shape_id], shape_instances[shape_id]);
+                for(int pid = 0; pid < n_particles; ++pid){
+                    if((particles[pid].shape_id != shape_id) ||
+                       (particle_flags[pid] & ParticleFlags::Hidden)) continue;
+                    sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
+                    glDrawArrays(GL_TRIANGLES, 0, n_vertices);
+                }
 
                 if(is_clip_plane_activated_){
                     sh_gbuffer->bind();
@@ -827,8 +746,14 @@ void Scene::render(void){
                 sh_spheres->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_spheres->setUniform("ProjectionMatrix", 1, projectionMatrix);
                 sh_spheres->setUniform("InvProjectionMatrix", 1, invProjMatrix);
+                sh_spheres->setUniform("in_Color", 1, diffcolor);
 
-                glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, shape_instances[shape_id]);
+                for(int pid = 0; pid < n_particles; ++pid){
+                    if((particles[pid].shape_id != shape_id) ||
+                       (particle_flags[pid] & ParticleFlags::Hidden)) continue;
+                    sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
+                    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+                }
             }
         }
 
@@ -919,7 +844,7 @@ void Scene::render(void){
 
         m_accumulator.Bind();
 
-        glBindVertexArray(shape_single_vaos[shape_id]);
+        glBindVertexArray(shape_vaos[shape_id]);
         glDepthMask(GL_TRUE);
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
@@ -927,14 +852,15 @@ void Scene::render(void){
         glStencilMask(0xFF);
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        if(shape_types[shape_id] == Shape::MESH){
+        if(shapes[shape_id].type == Shape::MESH){
+            int n_vertices = shapes[shape_id].mesh.n_vertices;
             sh_color->bind();
 
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
             glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
             sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
-            glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[shape_id]);
+            glDrawArrays(GL_TRIANGLES, 0, n_vertices);
 
             glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
             glStencilMask(0x00);
@@ -942,7 +868,7 @@ void Scene::render(void){
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
             mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
             sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
-            glDrawArrays(GL_TRIANGLES, 0, shape_num_vertices[shape_id]);
+            glDrawArrays(GL_TRIANGLES, 0, n_vertices);
         }
         else{
             sh_color_sphere->bind();

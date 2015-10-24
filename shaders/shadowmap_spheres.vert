@@ -5,9 +5,9 @@ uniform mat4 MVMatrix;
 uniform vec4 clip_plane;
 uniform float radius;
 uniform bool clip;
+uniform mat4 ModelMatrix;
 
 layout(location = 0) in vec3 in_Position;
-layout(location = 2) in mat4 ModelMatrix;
 
 smooth out vec2 TexCoord;
 flat out vec3 sphere_position;

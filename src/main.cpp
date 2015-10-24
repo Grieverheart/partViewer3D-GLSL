@@ -2,6 +2,7 @@
 #include "include/event_manager.h"
 #include "include/events.h"
 #include "include/register_lua_bindings.h"
+#include "include/perfmon.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
 extern "C"{
@@ -196,7 +197,12 @@ int main(int argc,char *argv[] ){
 
     call_lua_OnInit(L, argc, argv);
 
+    PerfMon perf;
+    double start_time = perf.get_time_ns();
+    int frame = 0;
+
     while(!glfwWindowShouldClose(window) && running){
+        ++frame;
         evt_mgr->processQueue();
         scene->process();
         call_lua_OnFrame(L);
@@ -205,6 +211,7 @@ int main(int argc,char *argv[] ){
 
         glfwSwapBuffers(window);
         glfwPollEvents();
+        if(frame % 100 == 0) printf("%f\n", 1.0e9 * frame / (perf.get_time_ns() - start_time));
     }
 	
 	lua_close(L);

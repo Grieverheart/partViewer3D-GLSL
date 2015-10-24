@@ -115,20 +115,14 @@ private:
 
     glm::vec4 clip_plane_;
 
-	unsigned int* shape_instances;
 	unsigned int* shape_vaos;
-	unsigned int* shape_vertex_vbos;
-	unsigned int* shape_model_matrix_vbos;
-	unsigned int* shape_colors_vbos;
-	unsigned int* shape_num_vertices;
-	unsigned int* shape_single_vaos;
-	unsigned int* instance_ids;
+	unsigned int* shape_vbos;
 	unsigned int* particle_flags;
 
     Particle* particles;
-    Shape::Type* shape_types;
-    unsigned int n_shapes;
-    unsigned int n_particles;
+    Shape* shapes;
+    int n_shapes;
+    int n_particles;
 
 	unsigned int vaoBox;
 	unsigned int vboBox;

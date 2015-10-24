@@ -7,10 +7,10 @@ uniform vec4 clip_plane;
 uniform float perspective_scale;
 uniform float radius;
 uniform bool clip;
+uniform mat4 ModelMatrix;
+uniform vec3 in_Color;
 
 layout(location = 0) in vec3 in_Position;
-layout(location = 1) in vec3 in_Color;
-layout(location = 2) in mat4 ModelMatrix;
 
 flat out vec3 pass_Color;
 noperspective out vec3 ray_origin;
