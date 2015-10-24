@@ -135,6 +135,7 @@ private:
 	unsigned int search_texture;
 
     std::vector<int> selected_pids;
+    std::vector<int> draw_pids;
 
 	bool is_scene_loaded;
     bool is_clip_plane_activated_;

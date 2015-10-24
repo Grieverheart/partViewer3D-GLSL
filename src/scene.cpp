@@ -337,6 +337,7 @@ void Scene::load_scene(const SimConfig& config){
 
     //Count shape instances and copy particles
     for(int i = 0; i < config.n_part; ++i){
+        draw_pids.push_back(i);
         particles[i] = config.particles[i];
 
         glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[i].pos);
@@ -545,6 +546,21 @@ void Scene::process(void){
 		sh_accumulator->setUniform("depth_iproj", 1, iproj);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
+
+    //TODO: Cache model_matrices[i] * glm::vec4(particles[i].pos, 1.0)
+    double* depths = new double[n_particles];
+    auto mv_matrix = viewMatrix * modelMatrix;
+    for(int i = 0; i < n_particles; ++i){
+        auto pos = mv_matrix * model_matrices[i] * glm::vec4(particles[i].pos, 1.0);
+        depths[i] = pos.z / pos.w;
+    }
+
+    std::sort(draw_pids.begin(), draw_pids.end(),
+        [depths](int i, int j) -> bool {
+            return (depths[i] > depths[j]);
+        }
+    );
+    delete[] depths;
 }
 
 void Scene::set_projection(void){
@@ -614,7 +630,7 @@ void Scene::render(void){
                 sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
                 sh_shadowmap_instanced->setUniform("clip_plane", 1, clip_plane_);
 
-                for(int pid = 0; pid < n_particles; ++pid){
+                for(auto pid: draw_pids){
                     if((particles[pid].shape_id != shape_id) ||
                        (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                     sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
@@ -655,7 +671,7 @@ void Scene::render(void){
                 sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
                 sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
 
-                for(int pid = 0; pid < n_particles; ++pid){
+                for(auto pid: draw_pids){
                     if((particles[pid].shape_id != shape_id) ||
                        (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                     sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
@@ -694,7 +710,7 @@ void Scene::render(void){
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
                 sh_gbuffer_instanced->setUniform("in_Color", 1, diffcolor);
 
-                for(int pid = 0; pid < n_particles; ++pid){
+                for(auto pid: draw_pids){
                     if((particles[pid].shape_id != shape_id) ||
                        (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                     sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
@@ -748,7 +764,7 @@ void Scene::render(void){
                 sh_spheres->setUniform("InvProjectionMatrix", 1, invProjMatrix);
                 sh_spheres->setUniform("in_Color", 1, diffcolor);
 
-                for(int pid = 0; pid < n_particles; ++pid){
+                for(auto pid: draw_pids){
                     if((particles[pid].shape_id != shape_id) ||
                        (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                     sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
