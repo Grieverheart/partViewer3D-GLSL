@@ -117,7 +117,9 @@ private:
 
 	unsigned int* shape_vaos;
 	unsigned int* shape_vbos;
+
 	unsigned int* particle_flags;
+    glm::vec3* particle_colors;
 
     Particle* particles;
     Shape* shapes;

@@ -233,6 +233,7 @@ Scene::~Scene(void){
     delete[] shapes;
     delete[] model_matrices;
     delete[] particle_flags;
+    delete[] particle_colors;
 
     delete grid;
 
@@ -254,6 +255,7 @@ void Scene::load_scene(const SimConfig& config){
         delete[] shapes;
         delete[] model_matrices;
         delete[] particle_flags;
+        delete[] particle_colors;
     }
 
     is_scene_loaded = true;
@@ -322,9 +324,10 @@ void Scene::load_scene(const SimConfig& config){
 	shape_vaos = new unsigned int[config.n_shapes]{};
 	shape_vbos = new unsigned int[config.n_shapes]{};
 
-    shapes         = new Shape[config.n_shapes];
-	particle_flags = new unsigned int[config.n_part]{};
-    model_matrices = new glm::mat4[config.n_part];
+    shapes          = new Shape[config.n_shapes];
+	particle_flags  = new unsigned int[config.n_part]{};
+	particle_colors = new glm::vec3[config.n_part];
+    model_matrices  = new glm::mat4[config.n_part];
 
     glm::mat4 tMatrix = glm::translate(
         glm::mat4(1.0),
@@ -337,6 +340,7 @@ void Scene::load_scene(const SimConfig& config){
 
     //Count shape instances and copy particles
     for(int i = 0; i < config.n_part; ++i){
+        particle_colors[i] = diffcolor;
         draw_pids.push_back(i);
         particles[i] = config.particles[i];
 
@@ -492,10 +496,7 @@ void Scene::unhide_particle(int pid){
 }
 
 void Scene::set_particle_color(int pid, const glm::vec3& color){
-    //TODO: Update
-    //auto shape_id = particles[pid].shape_id;
-    //glBindBuffer(GL_ARRAY_BUFFER, shape_colors_vbos[shape_id]);
-    //glBufferSubData(GL_ARRAY_BUFFER, instance_ids[pid] * sizeof(glm::vec3), sizeof(glm::vec3), &color);
+    particle_colors[pid] = color;
 }
 
 void Scene::wsize_changed(int w, int h){
@@ -708,12 +709,12 @@ void Scene::render(void){
                 sh_gbuffer_instanced->setUniform("clip_plane", 1, clip_plane_);
                 sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                 sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
-                sh_gbuffer_instanced->setUniform("in_Color", 1, diffcolor);
 
                 for(auto pid: draw_pids){
                     if((particles[pid].shape_id != shape_id) ||
                        (particle_flags[pid] & ParticleFlags::Hidden)) continue;
-                    sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
+                    sh_gbuffer_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
+                    sh_gbuffer_instanced->setUniform("in_Color", 1, particle_colors[pid]);
                     glDrawArrays(GL_TRIANGLES, 0, n_vertices);
                 }
 
