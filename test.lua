@@ -36,26 +36,34 @@ local function load_obj(filepath)
     --local mesh = Mesh()
 
     --local subdivision = 50
+
+    --local sin_pi_4 = math.sin(math.pi * 0.25)
+    --local cos_pi_4 = math.cos(math.pi * 0.25)
+    --local factor  = 2.0 * math.pi / subdivision
+
     --for i = 1, subdivision do
-    --    local theta1 = 2.0 * math.pi * i / subdivision
-    --    local theta2 = 2.0 * math.pi * (i + 1) / subdivision
+    --    local theta1 = factor * i
+    --    local theta2 = factor * (i + 1)
     --    local x1 = math.sin(theta1)
     --    local z1 = math.cos(theta1)
     --    local x2 = math.sin(theta2)
     --    local z2 = math.cos(theta2)
 
+    --    -- Cone base
     --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), glm.vec3(0.0, -1.0, 0.0)))
     --    mesh:add_vertex(Vertex(glm.vec3(0.0, 0.0, 0.0), glm.vec3(0.0, -1.0, 0.0)))
     --    mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2), glm.vec3(0.0, -1.0, 0.0)))
 
-    --    local theta3 = 2.0 * math.pi * (i - 0.5) / subdivision
-    --    local theta4 = 2.0 * math.pi * (i + 0.5) / subdivision
-    --    local theta5 = 2.0 * math.pi * (i + 1.5) / subdivision
-    --    local normal1 = glm.normalize(glm.vec3(math.sin(math.pi * 0.25) * math.sin(theta3), math.cos(math.pi * 0.25), math.sin(math.pi * 0.25) * math.cos(theta3)))
-    --    local normal2 = glm.normalize(glm.vec3(math.sin(math.pi * 0.25) * math.sin(theta4), math.cos(math.pi * 0.25), math.sin(math.pi * 0.25) * math.cos(theta4)))
-    --    local normal3 = glm.normalize(glm.vec3(math.sin(math.pi * 0.25) * math.sin(theta5), math.cos(math.pi * 0.25), math.sin(math.pi * 0.25) * math.cos(theta5)))
-    --    normal1 = glm.vec3(0.5) * (normal1 + normal2)
-    --    normal3 = glm.vec3(0.5) * (normal2 + normal3)
+    --    local theta3 = factor * (i - 0.5)
+    --    local theta4 = factor * (i + 0.5)
+    --    local theta5 = factor * (i + 1.5)
+    --    local normal1 = glm.normalize(glm.vec3(sin_pi_4 * math.sin(theta3), cos_pi_4, sin_pi_4 * math.cos(theta3)))
+    --    local normal2 = glm.normalize(glm.vec3(sin_pi_4 * math.sin(theta4), cos_pi_4, sin_pi_4 * math.cos(theta4)))
+    --    local normal3 = glm.normalize(glm.vec3(sin_pi_4 * math.sin(theta5), cos_pi_4, sin_pi_4 * math.cos(theta5)))
+    --    normal1 = 0.5 * (normal1 + normal2)
+    --    normal3 = 0.5 * (normal2 + normal3)
+
+    --    -- Rest of cone
     --    mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2), normal3))
     --    mesh:add_vertex(Vertex(glm.vec3(0.0, 1.0, 0.0), normal2))
     --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), normal1))
@@ -128,7 +136,7 @@ function OnInit(argv)
     end
 end
 
-local projection_toggle = 0
+local projection_toggle = false
 local clip_toggle = 0
 function OnKey(key, action, mods)
     if key == 66 then -- B
@@ -137,12 +145,16 @@ function OnKey(key, action, mods)
         end
     elseif key == 79 then -- O
         if action == 0 then
-            if projection_toggle == 0 then
+            if projection_toggle == false then
                 scene.set_projection_type('orthographic')
             else
                 scene.set_projection_type('perspective')
             end
             projection_toggle = not projection_toggle;
+        end
+    elseif key == 80 then -- O
+        if action == 0 then
+            scene.toggle_point_drawing_mode()
         end
     elseif key == 67 then -- C
         if action == 0 then

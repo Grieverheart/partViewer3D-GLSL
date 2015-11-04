@@ -63,6 +63,7 @@ public:
     void enable_clip_plane(void);
     void disable_clip_plane(void);
     void toggle_box(void);
+    void toggle_point_drawing_mode(void);
 
     void set_view_position(const glm::vec3&);
     const glm::vec3& get_view_position(void)const;
@@ -131,6 +132,8 @@ private:
 	unsigned int iboBox;
 	unsigned int plane_vao;
 	unsigned int plane_vbo;
+	unsigned int quad_vao;
+	unsigned int quad_vbo;
 	unsigned int fullscreen_triangle_vao;
 
 	unsigned int area_texture;
@@ -142,6 +145,7 @@ private:
 	bool is_scene_loaded;
     bool is_clip_plane_activated_;
 	bool drawBox;
+	bool draw_points_mode_;
 	bool m_blur;
 
     Projection projection_type;
@@ -156,19 +160,20 @@ private:
 	Cssao m_ssao;
     CShadowmap m_shadowmap;
 
-	Shader *sh_gbuffer;
-	Shader *sh_gbuffer_instanced;
-	Shader *sh_ssao;
-	Shader *sh_shadowmap_instanced;
-	Shader *sh_blur;
-	Shader *sh_accumulator;
-	Shader *sh_edge_detection;
-	Shader *sh_blend_weights;
-	Shader *sh_blend;
-	Shader *sh_spheres;
-	Shader *sh_shadowmap_spheres;
-	Shader *sh_color;
-	Shader *sh_color_sphere;
+	Shader* sh_gbuffer;
+	Shader* sh_gbuffer_instanced;
+	Shader* sh_ssao;
+	Shader* sh_shadowmap_instanced;
+	Shader* sh_blur;
+	Shader* sh_accumulator;
+	Shader* sh_edge_detection;
+	Shader* sh_blend_weights;
+	Shader* sh_blend;
+	Shader* sh_spheres;
+	Shader* sh_shadowmap_spheres;
+	Shader* sh_color;
+	Shader* sh_color_sphere;
+	Shader* sh_points;
 
     Grid* grid;
 

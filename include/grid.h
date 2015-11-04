@@ -12,6 +12,7 @@ struct AABB{
 };
 
 //TODO: Need to think how we will handle clipping planes and hidden particles.
+//TODO: Very high memory usage!!!
 class Grid{
 public:
     Grid(const SimConfig& config);

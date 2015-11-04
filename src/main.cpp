@@ -185,20 +185,25 @@ int main(int argc,char *argv[] ){
         call_lua_OnMouseScroll(L, scroll_event.dz);
     }, EVT_MOUSE_SCROLL);
 
-	
+
     L = luaL_newstate();
 	luaL_openlibs(L);
 
     register_lua_bindings(L, scene, window);
-	
+
     if(luaL_dofile(L, "test.lua")){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));
     }
 
-    call_lua_OnInit(L, argc, argv);
 
     PerfMon perf;
     double start_time = perf.get_time_ns();
+
+    call_lua_OnInit(L, argc, argv);
+
+    printf("%f\n", 1.0e-9 * (perf.get_time_ns() - start_time));
+
+    start_time = perf.get_time_ns();
     int frame = 0;
 
     while(!glfwWindowShouldClose(window) && running){
@@ -213,7 +218,7 @@ int main(int argc,char *argv[] ){
         glfwPollEvents();
         if(frame % 100 == 0) printf("%f\n", 1.0e9 * frame / (perf.get_time_ns() - start_time));
     }
-	
+
 	lua_close(L);
 
     //TODO: Make these unique pointers.
@@ -223,6 +228,6 @@ int main(int argc,char *argv[] ){
     glfwDestroyWindow(window);
 
     glfwTerminate();
-	
+
 	return 1;
 }

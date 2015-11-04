@@ -22,9 +22,9 @@ static int luaScene_set_projection_type(lua_State* L){
         scene->set_projection_type(Projection::ORTHOGRAPHIC);
     }
     else{
-        lua_pop(L, 2);
         printf("Projection type, '%s', not supported\n", lua_tostring(L, 1));
     }
+    lua_pop(L, 2);
     return 0;
 }
 
@@ -262,6 +262,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("enable_clip_plane", &Scene::enable_clip_plane, scene)
         .function_("disable_clip_plane", &Scene::disable_clip_plane, scene)
         .function_("toggle_box", &Scene::toggle_box, scene)
+        .function_("toggle_point_drawing_mode", &Scene::toggle_point_drawing_mode, scene)
         .function_("is_ssao_blur_enabled", &Scene::is_ssao_blur_enabled, scene)
         .function_("set_ssao_blur", &Scene::set_ssao_blur, scene)
         .function_("set_ssao_num_samples", &Scene::set_ssao_num_samples, scene)
