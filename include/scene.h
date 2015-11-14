@@ -7,6 +7,8 @@
 #include "accumulator.h"
 #include "ssao.h"
 #include "shadowmap.h"
+#include "Text/TextProperties.h"
+#include "Text/OpenGLFont.h"
 #include <exception>
 #include <vector>
 
@@ -92,6 +94,8 @@ public:
     void set_background_color(const glm::vec3&);
     glm::vec3 get_background_color(void)const;
 
+    void draw_text(const char* text, const TextProperties& props);
+
 private:
 	int windowWidth;
 	int windowHeight;
@@ -174,8 +178,11 @@ private:
 	Shader* sh_color;
 	Shader* sh_color_sphere;
 	Shader* sh_points;
+	Shader* sh_text;
 
     Grid* grid;
+
+    OpenGLFont fontManager_;
 
     void set_projection(void);
 	void drawConfigurationBox(void)const;

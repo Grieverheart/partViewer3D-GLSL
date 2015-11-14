@@ -72,25 +72,27 @@ Scene::Scene(int width, int height):
 #endif
 
 	glDisable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
     try{
-        sh_gbuffer = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
-        sh_gbuffer_instanced = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
-        sh_ssao = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
+        sh_gbuffer             = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
+        sh_gbuffer_instanced   = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
+        sh_ssao                = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
         sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
-        sh_shadowmap_spheres = new Shader("shaders/shadowmap_spheres.vert", "shaders/shadowmap_spheres.frag");
-        sh_blur = new Shader("shaders/blur.vert", "shaders/blur.frag");
-        sh_accumulator = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
-        sh_edge_detection = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
-        sh_blend_weights = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
-        sh_blend = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
-        sh_spheres = new Shader("shaders/spheres.vert", "shaders/spheres.frag");
-        sh_color = new Shader("shaders/color.vert", "shaders/color.frag");
-        sh_color_sphere = new Shader("shaders/color_sphere.vert", "shaders/color_sphere.frag");
-        sh_points = new Shader("shaders/points.vert", "shaders/points.frag");
+        sh_shadowmap_spheres   = new Shader("shaders/shadowmap_spheres.vert", "shaders/shadowmap_spheres.frag");
+        sh_blur                = new Shader("shaders/blur.vert", "shaders/blur.frag");
+        sh_accumulator         = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
+        sh_edge_detection      = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
+        sh_blend_weights       = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
+        sh_blend               = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
+        sh_spheres             = new Shader("shaders/spheres.vert", "shaders/spheres.frag");
+        sh_color               = new Shader("shaders/color.vert", "shaders/color.frag");
+        sh_color_sphere        = new Shader("shaders/color_sphere.vert", "shaders/color_sphere.frag");
+        sh_points              = new Shader("shaders/points.vert", "shaders/points.frag");
+        sh_text                = new Shader("shaders/text.vert", "shaders/text.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -463,6 +465,14 @@ void Scene::load_scene(const SimConfig& config){
 		sh_accumulator->setUniform("depth_iproj", 1, iproj);
 		sh_accumulator->setUniform("skyColor", 1, skycolor);
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
+	}
+
+	sh_text->bind();
+	{
+		glm::mat4 projectionMatrix = glm::ortho(0.0f, 600.0f, 0.0f, 600.0f); //TODO: Is this really correct?
+		sh_text->setUniform("projectionMatrix", 1, projectionMatrix);
+		sh_text->setUniform("inSampler", 0);
+		sh_text->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
 	}
 }
 
@@ -1020,6 +1030,15 @@ void Scene::render(void){
         }
     }
 
+    TextProperties props;
+    glEnable(GL_BLEND);
+    props.font_  = "/usr/share/fonts/TTF/Inconsolata-Regular.ttf";
+    props.width_ = 24;
+    props.x_     = 100;
+    props.y_     = 100;
+    draw_text("Hello World!", props);
+    glDisable(GL_BLEND);
+
     glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
@@ -1165,4 +1184,37 @@ void Scene::set_background_color(const glm::vec3& color){
 glm::vec3 Scene::get_background_color(void)const{
     return m_bgColor;
 }
+
+//TODO: Handle newline etc.
+//TODO: Use correct metrics.
+void Scene::draw_text(const char* text, const TextProperties& props){
+    float scale = (float) props.width_ / fontManager_.getDefaultWidth();
+    int dx = 0;
+
+    glBindVertexArray(quad_vao);
+	glActiveTexture(GL_TEXTURE0);
+
+    sh_text->bind();
+    for(const char* char_ptr = text; *char_ptr != '\0'; ++char_ptr){
+        char character = *char_ptr;
+        const OpenGLFont::Glyph* glyph = fontManager_.getCharGlyph(props.font_, character);
+        if(!glyph) return;
+
+        int width = (int)((glyph->metrics_.width >> 6) * scale);
+        //if(dx + width + (int)((glyph->metrics_.horiBearingX >> 6) * scale) > rect.w_) break;
+        int height = (int)((glyph->metrics_.height >> 6) * scale);
+        int x      = 0.5f * width + props.x_ + (int)((glyph->metrics_.horiBearingX >> 6) * scale) + dx;
+        int y      = windowHeight + 0.5f * height - props.y_ - (int)(((glyph->metrics_.horiBearingY - glyph->metrics_.height) >> 6) * scale);
+        
+        glm::mat4 modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(width, -height, 1.0f));
+        modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)) * modelMatrix;
+        sh_text->setUniform("modelMatrix", 1, modelMatrix);
+        glBindTexture(GL_TEXTURE_2D, (GLuint)glyph->tex_);
+    
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        
+        dx += (int)((glyph->metrics_.horiAdvance >> 6) * scale);
+    }
+}
+
 
