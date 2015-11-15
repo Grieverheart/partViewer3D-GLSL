@@ -109,6 +109,7 @@ Scene::Scene(int width, int height):
         delete sh_color;
         delete sh_color_sphere;
         delete sh_points;
+        delete sh_text;
         throw;
     }
 
@@ -246,6 +247,8 @@ Scene::~Scene(void){
 	delete sh_shadowmap_spheres;
 	delete sh_color;
 	delete sh_color_sphere;
+    delete sh_points;
+	delete sh_text;
 
 	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
 	if(n_shapes) glDeleteBuffers(n_shapes, shape_vbos);
@@ -469,7 +472,7 @@ void Scene::load_scene(const SimConfig& config){
 
 	sh_text->bind();
 	{
-		glm::mat4 projectionMatrix = glm::ortho(0.0f, 600.0f, 0.0f, 600.0f); //TODO: Is this really correct?
+		glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)windowWidth, 0.0f, (float)windowHeight);
 		sh_text->setUniform("projectionMatrix", 1, projectionMatrix);
 		sh_text->setUniform("inSampler", 0);
 		sh_text->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
@@ -556,6 +559,10 @@ void Scene::wsize_changed(int w, int h){
 
 	sh_blend->bind();
     sh_blend->setUniform("texel_size", 1, texel_size);
+
+	sh_text->bind();
+    glm::mat4 projectionMatrix = glm::ortho(0.0f, (float)windowWidth, 0.0f, (float)windowHeight);
+    sh_text->setUniform("projectionMatrix", 1, projectionMatrix);
 }
 
 void Scene::process(void){
