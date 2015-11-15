@@ -24,7 +24,7 @@
 --Add functionality for hiding particles? Note: this needs to also propagate to the grid.
 --Add functionality for changing particle color.
 --Draw points.
-Add font drawing. This will be a simple scene:draw_text(string text, TextProperties props).
+--Add font drawing. This will be a simple scene:draw_text(string text, TextProperties props).
 Add lua constants for keyboard and mouse keys.
 Make C++ Shader class accept text and binary sources.
 Perhaps add the ability to draw individual particles as points.
