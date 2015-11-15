@@ -264,6 +264,6 @@ end
 --function OnFrame()
 --    frame_id = frame_id + 1
 --    --print(frame_id)
---    props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, 0, 20)
+--    props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
 --    scene.draw_text(tostring(frame_id), props)
 --end

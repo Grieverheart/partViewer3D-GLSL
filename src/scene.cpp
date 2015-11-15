@@ -1218,6 +1218,7 @@ void Scene::draw_text(const char* text, const TextProperties& props){
         glm::mat4 modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(width, -height, 1.0f));
         modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)) * modelMatrix;
         sh_text->setUniform("modelMatrix", 1, modelMatrix);
+        sh_text->setUniform("inColor", 1, props.color_);
         glBindTexture(GL_TEXTURE_2D, (GLuint)glyph->tex_);
     
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
