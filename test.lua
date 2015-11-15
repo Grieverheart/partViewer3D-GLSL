@@ -263,5 +263,7 @@ end
 --frame_id = 0
 --function OnFrame()
 --    frame_id = frame_id + 1
---    print(frame_id)
+--    --print(frame_id)
+--    props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, 0, 20)
+--    scene.draw_text(tostring(frame_id), props)
 --end

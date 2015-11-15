@@ -212,6 +212,14 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
             .def("add_vertex", &Mesh::add_vertex)
             .def("get_vertex", &Mesh::get_vertex)
             .def("get_num_vertices", &Mesh::get_num_vertices)
+            .endef()
+        .class_<TextProperties>("TextProperties")
+            .def_constructor<>()
+            .def_constructor<const char*, int, int, int>()
+            .def_readwrite("font", &TextProperties::font_)
+            .def_readwrite("width", &TextProperties::width_)
+            .def_readwrite("x", &TextProperties::x_)
+            .def_readwrite("y", &TextProperties::y_)
             .endef();
 
     maan::module_(L, "glm")
@@ -287,7 +295,8 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("get_sky_color", &Scene::get_sky_color, scene)
         .function_("set_sky_color", &Scene::set_sky_color, scene)
         .function_("get_light_direction", &Scene::get_light_direction, scene)
-        .function_("set_light_direction", &Scene::set_light_direction, scene);
+        .function_("set_light_direction", &Scene::set_light_direction, scene)
+        .function_("draw_text", &Scene::draw_text, scene);
 
     //maan::module_(L, "window")
     //    .function_("size", &Scene::zoom, scene);

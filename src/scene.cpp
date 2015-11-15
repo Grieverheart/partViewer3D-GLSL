@@ -1030,15 +1030,6 @@ void Scene::render(void){
         }
     }
 
-    TextProperties props;
-    glEnable(GL_BLEND);
-    props.font_  = "/usr/share/fonts/TTF/Inconsolata-Regular.ttf";
-    props.width_ = 24;
-    props.x_     = 100;
-    props.y_     = 100;
-    draw_text("Hello World!", props);
-    glDisable(GL_BLEND);
-
     glDisable(GL_FRAMEBUFFER_SRGB);
 }
 
@@ -1185,12 +1176,13 @@ glm::vec3 Scene::get_background_color(void)const{
     return m_bgColor;
 }
 
-//TODO: Handle newline etc.
-//TODO: Use correct metrics.
 void Scene::draw_text(const char* text, const TextProperties& props){
+
     float scale = (float) props.width_ / fontManager_.getDefaultWidth();
     int dx = 0;
+    int dy = 0;
 
+    glEnable(GL_BLEND);
     glBindVertexArray(quad_vao);
 	glActiveTexture(GL_TEXTURE0);
 
@@ -1200,11 +1192,21 @@ void Scene::draw_text(const char* text, const TextProperties& props){
         const OpenGLFont::Glyph* glyph = fontManager_.getCharGlyph(props.font_, character);
         if(!glyph) return;
 
-        int width = (int)((glyph->metrics_.width >> 6) * scale);
-        //if(dx + width + (int)((glyph->metrics_.horiBearingX >> 6) * scale) > rect.w_) break;
-        int height = (int)((glyph->metrics_.height >> 6) * scale);
-        int x      = 0.5f * width + props.x_ + (int)((glyph->metrics_.horiBearingX >> 6) * scale) + dx;
-        int y      = windowHeight + 0.5f * height - props.y_ - (int)(((glyph->metrics_.horiBearingY - glyph->metrics_.height) >> 6) * scale);
+        if(character == '\n'){
+            dy += (glyph->metrics_.vertAdvance >> 6) * scale;
+            dx = 0;
+            continue;
+        }
+
+        if(char_ptr - text > 0){
+            auto kerning = fontManager_.getKerning(props.font_, character, *(char_ptr - 1));
+            dx += (kerning.x >> 6) * scale;
+        }
+
+        int width  = (glyph->metrics_.width >> 6) * scale;
+        int height = (glyph->metrics_.height >> 6) * scale;
+        int x      = props.x_ + dx + (glyph->metrics_.horiBearingX >> 6) * scale;
+        int y      = windowHeight - props.y_ - dy + (glyph->metrics_.horiBearingY >> 6) * scale;
         
         glm::mat4 modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(width, -height, 1.0f));
         modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)) * modelMatrix;
@@ -1213,8 +1215,10 @@ void Scene::draw_text(const char* text, const TextProperties& props){
     
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         
-        dx += (int)((glyph->metrics_.horiAdvance >> 6) * scale);
+        dx += (glyph->metrics_.horiAdvance >> 6) * scale;
     }
+
+    glDisable(GL_BLEND);
 }
 
 

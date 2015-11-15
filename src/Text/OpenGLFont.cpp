@@ -47,3 +47,11 @@ const OpenGLFont::Glyph* OpenGLFont::getCharGlyph(std::string fontName, uint32_t
 	
 	return glyph;
 }
+
+FT_Vector OpenGLFont::getKerning(std::string fontName, uint32_t char_a, uint32_t char_b)const{
+    //printf("%d\n", FT_HAS_KERNING()
+	const Font& font = FontMap_.at(fontName);
+    FT_Vector ret;
+    FT_Get_Kerning(font.face_, FT_Get_Char_Index(font.face_, char_a), FT_Get_Char_Index(font.face_, char_b), FT_KERNING_DEFAULT, &ret);
+    return ret;
+}

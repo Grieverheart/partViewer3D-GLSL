@@ -8,13 +8,13 @@ layout(location = 0) in vec3 in_Position;
 smooth out vec2 TexCoord;
 
 vec2 TexCoords[] = vec2[](
-    vec2(-0.5, -0.5),
-    vec2( 0.5, -0.5),
-    vec2(-0.5,  0.5),
-    vec2( 0.5,  0.5)
+    vec2(0.0, 0.0),
+    vec2(1.0, 0.0),
+    vec2(0.0, 1.0),
+    vec2(1.0, 1.0)
 );
 
 void main(void){
-    TexCoord = TexCoords[gl_VertexID] + vec2(0.5);
+    TexCoord = TexCoords[gl_VertexID];
 	gl_Position = projectionMatrix * modelMatrix * vec4(in_Position + vec3(TexCoords[gl_VertexID], 0.0), 1.0);
 }

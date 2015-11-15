@@ -20,6 +20,7 @@ public:
     OpenGLFont(void);
     ~OpenGLFont(void);
     const Glyph* getCharGlyph(std::string fontName, uint32_t character);
+    FT_Vector getKerning(std::string fontName, uint32_t char_a, uint32_t char_b)const;
     void setDefaultWidth(unsigned int width){
         defaultWidth_ = width;
     }

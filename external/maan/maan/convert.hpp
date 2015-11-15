@@ -45,6 +45,14 @@ namespace maan{
         lua_pushboolean(L, val);
     }
 
+    void push_LuaValue(lua_State* L, const char* val){
+        lua_pushstring(L, val);
+    }
+
+    void push_LuaValue(lua_State* L, const std::string& val){
+        lua_pushstring(L, val.c_str());
+    }
+
     template<class T>
     EnableIf<std::is_integral<T>,
     void> push_LuaValue(lua_State* L, T val){
@@ -121,6 +129,29 @@ namespace maan{
         T val = static_cast<T>(lua_touserdata(L, -1));
         lua_pop(L, 1);
         return val;
+    }
+
+    template<>
+    const char* get_LuaValue<const char*>(lua_State* L){
+        const char* val = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        return val;
+    }
+
+    template<>
+    std::string get_LuaValue<std::string>(lua_State* L){
+        const char* val = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        return val;
+    }
+
+    template<>
+    const std::string& get_LuaValue<const std::string&>(lua_State* L){
+        const char* val = lua_tostring(L, -1);
+        lua_pop(L, 1);
+        //@note: We have to rely on lua's gc here because we cannot return a reference to a temporary.
+        auto ret = create_LuaGCObject<std::string>(L, val);
+        return *ret;
     }
 
     template<class T>

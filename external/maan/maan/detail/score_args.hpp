@@ -24,6 +24,19 @@ namespace maan{
             }
         };
 
+        template<class T>
+        struct score_arg<
+            T,
+            typename std::enable_if<std::is_same<
+                typename std::remove_const<typename std::remove_reference<T>::type>::type,
+                std::string
+            >::value>::type
+        >{
+            static int score(lua_State* L, int idx){
+                return lua_isstring(L, idx)? 1: 0;
+            }
+        };
+
         template<typename T>
         struct score_arg< T, typename std::enable_if<std::is_arithmetic<T>::value>::type >{
             static int score(lua_State* L, int idx){
@@ -34,9 +47,10 @@ namespace maan{
         template<class T>
         struct score_arg<
             T,
-            typename std::enable_if<std::is_class<
-                typename std::remove_const<typename std::remove_reference<T>::type>::type
-            >::value>::type
+            typename std::enable_if<
+                std::is_class<typename std::remove_const<typename std::remove_reference<T>::type>::type>::value &&
+                !std::is_same<typename std::remove_const<typename std::remove_reference<T>::type>::type, std::string>::value
+            >::type
         >{
             static int score(lua_State* L, int idx){
                 using type_ = typename std::remove_const<typename std::remove_reference<T>::type>::type;
