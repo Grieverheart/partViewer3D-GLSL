@@ -139,12 +139,12 @@ end
 local projection_toggle = false
 local clip_toggle = 0
 function OnKey(key, action, mods)
-    if key == 66 then -- B
-        if action == 0 then
+    if key == keyboard.key['b'] then
+        if action == keyboard.action.release then
             scene.toggle_box()
         end
-    elseif key == 79 then -- O
-        if action == 0 then
+    elseif key == keyboard.key['o'] then
+        if action == keyboard.action.release then
             if projection_toggle == false then
                 scene.set_projection_type('orthographic')
             else
@@ -152,12 +152,12 @@ function OnKey(key, action, mods)
             end
             projection_toggle = not projection_toggle;
         end
-    elseif key == 80 then -- O
-        if action == 0 then
+    elseif key == keyboard.key['p'] then
+        if action == keyboard.action.release then
             scene.toggle_point_drawing_mode()
         end
-    elseif key == 67 then -- C
-        if action == 0 then
+    elseif key == keyboard.key['c'] then
+        if action == keyboard.action.release then
             if clip_toggle == 0 then
                 scene.enable_clip_plane();
             else
@@ -191,26 +191,26 @@ local function getArcballVec3(x, y)
 end
 
 
-local mouse = {
+local mouse_ = {
     last_mx = 0, last_my = 0,
     curr_mx = 0, curr_my = 0,
-    -- TODO: Make these per button, i.e. mouse.button[btn].is_pressed
+    -- TODO: Make these per button, i.e. mouse_.button[btn].is_pressed
     dragging = false, pressed = false
 }
 
 function OnMouseClick(x, y, button, action, mods)
-    if button == 0 then -- GLFW_MOUSE_BUTTON_LEFT
-        if action == 1 then
-            mouse.pressed = true
-            mouse.last_mx = mouse.curr_mx
-            mouse.last_my = mouse.curr_my
+    if button == mouse.button.left then
+        if action == mouse.action.press then
+            mouse_.pressed = true
+            mouse_.last_mx = mouse_.curr_mx
+            mouse_.last_my = mouse_.curr_my
         else
-            mouse.pressed = false
-            if mouse.dragging == true then
-                mouse.dragging = false
-            elseif button == 0 then -- Normal clicks go here
+            mouse_.pressed = false
+            if mouse_.dragging == true then
+                mouse_.dragging = false
+            elseif button == mouse.button.left then -- Normal clicks go here
                 pid = scene.raytrace(x, y)
-                if pid and (mods == 1) then
+                if pid and (mods == keyboard.mod.shift) then
                     scene.select_particle(pid)
                 elseif pid and (not scene.is_selected(pid)) then
                     scene.clear_selection()
@@ -222,23 +222,23 @@ function OnMouseClick(x, y, button, action, mods)
         end
     elseif button == 1 then
         pid = scene.raytrace(x, y)
-        if pid and (action == 0) then
+        if pid and (action == mouse.action.release) then
             scene.hide_particle(pid)
         end
     end
 end
 
 function OnMouseMotion(x, y)
-    mouse.curr_mx = x
-    mouse.curr_my = y
+    mouse_.curr_mx = x
+    mouse_.curr_my = y
 
-    if (mouse.curr_mx ~= mouse.last_mx) or (mouse.curr_my ~= mouse.last_my) then
-        if (mouse.pressed == true) and (mouse.dragging == false) then
-            mouse.dragging = true
+    if (mouse_.curr_mx ~= mouse_.last_mx) or (mouse_.curr_my ~= mouse_.last_my) then
+        if (mouse_.pressed == true) and (mouse_.dragging == false) then
+            mouse_.dragging = true
         end
-        if mouse.dragging == true then
-            a = getArcballVec3(mouse.last_mx, mouse.last_my)
-            b = getArcballVec3(mouse.curr_mx, mouse.curr_my)
+        if mouse_.dragging == true then
+            a = getArcballVec3(mouse_.last_mx, mouse_.last_my)
+            b = getArcballVec3(mouse_.curr_mx, mouse_.curr_my)
             axis = glm.cross(a, b)
 
             dot = glm.dot(a, b)
@@ -250,8 +250,8 @@ function OnMouseMotion(x, y)
 
             scene.rotate(angle, axis)
 
-            mouse.last_mx = mouse.curr_mx
-            mouse.last_my = mouse.curr_my
+            mouse_.last_mx = mouse_.curr_mx
+            mouse_.last_my = mouse_.curr_my
         end
     end
 end

@@ -25,7 +25,8 @@
 --Add functionality for changing particle color.
 --Draw points.
 --Add font drawing. This will be a simple scene:draw_text(string text, TextProperties props).
-Add lua constants for keyboard and mouse keys.
-Make C++ Shader class accept text and binary sources.
+--Add lua constants for keyboard and mouse keys.
+Add functionality for changing color, outline, etc. in point drawing mode.
+Add freetype2 to external libraries.
 Perhaps add the ability to draw individual particles as points.
 Add suport for multiple windows.
