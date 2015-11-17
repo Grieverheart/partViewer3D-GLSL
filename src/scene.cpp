@@ -1185,9 +1185,9 @@ glm::vec3 Scene::get_background_color(void)const{
 
 void Scene::draw_text(const char* text, const TextProperties& props){
 
-    float scale = (float) props.width_ / fontManager_.getDefaultWidth();
-    int dx = 0;
-    int dy = 0;
+    float scale = 1.0f;
+    float dx = 0;
+    float dy = 0;
 
     glEnable(GL_BLEND);
     glBindVertexArray(quad_vao);
@@ -1196,34 +1196,34 @@ void Scene::draw_text(const char* text, const TextProperties& props){
     sh_text->bind();
     for(const char* char_ptr = text; *char_ptr != '\0'; ++char_ptr){
         char character = *char_ptr;
-        const OpenGLFont::Glyph* glyph = fontManager_.getCharGlyph(props.font_, character);
+        const Glyph* glyph = fontManager_.get_char_glyph(props.font_, character);
         if(!glyph) return;
 
         if(character == '\n'){
-            dy += (glyph->metrics_.vertAdvance >> 6) * scale;
+            dy += glyph->advance_height() * scale;
             dx = 0;
             continue;
         }
 
-        if(char_ptr - text > 0){
-            auto kerning = fontManager_.getKerning(props.font_, character, *(char_ptr - 1));
-            dx += (kerning.x >> 6) * scale;
-        }
+        //if(char_ptr - text > 0){
+        //    auto kerning = fontManager_.getKerning(props.font_, character, *(char_ptr - 1));
+        //    dx += (kerning.x >> 6) * scale;
+        //}
 
-        int width  = (glyph->metrics_.width >> 6) * scale;
-        int height = (glyph->metrics_.height >> 6) * scale;
-        int x      = props.x_ + dx + (glyph->metrics_.horiBearingX >> 6) * scale;
-        int y      = windowHeight - props.y_ - dy + (glyph->metrics_.horiBearingY >> 6) * scale;
-        
+        int width  = glyph->width();
+        int height = glyph->height();
+        float x      = props.x_ + dx + glyph->left_bearing() * scale;
+        float y      = windowHeight - props.y_ - dy + glyph->top_bearing() * scale;
+
         glm::mat4 modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(width, -height, 1.0f));
         modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)) * modelMatrix;
         sh_text->setUniform("modelMatrix", 1, modelMatrix);
         sh_text->setUniform("inColor", 1, props.color_);
-        glBindTexture(GL_TEXTURE_2D, (GLuint)glyph->tex_);
+        glBindTexture(GL_TEXTURE_2D, (GLuint)glyph->tex_id());
     
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        
-        dx += (glyph->metrics_.horiAdvance >> 6) * scale;
+
+        dx += glyph->advance_width() * scale;
     }
 
     glDisable(GL_BLEND);

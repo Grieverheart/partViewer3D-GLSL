@@ -3,44 +3,76 @@
 
 #include <map>
 #include <cstdint>
-#include <ft2build.h>
-#include FT_FREETYPE_H
+#include "stb_truetype.h"
+
+struct Glyph{
+public:
+    Glyph(const stbtt_fontinfo* info, uint32_t character);
+    Glyph(const Glyph& other) = delete;
+    ~Glyph(void);
+
+    int width(void)const{
+        return width_;
+    }
+
+    int height(void)const{
+        return height_;
+    }
+
+    float advance_width(void)const{
+        return advance_width_;
+    }
+
+    float advance_height(void)const{
+        return advance_height_;
+    }
+
+    float left_bearing(void)const{
+        return left_bearing_;
+    }
+
+    float top_bearing(void)const{
+        return top_bearing_;
+    }
+
+    unsigned int tex_id(void)const{
+        return tex_;
+    }
+
+private:
+    const stbtt_fontinfo* font_info_;
+    unsigned char* bitmap_;
+    unsigned int tex_;
+    int width_, height_;
+
+    float advance_width_, left_bearing_;
+    float top_bearing_;
+    float advance_height_; //TODO: Move to Font
+};
 
 class OpenGLFont{
 public:
-    struct Glyph{
-        Glyph(void):
-            tex_(0)
+    OpenGLFont(void);
+
+    const Glyph* get_char_glyph(std::string fontName, uint32_t character);
+
+private:
+    using CharacterGlyphMap = std::map<uint32_t, Glyph>;
+    struct Font{
+        Font(const stbtt_fontinfo& info):
+            info_(info)
         {}
-        FT_Glyph_Metrics metrics_;
-        unsigned int tex_;
+
+        ~Font(void){
+            delete[] info_.data;
+        }
+
+        stbtt_fontinfo info_;
+        CharacterGlyphMap charmap_;
     };
 
-public:
-    OpenGLFont(void);
-    ~OpenGLFont(void);
-    const Glyph* getCharGlyph(std::string fontName, uint32_t character);
-    FT_Vector getKerning(std::string fontName, uint32_t char_a, uint32_t char_b)const;
-    void setDefaultWidth(unsigned int width){
-        defaultWidth_ = width;
-    }
-    unsigned int getDefaultWidth(void)const{
-        return defaultWidth_;
-    }
-    
-private:
     unsigned int defaultWidth_;
-    
-    typedef std::map<uint32_t, Glyph> CharacterGlyphMap;
-    struct Font{
-        Font(void):
-            face_(nullptr)
-        {}
-        FT_Face face_;
-        CharacterGlyphMap charMap_;
-    };
     std::map<std::string, Font> FontMap_;
-    FT_Library ftLibrary_;
 };
 
 #endif

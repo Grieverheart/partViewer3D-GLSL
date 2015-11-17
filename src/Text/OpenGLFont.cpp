@@ -1,57 +1,96 @@
 #include "include/Text/OpenGLFont.h"
 #include <GL/glew.h>
 #include <cstdio>
+#include <cmath>
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "include/Text/stb_truetype.h"
+
+Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character):
+    font_info_(info), bitmap_(nullptr), tex_(0)
+{
+    float scale = stbtt_ScaleForMappingEmToPixels(font_info_, 48);
+    //Bitmap
+    int xoff, yoff;
+    bitmap_ = stbtt_GetCodepointBitmap(font_info_, scale, scale, character, &width_, &height_, &xoff, &yoff);
+
+    //Texture
+    glGenTextures(1, &tex_);
+    glBindTexture(GL_TEXTURE_2D, tex_);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, width_, height_, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap_);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //Metrics
+    int advance_width, left_bearing;
+    stbtt_GetCodepointHMetrics(font_info_, character, &advance_width, &left_bearing);
+
+    int ascent, descent, lineGap;
+    stbtt_GetFontVMetrics(font_info_, &ascent, &descent, &lineGap);
+    advance_height_ = ascent - descent + lineGap;
+
+    advance_height_ = advance_height_ * scale;
+    advance_width_ = advance_width * scale;
+    left_bearing_ = left_bearing * scale;
+
+    int x0, y0, x1, y1;
+    if(stbtt_GetCodepointBox(font_info_, character, &x0, &y0, &x1, &y1)){
+        top_bearing_ = y1 * scale;
+        printf("%f\n", top_bearing_);
+    }
+}
+
+Glyph::~Glyph(void){
+    stbtt_FreeBitmap(bitmap_, nullptr);
+}
+
 
 OpenGLFont::OpenGLFont(void):
 	defaultWidth_(48)
-{
-	FT_Init_FreeType(&ftLibrary_);
-}
-
-OpenGLFont::~OpenGLFont(void){
-}
+{}
 
 //Consider creating an additional function that returns multiple characters per font
-const OpenGLFont::Glyph* OpenGLFont::getCharGlyph(std::string fontName, uint32_t character){
-	Font& font = FontMap_[fontName];
+const Glyph* OpenGLFont::get_char_glyph(std::string fontName, uint32_t character){
+	auto font_itr = FontMap_.find(fontName);
 	//Face doesn't exist yet. We have to create it
-	if(!font.face_){
-		FT_Error error = FT_New_Face(ftLibrary_, fontName.c_str(), 0, &font.face_);
-		if(error){
-			printf("Couldn't load font %s. Error: 0x%.4X\n", fontName.c_str(), error);
-			FontMap_.erase(fontName);
+	if(font_itr == FontMap_.end()){
+        int error = 1;
+        unsigned char* ttf_data = nullptr;
+        stbtt_fontinfo info;
+
+        FILE* fp = fopen(fontName.c_str(), "rb");
+        if(!fp) error = 0;
+        else{
+            fseek(fp, 0L, SEEK_END);
+            auto sz = ftell(fp);
+            fseek(fp, 0L, SEEK_SET);
+            ttf_data = new unsigned char[sz];
+            fread(ttf_data, sz, 1, fp);
+            error = stbtt_InitFont(&info, ttf_data, 0);
+        }
+
+		if(error == 0){
+			printf("Couldn't load font %s.\n", fontName.c_str());
 			return nullptr;
 		}
-		FT_Set_Pixel_Sizes(font.face_, 0, defaultWidth_); //Pre-set width
+		//FT_Set_Pixel_Sizes(font.face_, 0, defaultWidth_); //Pre-set width
+        auto pair = FontMap_.emplace(fontName, info);
+        if(!pair.second) return nullptr; //TODO: Handle error.
+        font_itr = pair.first;
 	}
-	
-	Glyph* glyph = &font.charMap_[character];
+
+    Font& font = font_itr->second;
+
+	auto glyph_itr = font.charmap_.find(character);
 	//Glyph was not previously loaded. We need to do this now
-	if(!glyph->tex_){
-		FT_Load_Char(font.face_, character, FT_LOAD_RENDER);
-		glyph->metrics_ = font.face_->glyph->metrics;
-		const FT_Bitmap &bitmap = font.face_->glyph->bitmap;
-		
-		GLuint texobj;
-		glGenTextures(1, &texobj);
-		glBindTexture(GL_TEXTURE_2D, texobj);
-		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, bitmap.width, bitmap.rows, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap.buffer);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
-		glyph->tex_ = texobj;
+	if(glyph_itr == font.charmap_.end()){
+        auto pair = font.charmap_.emplace(std::piecewise_construct, std::make_tuple(character), std::make_tuple(&font.info_, character));
+        if(!pair.second) return nullptr; //TODO: Handle error.
+        glyph_itr = pair.first;
 	}
-	
-	return glyph;
+
+	return &glyph_itr->second;
 }
 
-FT_Vector OpenGLFont::getKerning(std::string fontName, uint32_t char_a, uint32_t char_b)const{
-    //printf("%d\n", FT_HAS_KERNING()
-	const Font& font = FontMap_.at(fontName);
-    FT_Vector ret;
-    FT_Get_Kerning(font.face_, FT_Get_Char_Index(font.face_, char_a), FT_Get_Char_Index(font.face_, char_b), FT_KERNING_DEFAULT, &ret);
-    return ret;
-}

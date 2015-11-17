@@ -38,7 +38,6 @@ set(BUILD_SHARED_LIBS ON)
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw-3.1.1")
 
 find_package(OpenGL REQUIRED)
-find_package(Freetype REQUIRED)
 #find_package(Lua REQUIRED)
 
 include_directories(
@@ -46,14 +45,13 @@ include_directories(
     "${CMAKE_SOURCE_DIR}/external/glfw-3.1.1/include"
     "${CMAKE_SOURCE_DIR}/external/glm-0.9.6.3"
     "${CMAKE_SOURCE_DIR}/external/maan"
-    "${CMAKE_SOURCE_DIR}/external/glew-1.12.0/include"
-    "${FREETYPE_INCLUDE_DIRS}")
+    "${CMAKE_SOURCE_DIR}/external/glew-1.12.0/include")
 
 set(EXTERNAL_LIBS
     glfw
     GLEW_shared)
 
-target_link_libraries(main ${OPENGL_gl_LIBRARY} lua ${EXTERNAL_LIBS} ${FREETYPE_LIBRARIES})
+target_link_libraries(main ${OPENGL_gl_LIBRARY} lua ${EXTERNAL_LIBS})
 
 install(TARGETS main DESTINATION ${CMAKE_SOURCE_DIR})
 

@@ -16,5 +16,6 @@ vec2 TexCoords[] = vec2[](
 
 void main(void){
     TexCoord = TexCoords[gl_VertexID];
+    //TexCoord.y = 1.0 - TexCoord.y;
 	gl_Position = projectionMatrix * modelMatrix * vec4(in_Position + vec3(TexCoords[gl_VertexID], 0.0), 1.0);
 }
