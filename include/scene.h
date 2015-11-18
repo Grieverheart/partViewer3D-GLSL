@@ -8,7 +8,7 @@
 #include "ssao.h"
 #include "shadowmap.h"
 #include "Text/TextProperties.h"
-#include "Text/OpenGLFont.h"
+#include "Text/FontManager.h"
 #include <exception>
 #include <vector>
 
@@ -182,7 +182,7 @@ private:
 
     Grid* grid;
 
-    OpenGLFont fontManager_;
+    Text::FontManager fontManager_;
 
     void set_projection(void);
 	void drawConfigurationBox(void)const;

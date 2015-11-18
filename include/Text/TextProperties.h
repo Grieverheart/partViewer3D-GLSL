@@ -4,7 +4,7 @@
 #include <string>
 
 struct TextProperties{
-    TextProperties(const char* font, int width, const glm::vec4& color, int x, int y):
+    TextProperties(const char* font, float width, const glm::vec4& color, int x, int y):
         color_(color),
         font_(font),
         width_(width),
@@ -20,7 +20,7 @@ struct TextProperties{
 
     glm::vec4 color_;
     std::string font_;
-    int width_;
+    float width_;
     int x_, y_;
 };
 

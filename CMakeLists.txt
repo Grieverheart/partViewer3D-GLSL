@@ -19,7 +19,7 @@ set(SOURCE_FILES
     src/shader.cpp
     src/register_lua_bindings.cpp
     src/ssao.cpp
-    src/Text/OpenGLFont.cpp)
+    src/Text/FontManager.cpp)
 
 add_executable(main ${SOURCE_FILES})
 

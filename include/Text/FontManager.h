@@ -1,13 +1,18 @@
-#ifndef __OPENGL_FONT_H
-#define __OPENGL_FONT_H
+#ifndef __FONT_MANAGER_H
+#define __FONT_MANAGER_H
 
 #include <map>
 #include <cstdint>
 #include "stb_truetype.h"
 
+//TODO: Add kerning.
+//TODO: Subpixel.
+
+namespace Text{
+
 struct Glyph{
 public:
-    Glyph(const stbtt_fontinfo* info, uint32_t character);
+    Glyph(const stbtt_fontinfo* info, uint32_t character, float scale);
     Glyph(const Glyph& other) = delete;
     ~Glyph(void);
 
@@ -21,10 +26,6 @@ public:
 
     float advance_width(void)const{
         return advance_width_;
-    }
-
-    float advance_height(void)const{
-        return advance_height_;
     }
 
     float left_bearing(void)const{
@@ -47,32 +48,38 @@ private:
 
     float advance_width_, left_bearing_;
     float top_bearing_;
-    float advance_height_; //TODO: Move to Font
 };
 
-class OpenGLFont{
+struct Font{
 public:
-    OpenGLFont(void);
-
-    const Glyph* get_char_glyph(std::string fontName, uint32_t character);
+    Font(const stbtt_fontinfo& info, float default_size);
+    ~Font(void);
+    const Glyph* get_char_glyph(uint32_t character);
+    float line_advance(void)const{
+        return advance_height_;
+    }
 
 private:
     using CharacterGlyphMap = std::map<uint32_t, Glyph>;
-    struct Font{
-        Font(const stbtt_fontinfo& info):
-            info_(info)
-        {}
+    float scale_;
+    float advance_height_;
+    stbtt_fontinfo info_;
+    CharacterGlyphMap charmap_;
+};
 
-        ~Font(void){
-            delete[] info_.data;
-        }
+class FontManager{
+public:
+    FontManager(void);
+    Font* get_font(std::string font_name);
+    float get_default_size(void)const{
+        return default_size_;
+    }
 
-        stbtt_fontinfo info_;
-        CharacterGlyphMap charmap_;
-    };
-
-    unsigned int defaultWidth_;
+private:
+    float default_size_;
     std::map<std::string, Font> FontMap_;
+};
+
 };
 
 #endif

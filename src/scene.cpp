@@ -1185,7 +1185,7 @@ glm::vec3 Scene::get_background_color(void)const{
 
 void Scene::draw_text(const char* text, const TextProperties& props){
 
-    float scale = 1.0f;
+    float scale = props.width_ / fontManager_.get_default_size();
     float dx = 0;
     float dy = 0;
 
@@ -1193,14 +1193,16 @@ void Scene::draw_text(const char* text, const TextProperties& props){
     glBindVertexArray(quad_vao);
 	glActiveTexture(GL_TEXTURE0);
 
+    Text::Font* font = fontManager_.get_font(props.font_);
+
     sh_text->bind();
     for(const char* char_ptr = text; *char_ptr != '\0'; ++char_ptr){
         char character = *char_ptr;
-        const Glyph* glyph = fontManager_.get_char_glyph(props.font_, character);
+        const Text::Glyph* glyph = font->get_char_glyph(character);
         if(!glyph) return;
 
         if(character == '\n'){
-            dy += glyph->advance_height() * scale;
+            dy += font->line_advance() * scale;
             dx = 0;
             continue;
         }
@@ -1210,8 +1212,8 @@ void Scene::draw_text(const char* text, const TextProperties& props){
         //    dx += (kerning.x >> 6) * scale;
         //}
 
-        int width  = glyph->width();
-        int height = glyph->height();
+        int width  = glyph->width() * scale;
+        int height = glyph->height() * scale;
         float x      = props.x_ + dx + glyph->left_bearing() * scale;
         float y      = windowHeight - props.y_ - dy + glyph->top_bearing() * scale;
 

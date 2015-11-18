@@ -1,14 +1,15 @@
-#include "include/Text/OpenGLFont.h"
+#include "include/Text/FontManager.h"
 #include <GL/glew.h>
 #include <cstdio>
 #include <cmath>
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "include/Text/stb_truetype.h"
 
-Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character):
+using namespace Text;
+
+Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character, float scale):
     font_info_(info), bitmap_(nullptr), tex_(0)
 {
-    float scale = stbtt_ScaleForMappingEmToPixels(font_info_, 48);
     //Bitmap
     int xoff, yoff;
     bitmap_ = stbtt_GetCodepointBitmap(font_info_, scale, scale, character, &width_, &height_, &xoff, &yoff);
@@ -27,11 +28,6 @@ Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character):
     int advance_width, left_bearing;
     stbtt_GetCodepointHMetrics(font_info_, character, &advance_width, &left_bearing);
 
-    int ascent, descent, lineGap;
-    stbtt_GetFontVMetrics(font_info_, &ascent, &descent, &lineGap);
-    advance_height_ = ascent - descent + lineGap;
-
-    advance_height_ = advance_height_ * scale;
     advance_width_ = advance_width * scale;
     left_bearing_ = left_bearing * scale;
 
@@ -46,21 +42,46 @@ Glyph::~Glyph(void){
     stbtt_FreeBitmap(bitmap_, nullptr);
 }
 
+Font::Font(const stbtt_fontinfo& info, float default_size):
+    info_(info)
+{
+    scale_ = stbtt_ScaleForMappingEmToPixels(&info_, default_size);
+    int ascent, descent, lineGap;
+    stbtt_GetFontVMetrics(&info_, &ascent, &descent, &lineGap);
+    advance_height_ = scale_ * (ascent - descent + lineGap);
+}
 
-OpenGLFont::OpenGLFont(void):
-	defaultWidth_(48)
-{}
+Font::~Font(void){
+    delete[] info_.data;
+}
+
 
 //Consider creating an additional function that returns multiple characters per font
-const Glyph* OpenGLFont::get_char_glyph(std::string fontName, uint32_t character){
-	auto font_itr = FontMap_.find(fontName);
+const Glyph* Font::get_char_glyph(uint32_t character){
+	auto glyph_itr = charmap_.find(character);
+	//Glyph was not previously loaded. We need to do this now
+	if(glyph_itr == charmap_.end()){
+        auto pair = charmap_.emplace(std::piecewise_construct, std::make_tuple(character), std::make_tuple(&info_, character, scale_));
+        if(!pair.second) return nullptr; //TODO: Handle error.
+        glyph_itr = pair.first;
+	}
+
+	return &glyph_itr->second;
+}
+
+FontManager::FontManager(void):
+	default_size_(48.0f)
+{}
+
+Font* FontManager::get_font(std::string font_name){
+	auto font_itr = FontMap_.find(font_name);
 	//Face doesn't exist yet. We have to create it
 	if(font_itr == FontMap_.end()){
         int error = 1;
         unsigned char* ttf_data = nullptr;
         stbtt_fontinfo info;
 
-        FILE* fp = fopen(fontName.c_str(), "rb");
+        FILE* fp = fopen(font_name.c_str(), "rb");
         if(!fp) error = 0;
         else{
             fseek(fp, 0L, SEEK_END);
@@ -72,25 +93,15 @@ const Glyph* OpenGLFont::get_char_glyph(std::string fontName, uint32_t character
         }
 
 		if(error == 0){
-			printf("Couldn't load font %s.\n", fontName.c_str());
+			printf("Couldn't load font %s.\n", font_name.c_str());
 			return nullptr;
 		}
-		//FT_Set_Pixel_Sizes(font.face_, 0, defaultWidth_); //Pre-set width
-        auto pair = FontMap_.emplace(fontName, info);
+		//FT_Set_Pixel_Sizes(font.face_, 0, default_size_); //Pre-set width
+        auto pair = FontMap_.emplace(std::piecewise_construct, std::make_tuple(font_name), std::make_tuple(info, default_size_));
         if(!pair.second) return nullptr; //TODO: Handle error.
         font_itr = pair.first;
 	}
 
-    Font& font = font_itr->second;
-
-	auto glyph_itr = font.charmap_.find(character);
-	//Glyph was not previously loaded. We need to do this now
-	if(glyph_itr == font.charmap_.end()){
-        auto pair = font.charmap_.emplace(std::piecewise_construct, std::make_tuple(character), std::make_tuple(&font.info_, character));
-        if(!pair.second) return nullptr; //TODO: Handle error.
-        glyph_itr = pair.first;
-	}
-
-	return &glyph_itr->second;
+    return &font_itr->second;
 }
 
