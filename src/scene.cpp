@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include "include/Text/FontManager.h"
 #include "include/gl_utils.h"
 #include "include/shader.h"
 #include "include/grid.h"
@@ -43,8 +44,8 @@ Scene::Scene(int width, int height):
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
     sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr),
     sh_spheres(nullptr), sh_shadowmap_spheres(nullptr), sh_points(nullptr),
-    grid(nullptr)
-
+    grid(nullptr),
+    fontManager_(new Text::FontManager())
 {
 	glewExperimental = GL_TRUE;
 	GLenum error = glewInit(); //Enable GLEW
@@ -1183,9 +1184,9 @@ glm::vec3 Scene::get_background_color(void)const{
     return m_bgColor;
 }
 
-void Scene::draw_text(const char* text, const TextProperties& props){
+void Scene::draw_text(const char* text, const Text::Properties& props){
 
-    float scale = props.width_ / fontManager_.get_default_size();
+    float scale = props.width_ / fontManager_->get_default_size();
     float dx = 0;
     float dy = 0;
 
@@ -1193,7 +1194,7 @@ void Scene::draw_text(const char* text, const TextProperties& props){
     glBindVertexArray(quad_vao);
 	glActiveTexture(GL_TEXTURE0);
 
-    Text::Font* font = fontManager_.get_font(props.font_);
+    Text::Font* font = fontManager_->get_font(props.font_);
 
     sh_text->bind();
     for(const char* char_ptr = text; *char_ptr != '\0'; ++char_ptr){
@@ -1207,15 +1208,15 @@ void Scene::draw_text(const char* text, const TextProperties& props){
             continue;
         }
 
-        //if(char_ptr - text > 0){
-        //    auto kerning = fontManager_.getKerning(props.font_, character, *(char_ptr - 1));
-        //    dx += (kerning.x >> 6) * scale;
-        //}
+        if(char_ptr - text > 0){
+            float kerning = font->kern_advance(character, *(char_ptr - 1));
+            dx += kerning * scale;
+        }
 
         int width  = glyph->width() * scale;
         int height = glyph->height() * scale;
-        float x      = props.x_ + dx + glyph->left_bearing() * scale;
-        float y      = windowHeight - props.y_ - dy + glyph->top_bearing() * scale;
+        float x    = props.x_ + dx + glyph->left_bearing() * scale;
+        float y    = windowHeight - props.y_ - dy + glyph->top_bearing() * scale;
 
         glm::mat4 modelMatrix = glm::scale(glm::mat4(1.0f), glm::vec3(width, -height, 1.0f));
         modelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)) * modelMatrix;

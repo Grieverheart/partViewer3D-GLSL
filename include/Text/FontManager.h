@@ -41,7 +41,6 @@ public:
     }
 
 private:
-    const stbtt_fontinfo* font_info_;
     unsigned char* bitmap_;
     unsigned int tex_;
     int width_, height_;
@@ -55,6 +54,7 @@ public:
     Font(const stbtt_fontinfo& info, float default_size);
     ~Font(void);
     const Glyph* get_char_glyph(uint32_t character);
+    float kern_advance(uint32_t ch1, uint32_t ch2)const;
     float line_advance(void)const{
         return advance_height_;
     }

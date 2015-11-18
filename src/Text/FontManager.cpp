@@ -8,11 +8,11 @@
 using namespace Text;
 
 Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character, float scale):
-    font_info_(info), bitmap_(nullptr), tex_(0)
+    bitmap_(nullptr), tex_(0)
 {
     //Bitmap
     int xoff, yoff;
-    bitmap_ = stbtt_GetCodepointBitmap(font_info_, scale, scale, character, &width_, &height_, &xoff, &yoff);
+    bitmap_ = stbtt_GetCodepointBitmap(info, scale, scale, character, &width_, &height_, &xoff, &yoff);
 
     //Texture
     glGenTextures(1, &tex_);
@@ -26,13 +26,13 @@ Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character, float scale):
 
     //Metrics
     int advance_width, left_bearing;
-    stbtt_GetCodepointHMetrics(font_info_, character, &advance_width, &left_bearing);
+    stbtt_GetCodepointHMetrics(info, character, &advance_width, &left_bearing);
 
     advance_width_ = advance_width * scale;
     left_bearing_ = left_bearing * scale;
 
     int x0, y0, x1, y1;
-    if(stbtt_GetCodepointBox(font_info_, character, &x0, &y0, &x1, &y1)){
+    if(stbtt_GetCodepointBox(info, character, &x0, &y0, &x1, &y1)){
         top_bearing_ = y1 * scale;
         printf("%f\n", top_bearing_);
     }
@@ -67,6 +67,10 @@ const Glyph* Font::get_char_glyph(uint32_t character){
 	}
 
 	return &glyph_itr->second;
+}
+
+float Font::kern_advance(uint32_t ch1, uint32_t ch2)const{
+    return stbtt_GetCodepointKernAdvance(&info_, ch1, ch2);
 }
 
 FontManager::FontManager(void):

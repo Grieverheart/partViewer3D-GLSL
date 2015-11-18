@@ -7,8 +7,7 @@
 #include "accumulator.h"
 #include "ssao.h"
 #include "shadowmap.h"
-#include "Text/TextProperties.h"
-#include "Text/FontManager.h"
+#include "Text/Properties.h"
 #include <exception>
 #include <vector>
 
@@ -18,6 +17,9 @@
 
 class Shader;
 class Grid;
+namespace Text{
+    class FontManager;
+}
 
 enum class Projection{
     PERSPECTIVE,
@@ -94,7 +96,7 @@ public:
     void set_background_color(const glm::vec3&);
     glm::vec3 get_background_color(void)const;
 
-    void draw_text(const char* text, const TextProperties& props);
+    void draw_text(const char* text, const Text::Properties& props);
 
 private:
 	int windowWidth;
@@ -182,7 +184,7 @@ private:
 
     Grid* grid;
 
-    Text::FontManager fontManager_;
+    Text::FontManager* fontManager_;
 
     void set_projection(void);
 	void drawConfigurationBox(void)const;

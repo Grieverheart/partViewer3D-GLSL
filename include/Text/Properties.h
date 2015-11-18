@@ -3,15 +3,17 @@
 
 #include <string>
 
-struct TextProperties{
-    TextProperties(const char* font, float width, const glm::vec4& color, int x, int y):
+namespace Text{
+
+struct Properties{
+    Properties(const char* font, float width, const glm::vec4& color, int x, int y):
         color_(color),
         font_(font),
         width_(width),
         x_(x), y_(y)
     {}
 
-    TextProperties(void):
+    Properties(void):
         color_(0.0),
         font_(""),
         width_(0),
@@ -23,5 +25,7 @@ struct TextProperties{
     float width_;
     int x_, y_;
 };
+
+}
 
 #endif

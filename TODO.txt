@@ -26,7 +26,7 @@
 --Draw points.
 --Add font drawing. This will be a simple scene:draw_text(string text, TextProperties props).
 --Add lua constants for keyboard and mouse keys.
+--Migrate to stb_truetype instead of freetype2.
 Add functionality for changing color, outline, etc. in point drawing mode.
-Add freetype2 to external libraries.
 Perhaps add the ability to draw individual particles as points.
 Add suport for multiple windows.
