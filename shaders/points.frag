@@ -1,7 +1,11 @@
 #version 330 core
 
 uniform mat4 ProjectionMatrix;
+
 uniform float radius;
+uniform float outline_radius;
+uniform vec4 color;
+uniform vec4 outline_color;
 
 smooth in vec2 TexCoord;
 flat in vec3 sphere_position;
@@ -14,8 +18,7 @@ void main(void){
     float r2 = radius * radius;
     if(dotp > r2) discard;
 
-    //TODO: Make these colors, and thickness, parameters
-    outColor = (dotp > r2 * 0.7)? vec3(0.0): vec3(0.05);
+    outColor = (dotp > (r2 - outline_radius * outline_radius))? outline_color.rgb: color.rgb;
 
     pos += sphere_position;
 

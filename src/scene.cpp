@@ -32,6 +32,8 @@ Scene::Scene(int width, int height):
 	m_bgColor(glm::vec3(44, 114, 220) / 255.0f),
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
+    point_radius_(0.2f), point_outline_radius_(0.14f),
+    point_color_(0.05), point_outline_color_(0.0),
     clip_plane_{0.0, 0.0, -1.0, 0.0},
 	shape_vaos(nullptr), shape_vbos(nullptr),
     particle_flags(nullptr),
@@ -478,6 +480,14 @@ void Scene::load_scene(const SimConfig& config){
 		sh_text->setUniform("inSampler", 0);
 		sh_text->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
 	}
+
+    sh_points->bind();
+    {
+        sh_points->setUniform("radius", point_radius_);
+        sh_points->setUniform("outline_radius", point_outline_radius_);
+        sh_points->setUniform("color", 1, point_color_);
+        sh_points->setUniform("outline_color", 1, point_outline_color_);
+    }
 }
 
 bool Scene::raytrace(int x, int y, int& pid){
@@ -531,6 +541,31 @@ void Scene::unhide_particle(int pid){
 
 void Scene::set_particle_color(int pid, const glm::vec3& color){
     particle_colors[pid] = color;
+}
+
+//TODO: Perhaps add a should_update_point_uniforms.
+void Scene::set_point_radius(float radius){
+    point_radius_ = radius;
+    sh_points->bind();
+    sh_points->setUniform("radius", point_radius_);
+}
+
+void Scene::set_point_outline_radius(float radius){
+    point_outline_radius_ = radius;
+    sh_points->bind();
+    sh_points->setUniform("outline_radius", point_outline_radius_);
+}
+
+void Scene::set_point_color(const glm::vec4& color){
+    point_color_ = color;
+    sh_points->bind();
+    sh_points->setUniform("color", 1, point_color_);
+}
+
+void Scene::set_point_outline_color(const glm::vec4& color){
+    point_outline_color_ = color;
+    sh_points->bind();
+    sh_points->setUniform("outline_color", 1, point_outline_color_);
 }
 
 void Scene::wsize_changed(int w, int h){
@@ -653,7 +688,6 @@ void Scene::render(void){
 
         sh_points->bind();
 
-        sh_points->setUniform("radius", 0.2f);
         sh_points->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
         sh_points->setUniform("ProjectionMatrix", 1, projectionMatrix);
         for(auto pid: draw_pids){

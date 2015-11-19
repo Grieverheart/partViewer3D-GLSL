@@ -57,6 +57,11 @@ public:
 
     void set_particle_color(int pid, const glm::vec3& color);
 
+    void set_point_radius(float);
+    void set_point_outline_radius(float);
+    void set_point_color(const glm::vec4&);
+    void set_point_outline_color(const glm::vec4&);
+
     void set_projection_type(Projection);
 
     glm::mat4 get_view_matrix(void)const;
@@ -119,6 +124,11 @@ private:
 	glm::vec3 m_bgColor;
 	glm::vec3 diffcolor;
 	glm::vec3 skycolor;
+
+    float point_radius_;
+    float point_outline_radius_;
+	glm::vec4 point_color_;
+	glm::vec4 point_outline_color_;
 
     glm::vec4 clip_plane_;
 
