@@ -29,4 +29,5 @@
 --Migrate to stb_truetype instead of freetype2.
 --Add functionality for changing color, outline, etc. in point drawing mode.
 --Perhaps add the ability to draw individual particles as points.
+Handle clipping with point drawing.
 Add suport for multiple windows.
