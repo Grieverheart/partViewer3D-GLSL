@@ -79,7 +79,7 @@ local function load_scene(filepath)
     local particles = {}
     local shapes = {}
 
-    local n_part = fp:read("*n")
+    n_part = fp:read("*n") --NOTE: global!
     fp:read() --skip newline
 
     -- Read box data
@@ -154,7 +154,9 @@ function OnKey(key, action, mods)
         end
     elseif key == keyboard.key['p'] then
         if action == keyboard.action.release then
-            scene.toggle_point_drawing_mode()
+            for pid = 0, n_part - 1 do
+                scene.toggle_particle_point_drawing(pid)
+            end
         end
     elseif key == keyboard.key['c'] then
         if action == keyboard.action.release then

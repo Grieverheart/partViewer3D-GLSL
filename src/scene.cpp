@@ -22,7 +22,8 @@ static const glm::mat4 biasMatrix(
 );
 
 enum ParticleFlags{
-    Hidden = 0x01
+    Hidden = 0x01,
+    Point  = 0x02
 };
 
 Scene::Scene(int width, int height):
@@ -33,13 +34,13 @@ Scene::Scene(int width, int height):
 	diffcolor(glm::vec3(77, 27, 147) / 255.0f),
 	skycolor(0.529, 0.808, 0.921),
     point_radius_(0.2f), point_outline_radius_(0.14f),
-    point_color_(0.05), point_outline_color_(0.0),
+    point_color_(0.05, 0.05, 0.05, 0.5), point_outline_color_(0.0, 0.0, 0.0, 0.5),
     clip_plane_{0.0, 0.0, -1.0, 0.0},
 	shape_vaos(nullptr), shape_vbos(nullptr),
     particle_flags(nullptr),
     particles(nullptr), shapes(nullptr), n_shapes(0), n_particles(0),
     vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
-    is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), draw_points_mode_(false), m_blur(true),
+    is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer(nullptr), sh_gbuffer_instanced(nullptr), sh_ssao(nullptr),
@@ -78,6 +79,7 @@ Scene::Scene(int width, int height):
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_CULL_FACE);
 	glCullFace(GL_BACK);
+    glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
     try{
@@ -543,6 +545,10 @@ void Scene::set_particle_color(int pid, const glm::vec3& color){
     particle_colors[pid] = color;
 }
 
+void Scene::toggle_particle_point_drawing(int pid){
+    particle_flags[pid] ^= ParticleFlags::Point;
+}
+
 //TODO: Perhaps add a should_update_point_uniforms.
 void Scene::set_point_radius(float radius){
     point_radius_ = radius;
@@ -621,15 +627,27 @@ void Scene::process(void){
 		sh_accumulator->setUniform("invProjMatrix", 1, invProjMatrix);
 	}
 
+    draw_points_end_ = std::partition(draw_pids.begin(), draw_pids.end(),
+        [=](int i) -> bool {
+            return (particle_flags[i] & ParticleFlags::Point);
+        }
+    );
+
     //TODO: Cache model_matrices[i] * glm::vec4(particles[i].pos, 1.0)
     double* depths = new double[n_particles];
     auto mv_matrix = viewMatrix * modelMatrix;
     for(int i = 0; i < n_particles; ++i){
-        auto pos = mv_matrix * model_matrices[i] * glm::vec4(particles[i].pos, 1.0);
+        auto pos = mv_matrix * model_matrices[i] * glm::vec4(0.0, 0.0, 0.0, 1.0);
         depths[i] = pos.z / pos.w;
     }
 
-    std::sort(draw_pids.begin(), draw_pids.end(),
+    std::sort(draw_pids.begin(), draw_points_end_,
+        [depths](int i, int j) -> bool {
+            return (depths[i] < depths[j]);
+        }
+    );
+
+    std::sort(draw_points_end_, draw_pids.end(),
         [depths](int i, int j) -> bool {
             return (depths[i] > depths[j]);
         }
@@ -676,36 +694,14 @@ void Scene::render(void){
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_DEPTH_TEST);
 
-    //TODO: Use SMAA and also draw configuration box. Perhaps also color selected.
-    if(draw_points_mode_){
-        m_accumulator.Bind();
+    //Pre-clear the accumulator.
+    m_accumulator.Bind();
+    glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClearColor(0.0, 0.0, 0.0, 1.0);
 
-        glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
-        glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-        glClearColor(0.0, 0.0, 0.0, 1.0);
 
-        glBindVertexArray(quad_vao);
-
-        sh_points->bind();
-
-        sh_points->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
-        sh_points->setUniform("ProjectionMatrix", 1, projectionMatrix);
-        for(auto pid: draw_pids){
-            if(particle_flags[pid] & ParticleFlags::Hidden) continue;
-            sh_points->setUniform("ModelMatrix", 1, model_matrices[pid]);
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-        }
-
-        if(drawBox){
-            sh_gbuffer->bind();
-            {
-                drawConfigurationBox();
-            }
-        }
-
-        glBindVertexArray(fullscreen_triangle_vao);
-    }
-    else{
+    if(draw_points_end_ != draw_pids.end()){
         //"Shadow Pass"
         {
             m_shadowmap.Bind();
@@ -734,7 +730,8 @@ void Scene::render(void){
                     sh_shadowmap_instanced->setUniform("MVPMatrix", 1, lightProjectionMatrix * lightViewMatrix * modelMatrix);
                     sh_shadowmap_instanced->setUniform("clip_plane", 1, clip_plane_);
 
-                    for(auto pid: draw_pids){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids.end(); ++pid_itr){
+                        auto pid = *pid_itr;
                         if((particles[pid].shape_id != shape_id) ||
                            (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                         sh_shadowmap_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
@@ -775,7 +772,8 @@ void Scene::render(void){
                     sh_shadowmap_spheres->setUniform("MVMatrix", 1, lightViewMatrix * modelMatrix);
                     sh_shadowmap_spheres->setUniform("ProjectionMatrix", 1, lightProjectionMatrix);
 
-                    for(auto pid: draw_pids){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids.end(); ++pid_itr){
+                        auto pid = *pid_itr;
                         if((particles[pid].shape_id != shape_id) ||
                            (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                         sh_shadowmap_spheres->setUniform("ModelMatrix", 1, model_matrices[pid]);
@@ -813,7 +811,8 @@ void Scene::render(void){
                     sh_gbuffer_instanced->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
                     sh_gbuffer_instanced->setUniform("ProjectionMatrix", 1, projectionMatrix);
 
-                    for(auto pid: draw_pids){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids.end(); ++pid_itr){
+                        auto pid = *pid_itr;
                         if((particles[pid].shape_id != shape_id) ||
                            (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                         sh_gbuffer_instanced->setUniform("ModelMatrix", 1, model_matrices[pid]);
@@ -868,19 +867,13 @@ void Scene::render(void){
                     sh_spheres->setUniform("InvProjectionMatrix", 1, invProjMatrix);
                     sh_spheres->setUniform("in_Color", 1, diffcolor);
 
-                    for(auto pid: draw_pids){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids.end(); ++pid_itr){
+                        auto pid = *pid_itr;
                         if((particles[pid].shape_id != shape_id) ||
                            (particle_flags[pid] & ParticleFlags::Hidden)) continue;
                         sh_spheres->setUniform("ModelMatrix", 1, model_matrices[pid]);
                         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
                     }
-                }
-            }
-
-            if(drawBox){
-                sh_gbuffer->bind();
-                {
-                    drawConfigurationBox();
                 }
             }
         }
@@ -922,14 +915,15 @@ void Scene::render(void){
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         }
 
+
+        //glBindVertexArray(fullscreen_triangle_vao);
+
         //"Gather Pass"
         {
             //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+            glDepthMask(GL_TRUE);
+            glEnable(GL_DEPTH_TEST);
             m_accumulator.Bind();
-
-            glClearColor(m_bgColor.x, m_bgColor.y, m_bgColor.z, 0.0);
-            glClear(GL_COLOR_BUFFER_BIT);
-            glClearColor(0.0, 0.0, 0.0, 1.0);
 
             m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
             m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_NORMAL, 1);
@@ -953,75 +947,97 @@ void Scene::render(void){
 
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
-
-        }
-
-        //"Selection Pass"
-        for(auto selected_pid: selected_pids){
-            int shape_id = particles[selected_pid].shape_id;
-
-            m_accumulator.Bind();
-
-            glBindVertexArray(shape_vaos[shape_id]);
-            glDepthMask(GL_TRUE);
-            glEnable(GL_DEPTH_TEST);
-            glEnable(GL_STENCIL_TEST);
-            glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-            glStencilMask(0xFF);
-            glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-            if(shapes[shape_id].type == Shape::MESH){
-                int n_vertices = shapes[shape_id].mesh.n_vertices;
-                sh_color->bind();
-
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-                glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
-                sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
-                glDrawArrays(GL_TRIANGLES, 0, n_vertices);
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
-                glDisable(GL_DEPTH_TEST);
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
-                sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
-                glDrawArrays(GL_TRIANGLES, 0, n_vertices);
-            }
-            else{
-                sh_color_sphere->bind();
-
-                glStencilFunc(GL_ALWAYS, 1, 0xFF);
-                glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
-                float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
-
-                glm::mat4 mv_matrix = viewMatrix * modelMatrix * model_matrices[selected_pid];
-                sh_color_sphere->setUniform("mv_matrix", 1, mv_matrix);
-                sh_color_sphere->setUniform("projection_matrix", 1, projectionMatrix);
-                sh_color_sphere->setUniform("iprojection_matrix", 1, invProjMatrix);
-                sh_color_sphere->setUniform("perspective_scale", perspective_scale);
-                sh_color_sphere->setUniform("radius", 0.5f);
-                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-                glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-                glStencilMask(0x00);
-                glDisable(GL_DEPTH_TEST);
-                glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-                sh_color_sphere->setUniform("radius", 1.1f * 0.5f);
-                glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-            }
-
-            glDisable(GL_STENCIL_TEST);
-            glDepthMask(GL_FALSE);
         }
     }
+
+    if(drawBox){
+        sh_gbuffer->bind();
+        {
+            drawConfigurationBox();
+        }
+    }
+
+    //"Point Drawing Pass"
+    if(draw_points_end_ != draw_pids.begin()){
+        glEnable(GL_BLEND);
+        //glDisable(GL_DEPTH_TEST);
+        glBindVertexArray(quad_vao);
+
+        sh_points->bind();
+
+        sh_points->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
+        sh_points->setUniform("ProjectionMatrix", 1, projectionMatrix);
+
+        for(auto pid_itr = draw_pids.begin(); pid_itr != draw_points_end_; ++pid_itr){
+            auto pid = *pid_itr;
+            if(particle_flags[pid] & ParticleFlags::Hidden) continue;
+            sh_points->setUniform("ModelMatrix", 1, model_matrices[pid]);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+        glDisable(GL_BLEND);
+    }
+
+    //"Selection Pass"
+    glEnable(GL_STENCIL_TEST);
+    for(auto selected_pid: selected_pids){
+        int shape_id = particles[selected_pid].shape_id;
+
+        glBindVertexArray(shape_vaos[shape_id]);
+        glEnable(GL_DEPTH_TEST);
+        glStencilMask(0xFF);
+        glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
+        if(shapes[shape_id].type == Shape::MESH){
+            int n_vertices = shapes[shape_id].mesh.n_vertices;
+            sh_color->bind();
+
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+            glm::mat4 mvp_matrix = projectionMatrix * viewMatrix * modelMatrix * model_matrices[selected_pid];
+            sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
+            glDrawArrays(GL_TRIANGLES, 0, n_vertices);
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDisable(GL_DEPTH_TEST);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
+            sh_color->setUniform("mvp_matrix", 1, mvp_matrix);
+            glDrawArrays(GL_TRIANGLES, 0, n_vertices);
+        }
+        else{
+            sh_color_sphere->bind();
+
+            glStencilFunc(GL_ALWAYS, 1, 0xFF);
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+            float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
+
+            glm::mat4 mv_matrix = viewMatrix * modelMatrix * model_matrices[selected_pid];
+            sh_color_sphere->setUniform("mv_matrix", 1, mv_matrix);
+            sh_color_sphere->setUniform("projection_matrix", 1, projectionMatrix);
+            sh_color_sphere->setUniform("iprojection_matrix", 1, invProjMatrix);
+            sh_color_sphere->setUniform("perspective_scale", perspective_scale);
+            sh_color_sphere->setUniform("radius", 0.5f);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
+            glStencilMask(0x00);
+            glDisable(GL_DEPTH_TEST);
+            glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+            sh_color_sphere->setUniform("radius", 1.1f * 0.5f);
+            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        }
+
+    }
+    glDisable(GL_STENCIL_TEST);
 
     //"SMAA"
     {
         glBindVertexArray(fullscreen_triangle_vao);
         glDisable(GL_CULL_FACE);
         glDisable(GL_DEPTH_TEST);
+        glDepthMask(GL_FALSE);
 
         //"Edge Pass"
         {
@@ -1112,10 +1128,6 @@ void Scene::disable_clip_plane(void){
 
 void Scene::toggle_box(void){
     drawBox = !drawBox;
-}
-
-void Scene::toggle_point_drawing_mode(void){
-    draw_points_mode_ = !draw_points_mode_;
 }
 
 void Scene::set_view_position(const glm::vec3& pos){

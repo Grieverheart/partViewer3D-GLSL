@@ -88,6 +88,7 @@ void main(void){
 
         out_Color = vec4(Color * CalcLight(Position, Normal, AO), 1.0);
         //if(isEdge(Normal)) out_Color = out_Color * 0.6;
+        gl_FragDepth = Depth;
     }
     else discard;
 }

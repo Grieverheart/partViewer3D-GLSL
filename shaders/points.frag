@@ -10,7 +10,7 @@ uniform vec4 outline_color;
 smooth in vec2 TexCoord;
 flat in vec3 sphere_position;
 
-layout(location = 0) out vec3 outColor;
+layout(location = 0) out vec4 outColor;
 
 void main(void){
     vec3 pos = vec3(TexCoord, 0.0);
@@ -18,7 +18,7 @@ void main(void){
     float r2 = radius * radius;
     if(dotp > r2) discard;
 
-    outColor = (dotp > (r2 - outline_radius * outline_radius))? outline_color.rgb: color.rgb;
+    outColor = (dotp > (r2 - outline_radius * outline_radius))? outline_color: color;
 
     pos += sphere_position;
 

@@ -57,6 +57,7 @@ public:
 
     void set_particle_color(int pid, const glm::vec3& color);
 
+    void toggle_particle_point_drawing(int pid);
     void set_point_radius(float);
     void set_point_outline_radius(float);
     void set_point_color(const glm::vec4&);
@@ -72,7 +73,6 @@ public:
     void enable_clip_plane(void);
     void disable_clip_plane(void);
     void toggle_box(void);
-    void toggle_point_drawing_mode(void);
 
     void set_view_position(const glm::vec3&);
     const glm::vec3& get_view_position(void)const;
@@ -157,11 +157,11 @@ private:
 
     std::vector<int> selected_pids;
     std::vector<int> draw_pids;
+    std::vector<int>::iterator draw_points_end_;
 
 	bool is_scene_loaded;
     bool is_clip_plane_activated_;
 	bool drawBox;
-	bool draw_points_mode_;
 	bool m_blur;
 
     Projection projection_type;

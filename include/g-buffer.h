@@ -16,8 +16,8 @@ public:
 	void UnBind(void)const;
     void BindTexture(GBUFF_TEXTURE_TYPE tex_type, int attachment_point)const;
 	void Resize(unsigned int WindowWidth, unsigned int WindowHeight)const;
-private:
 	unsigned int m_fbo;
+private:
 	unsigned int m_textures[GBUFF_NUM_TEXTURES];
 };
 
