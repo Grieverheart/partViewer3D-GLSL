@@ -137,7 +137,7 @@ function OnInit(argv)
 end
 
 local projection_toggle = false
-local clip_toggle = 0
+local clip_toggle = false
 function OnKey(key, action, mods)
     if key == keyboard.key['b'] then
         if action == keyboard.action.release then
@@ -160,7 +160,7 @@ function OnKey(key, action, mods)
         end
     elseif key == keyboard.key['c'] then
         if action == keyboard.action.release then
-            if clip_toggle == 0 then
+            if clip_toggle == false then
                 scene.enable_clip_plane();
             else
                 scene.disable_clip_plane();

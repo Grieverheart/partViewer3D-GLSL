@@ -1,5 +1,6 @@
 #version 330 core
 
+uniform vec4 clip_plane;
 uniform mat4 ProjectionMatrix;
 uniform mat4 MVMatrix;
 uniform mat4 ModelMatrix;
@@ -20,6 +21,8 @@ vec2 TexCoords[] = vec2[](
 void main(void){
 
     TexCoord = radius * TexCoords[gl_VertexID];
+
+    gl_ClipDistance[0] = dot(clip_plane, ModelMatrix * vec4(in_Position, 1.0));
 
 	gl_Position = MVMatrix * ModelMatrix * vec4(in_Position, 1.0);
     sphere_position = gl_Position.xyz / gl_Position.w;

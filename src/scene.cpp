@@ -968,12 +968,19 @@ void Scene::render(void){
         sh_points->setUniform("MVMatrix", 1, viewMatrix * modelMatrix);
         sh_points->setUniform("ProjectionMatrix", 1, projectionMatrix);
 
+        if(is_clip_plane_activated_){
+            glEnable(GL_CLIP_DISTANCE0);
+            sh_points->setUniform("clip_plane", 1, clip_plane_);
+        }
+
         for(auto pid_itr = draw_pids.begin(); pid_itr != draw_points_end_; ++pid_itr){
             auto pid = *pid_itr;
             if(particle_flags[pid] & ParticleFlags::Hidden) continue;
             sh_points->setUniform("ModelMatrix", 1, model_matrices[pid]);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
+
+        if(is_clip_plane_activated_) glDisable(GL_CLIP_DISTANCE0);
         glDisable(GL_BLEND);
     }
 
