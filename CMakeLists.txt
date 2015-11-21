@@ -32,6 +32,7 @@ if(UNIX)
         INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:$ORIGIN/")
 endif()
 
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/lua-5.2.4")
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.12.0")
 #set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared libraries")
 set(BUILD_SHARED_LIBS ON)
@@ -42,6 +43,7 @@ find_package(OpenGL REQUIRED)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
+    "${CMAKE_SOURCE_DIR}/external/lua-5.2.4/src"
     "${CMAKE_SOURCE_DIR}/external/glfw-3.1.1/include"
     "${CMAKE_SOURCE_DIR}/external/glm-0.9.6.3"
     "${CMAKE_SOURCE_DIR}/external/maan"
@@ -49,9 +51,10 @@ include_directories(
 
 set(EXTERNAL_LIBS
     glfw
+    liblua
     GLEW_shared)
 
-target_link_libraries(main ${OPENGL_gl_LIBRARY} lua ${EXTERNAL_LIBS})
+target_link_libraries(main ${OPENGL_gl_LIBRARY} ${EXTERNAL_LIBS})
 
 install(TARGETS main DESTINATION ${CMAKE_SOURCE_DIR})
 
