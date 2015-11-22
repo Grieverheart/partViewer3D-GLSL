@@ -1,5 +1,6 @@
 #include "include/shader.h"
-#include <GL/glew.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glcorearb.h>
 #include <glm/glm.hpp>
 #include <cstdio>
 

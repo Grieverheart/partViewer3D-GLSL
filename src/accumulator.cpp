@@ -1,5 +1,6 @@
 #include "include/accumulator.h"
-#include <GL/glew.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glcorearb.h>
 #include <cstdio>
 
 Accumulator::Accumulator(void):

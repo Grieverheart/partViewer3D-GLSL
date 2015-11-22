@@ -1,10 +1,16 @@
 #include "include/scene.h"
-#include <GL/glew.h>
+
+#define GL_GLEXT_PROTOTYPES
+#include <GL/glcorearb.h>
 
 #ifdef _WIN32
-#include <GL/wglew.h>
+#define WGL_WGLEXT_PROTOTYPES
+#include <GL/wgl.h>
+#include <GL/wglext.h>
 #elif __linux
-#include <GL/glxew.h>
+#define GLX_GLXEXT_PROTOTYPES
+#include <GL/glx.h>
+#include <GL/glxext.h>
 #endif
 
 #include <algorithm>
@@ -50,11 +56,6 @@ Scene::Scene(int width, int height):
     grid(nullptr),
     fontManager_(new Text::FontManager())
 {
-	glewExperimental = GL_TRUE;
-	GLenum error = glewInit(); //Enable GLEW
-	if(error != GLEW_OK) throw GlewInitializationException();
-	glError(__FILE__,__LINE__);
-
 	int glVersion[2] = {-1,1};
 	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
 	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
