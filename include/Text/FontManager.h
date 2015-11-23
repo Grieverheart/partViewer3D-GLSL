@@ -3,6 +3,7 @@
 
 #include <map>
 #include <cstdint>
+#include <string>
 #include "stb_truetype.h"
 
 //TODO: Add kerning.

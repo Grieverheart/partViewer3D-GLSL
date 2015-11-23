@@ -180,7 +180,7 @@ Grid::Grid(const SimConfig& config):
 {
     is_ignored = new bool[config.n_part]{};
     // Find shape out_radius
-    float out_radii[config.n_shapes]{};
+    std::vector<float> out_radii(config.n_shapes, 0);
     for(int shape_id = 0; shape_id < config.n_shapes; ++shape_id){
         if(config.shapes[shape_id].type == Shape::MESH){
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;

@@ -35,7 +35,7 @@ void main(void){
 
 	vec2 TexCoord = TexCoord;
 	vec3 Normal = texture(NormalMap, TexCoord).xyz;
-	if(Normal != 0.0){
+	if(Normal != vec3(0.0)){
 		vec3 Position = CalcPosition();
 		Normal = normalize(Normal);
 		mat3 RotationMatrix = RADIUS * CalcRMatrix(Normal, TexCoord);

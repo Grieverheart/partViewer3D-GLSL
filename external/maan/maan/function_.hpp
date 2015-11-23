@@ -30,8 +30,26 @@ namespace maan{
         //}
 
         template<typename...ArgsT>
-        std::tuple<ArgsT...> get_args(lua_State* L){
-            return std::forward_as_tuple(get_LuaValue<ArgsT>(L)...);
+        struct arg_extr;
+
+        template<typename T, typename...ArgsT>
+        struct arg_extr<T, ArgsT...>{
+            static inline std::tuple<T&&, ArgsT&&...> get_args(lua_State* L){
+                auto args = arg_extr<ArgsT...>::get_args(L);
+                return std::tuple_cat(std::forward_as_tuple(get_LuaValue<T>(L)), std::move(args));
+            }
+        };
+
+        template<>
+        struct arg_extr<>{
+            static inline std::tuple<> get_args(lua_State* L){
+                return std::make_tuple();
+            }
+        };
+
+        template<typename...ArgsT>
+        std::tuple<ArgsT&&...> get_args(lua_State* L){
+            return arg_extr<ArgsT...>::get_args(L);
         }
 
         struct Functor{
@@ -119,7 +137,7 @@ namespace maan{
     }
 
     //TODO: function_ should write to current table instead of global one.
-    template<class R, typename...ArgsT, typename T = R(ArgsT...)>
+    template<class R, typename...ArgsT, typename T>
     void function_(lua_State* L, const char* name, R (*func)(ArgsT...)){
         using F = detail::OverloadableFunctor<T>;
 
@@ -141,7 +159,7 @@ namespace maan{
         }
     }
 
-    template<class R, typename...ArgsT, typename T = R(ArgsT...)>
+    template<class R, typename...ArgsT, typename T>
     void function_(lua_State* L, const char* name, std::function<R(ArgsT...)> func){
         using F = detail::OverloadableFunctor<T>;
 
@@ -163,7 +181,7 @@ namespace maan{
         }
     }
 
-    template<class C, class R, typename...ArgsT, typename T = R(ArgsT...)>
+    template<class C, class R, typename...ArgsT, typename T>
     void function_(lua_State* L, const char* name, R (C::*func)(ArgsT...)const, const C* singleton){
         using F = detail::OverloadableFunctor<T>;
 
@@ -185,7 +203,7 @@ namespace maan{
         }
     }
 
-    template<class C, class R, typename...ArgsT, typename T = R(ArgsT...)>
+    template<class C, class R, typename...ArgsT, typename T>
     void function_(lua_State* L, const char* name, R (C::*func)(ArgsT...), C* singleton){
         using F = detail::OverloadableFunctor<T>;
 

@@ -25,16 +25,9 @@ static inline bool validateProgram(GLuint program){
 	
 	if(length>0){
 		printf("Program %d link error: %s\n", program, buffer);
+        return false;
 	}
-	
-	glValidateProgram(program);
-	GLint status;
-	glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
-	
-	if(status == GL_FALSE){
-		printf("Error validating program %d.\n", program);
-		return false;
-	}
+
 	return true;
 }
 

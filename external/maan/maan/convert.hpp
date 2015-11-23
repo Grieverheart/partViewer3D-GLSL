@@ -81,18 +81,18 @@ namespace maan{
         lua_pushnumber(L, val);
     }
 
+    template<typename T>
+    using bare_type = typename std::remove_const<typename std::remove_reference<T>::type>::type;
 
     //TODO: Perhaps we should return a reference.
-    template<
-        class T,
-        typename type_ = typename std::remove_const<typename std::remove_reference<T>::type>::type
-    >
-    EnableIf<std::is_class<type_>,
+    template<class T>
+    EnableIf<std::is_class<bare_type<T>>,
     T> get_LuaValue(lua_State* L){
+        using type_ = bare_type<T>;
         //We didn't get a userdatum! Raise error.
         if(!lua_isuserdata(L, -1)){
             const char* expected_name = detail::get_class_name<type_>(L);
-            detail::typeerror(L, -1, expected_name, luaL_typename(L, -1));
+            detail::typeerror(L, lua_gettop(L), expected_name, luaL_typename(L, -1));
         }
 
         //Check if we get userdata of the expected type by comparing the metatables.
@@ -103,7 +103,7 @@ namespace maan{
             lua_pop(L, 1);
             const char* got_name = detail::get_class_name(L, -1);
             lua_pop(L, 1);
-            detail::typeerror(L, -1, expected_name, got_name);
+            detail::typeerror(L, lua_gettop(L), expected_name, got_name);
         }
         lua_pop(L, 2);
 

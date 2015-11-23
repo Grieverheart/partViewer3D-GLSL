@@ -78,7 +78,7 @@ bool isEdge(vec3 normal){
 void main(void){
 
     vec4 NormalAO = texture(NormalMap, TexCoord); //Assume normalized
-    if(NormalAO.xyz != 0.0){
+    if(NormalAO.xyz != vec3(0.0)){
         float Depth = texture(DepthMap, TexCoord).r;
         vec3 Position = CalcPosition(Depth);
 

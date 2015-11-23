@@ -8,6 +8,8 @@
 #include <windows.h>
 #elif __linux
 #include <ctime>
+#elif __APPLE__
+#include <mach/mach_time.h>
 #endif
 
 #ifdef _MSC_VER
@@ -28,6 +30,11 @@ public:
         LARGE_INTEGER li;
         QueryPerformanceFrequency(&li);
         cpu_freq = li.QuadPart; //ns
+#elif __APPLE__
+        mach_timebase_info_data_t tb{};
+        mach_timebase_info(&tb);
+        orwl_timebase = tb.numer;
+        orwl_timebase /= tb.denom;
 #endif
     }
 
@@ -77,6 +84,10 @@ public:
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
         return ts.tv_sec * NS_IN_SEC + ts.tv_nsec;
+#elif __APPLE__
+        return mach_absolute_time() * orwl_timebase;
+#else
+#error Not implemented for current platform.
 #endif
     }
 
@@ -97,6 +108,8 @@ private:
     };
 #ifdef _WIN32
     uint64_t cpu_freq;
+#elif __APPLE__
+    double orwl_timebase;
 #endif
 
     unsigned int curr_frame_;

@@ -87,7 +87,7 @@ Scene::Scene(int width, int height):
         sh_gbuffer             = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
         sh_gbuffer_instanced   = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
         sh_ssao                = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
-        sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert");
+        sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert", "shaders/shadowmap_instanced.frag");
         sh_shadowmap_spheres   = new Shader("shaders/shadowmap_spheres.vert", "shaders/shadowmap_spheres.frag");
         sh_blur                = new Shader("shaders/blur.vert", "shaders/blur.frag");
         sh_accumulator         = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
@@ -493,6 +493,7 @@ void Scene::load_scene(const SimConfig& config){
     }
 }
 
+//TODO: Handle Orthographic projection correctly.
 bool Scene::raytrace(int x, int y, int& pid){
     glm::mat4 imodel_matrix = glm::inverse(modelMatrix);
     glm::vec3 o = glm::vec3(imodel_matrix * invViewMatrix * glm::vec4(glm::vec3(0.0), 1.0));
@@ -848,6 +849,7 @@ void Scene::render(void){
                         glColorMaski(0, GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
                         glDisable(GL_STENCIL_TEST);
                         glDisable(GL_CLIP_DISTANCE0);
+                        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
                     }
                 }
                 else{
@@ -879,6 +881,8 @@ void Scene::render(void){
             }
         }
 
+        //TODO: What's happening here?!
+        glBindVertexArray(fullscreen_triangle_vao);
         //"SSAO Pass"
         {
             glDisable(GL_CULL_FACE);
@@ -903,8 +907,9 @@ void Scene::render(void){
 
             //"SSAO Blur Pass"
 
-            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
             m_gbuffer.Bind();
+            glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
+            glClear(GL_COLOR_BUFFER_BIT);
             m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
 
             sh_blur->bind();
@@ -915,9 +920,6 @@ void Scene::render(void){
             }
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
         }
-
-
-        //glBindVertexArray(fullscreen_triangle_vao);
 
         //"Gather Pass"
         {

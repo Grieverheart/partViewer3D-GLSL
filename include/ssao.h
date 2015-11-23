@@ -35,7 +35,6 @@ private:
 	
 	unsigned int m_kernel_size;
 	unsigned int m_noise_size;
-	unsigned int m_noise_scale;
 
 	unsigned int m_noise_texture;
 	unsigned int m_ssaoTexture;
