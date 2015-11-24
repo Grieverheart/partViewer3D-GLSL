@@ -15,6 +15,7 @@
 
 #include <algorithm>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include "include/Text/FontManager.h"
 #include "include/gl_utils.h"
 #include "include/shader.h"
@@ -53,6 +54,7 @@ Scene::Scene(int width, int height):
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
     sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr),
     sh_spheres(nullptr), sh_shadowmap_spheres(nullptr), sh_points(nullptr),
+    sh_text(nullptr), sh_qual_line(nullptr),
     grid(nullptr),
     fontManager_(new Text::FontManager())
 {
@@ -99,6 +101,7 @@ Scene::Scene(int width, int height):
         sh_color_sphere        = new Shader("shaders/color_sphere.vert", "shaders/color_sphere.frag");
         sh_points              = new Shader("shaders/points.vert", "shaders/points.frag");
         sh_text                = new Shader("shaders/text.vert", "shaders/text.frag");
+        sh_qual_line           = new Shader("shaders/quad_line.vert", "shaders/quad_line.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -116,6 +119,7 @@ Scene::Scene(int width, int height):
         delete sh_color_sphere;
         delete sh_points;
         delete sh_text;
+        delete sh_qual_line;
         throw;
     }
 
@@ -134,18 +138,10 @@ Scene::Scene(int width, int height):
 
     glGenBuffers(1, &vboBox);
     glBindBuffer(GL_ARRAY_BUFFER, vboBox);
-    glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray((GLuint)0);
-
-    GLushort elements[] = {
-        3, 6, 7, 5,
-        1, 4, 2, 0,
-        7, 4, 2, 6, 1, 0, 3, 5
-    };
-
-    glGenBuffers(1, &iboBox);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, iboBox);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(elements), elements, GL_STATIC_DRAW);
+    glVertexAttribPointer((GLuint)0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), 0);
+    glEnableVertexAttribArray((GLuint)1);
+    glVertexAttribPointer((GLuint)1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (const GLvoid*)(3 * sizeof(float)));
 
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -255,6 +251,7 @@ Scene::~Scene(void){
 	delete sh_color_sphere;
     delete sh_points;
 	delete sh_text;
+    delete sh_qual_line;
 
 	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
 	if(n_shapes) glDeleteBuffers(n_shapes, shape_vbos);
@@ -304,23 +301,54 @@ void Scene::load_scene(const SimConfig& config){
             -config.box[2][2] / 2.0
         );
 
-        glm::vec3 vertices[] = {
-            glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3(config.box[0][0], config.box[1][0], config.box[2][0]),
-            glm::vec3(config.box[0][1], config.box[1][1], config.box[2][1]),
-            glm::vec3(config.box[0][2], config.box[1][2], config.box[2][2]),
-            glm::vec3(config.box[0][0] + config.box[0][1], config.box[1][0] + config.box[1][1], config.box[2][0] + config.box[2][1]),
-            glm::vec3(config.box[0][0] + config.box[0][2], config.box[1][0] + config.box[1][2], config.box[2][0] + config.box[2][2]),
-            glm::vec3(config.box[0][1] + config.box[0][2], config.box[1][1] + config.box[1][2], config.box[2][1] + config.box[2][2]),
-            glm::vec3(config.box[0][0] + config.box[0][1] + config.box[0][2],
-                      config.box[1][0] + config.box[1][1] + config.box[1][2],
-                      config.box[2][0] + config.box[2][1] + config.box[2][2])
+        ////////////////////////
+        //                    //
+        //    6 +--------+ 7  //
+        //     /|       /|    //
+        //    / |    4 / |    //
+        // 2 +--------+  |    //
+        //   |  |     |  |    //
+        //   |3 +-----|--+ 5  //
+        //   | /      | /     //
+        //   |/       |/      //
+        // 0 +--------+ 1     //
+        //                    //
+        ////////////////////////
+
+        glm::vec3 box_vertices[] = {
+            /* 0 */ glm::vec3(0.0f, 0.0f, 0.0f),
+            /* 1 */ glm::column(config.box, 0),
+            /* 2 */ glm::column(config.box, 1),
+            /* 3 */ glm::column(config.box, 2),
+            /* 4 */ glm::column(config.box, 0) + glm::column(config.box, 1),
+            /* 5 */ glm::column(config.box, 0) + glm::column(config.box, 2),
+            /* 6 */ glm::column(config.box, 1) + glm::column(config.box, 2),
+            /* 7 */ glm::column(config.box, 0) + glm::column(config.box, 1) + glm::column(config.box, 2),
         };
 
-        for(size_t i = 0; i < 8; ++i) vertices[i] += offset;
+        for(size_t i = 0; i < 8; ++i) box_vertices[i] += offset;
+
+        size_t vertex_ids[] = {
+            0, 1, 3, 5, //bottom
+            3, 5, 6, 7, //back
+            6, 7, 2, 4, //top
+            3, 6, 0, 2,//left
+            0, 2, 1, 4, //front
+            1, 4, 5, 7  //right
+        };
+
+        float* vertex_data = new float[24 * 5];
+        for(size_t qid = 0; qid < 6; ++qid){
+            for(size_t vid = 0; vid < 4; ++vid){
+                std::copy(&box_vertices[vertex_ids[4 * qid + vid]].x, &box_vertices[vertex_ids[4 * qid + vid]].z + 1, &vertex_data[20 * qid + 5 * vid]);
+                vertex_data[20 * qid + 5 * vid + 3] = float(vid & 1);
+                vertex_data[20 * qid + 5 * vid + 4] = float((vid & 2) >> 1);
+                printf("%lu, %lu\n", vid & 1, (vid & 2) >> 1);
+            }
+        }
 
         glBindBuffer(GL_ARRAY_BUFFER, vboBox);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * 8, vertices, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 120, vertex_data, GL_STATIC_DRAW);
     }
 
     out_radius_ = glm::length(glm::vec3(
@@ -635,7 +663,6 @@ void Scene::process(void){
         }
     );
 
-    //TODO: Cache model_matrices[i] * glm::vec4(particles[i].pos, 1.0)
     double* depths = new double[n_particles];
     auto mv_matrix = viewMatrix * modelMatrix;
     for(int i = 0; i < n_particles; ++i){
@@ -654,6 +681,7 @@ void Scene::process(void){
             return (depths[i] > depths[j]);
         }
     );
+
     delete[] depths;
 }
 
@@ -678,15 +706,15 @@ void Scene::set_projection_type(Projection ptype){
 //TODO: Improve line rendering!!!
 void Scene::drawConfigurationBox(void)const{
 
-	glLineWidth(fabs(-0.067f * zoom_ + 4.0f));
+	//glLineWidth(fabs(-0.067f * zoom_ + 4.0f));
 
 	glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
-	sh_gbuffer->setUniform("MVPMatrix", 1, MVPMatrix);
-	sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
+	sh_qual_line->setUniform("MVPMatrix", 1, MVPMatrix);
+	//sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
 
 	glBindVertexArray(vaoBox);
-	glDrawElements(GL_LINE_LOOP, 8, GL_UNSIGNED_SHORT, 0);
-	glDrawElements(GL_LINES, 8, GL_UNSIGNED_SHORT, (GLvoid*)(8*sizeof(GLushort)));
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 12);
+	glDrawArrays(GL_TRIANGLE_STRIP, 12, 12);
 }
 
 void Scene::render(void){
@@ -924,8 +952,10 @@ void Scene::render(void){
         //"Gather Pass"
         {
             //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
-            glDepthMask(GL_TRUE);
-            glEnable(GL_DEPTH_TEST);
+            if(drawBox){
+                glDepthMask(GL_TRUE);
+                glEnable(GL_DEPTH_TEST);
+            }
             m_accumulator.Bind();
 
             m_gbuffer.BindTexture(CGBuffer::GBUFF_TEXTURE_TYPE_DIFFUSE, 0);
@@ -954,9 +984,13 @@ void Scene::render(void){
     }
 
     if(drawBox){
-        sh_gbuffer->bind();
+        sh_qual_line->bind();
         {
+            glEnable(GL_BLEND);
+            glDepthMask(GL_TRUE);
+            glDisable(GL_CULL_FACE);
             drawConfigurationBox();
+            glDisable(GL_BLEND);
         }
     }
 

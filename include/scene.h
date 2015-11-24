@@ -191,6 +191,7 @@ private:
 	Shader* sh_color_sphere;
 	Shader* sh_points;
 	Shader* sh_text;
+	Shader* sh_qual_line;
 
     Grid* grid;
 
