@@ -145,7 +145,6 @@ private:
 
 	unsigned int vaoBox;
 	unsigned int vboBox;
-	unsigned int iboBox;
 	unsigned int plane_vao;
 	unsigned int plane_vbo;
 	unsigned int quad_vao;
@@ -191,7 +190,7 @@ private:
 	Shader* sh_color_sphere;
 	Shader* sh_points;
 	Shader* sh_text;
-	Shader* sh_qual_line;
+	Shader* sh_quad_line;
 
     Grid* grid;
 

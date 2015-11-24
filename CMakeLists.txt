@@ -25,7 +25,7 @@ add_executable(main ${SOURCE_FILES})
 
 if(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU" OR
    ${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "-Wall -Wno-comment -Wno-strict-aliasing -O0 -std=c++11 -g -march=native")
+    set(CMAKE_CXX_FLAGS "-Wall -Wno-comment -Wno-strict-aliasing -O3 -std=c++11 -g -march=native")
 endif()
 
 if(UNIX AND NOT APPLE)

@@ -110,7 +110,7 @@ if (UNIX)
     add_definitions(-Wall)
 
     if (BUILD_SHARED_LIBS)
-        add_definitions(-fvisibility=hidden)
+        add_definitions(-fvisibility=hidden -O3)
     endif()
 endif()
 

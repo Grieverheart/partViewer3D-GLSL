@@ -46,7 +46,7 @@ Scene::Scene(int width, int height):
 	shape_vaos(nullptr), shape_vbos(nullptr),
     particle_flags(nullptr),
     particles(nullptr), shapes(nullptr), n_shapes(0), n_particles(0),
-    vaoBox(0), vboBox(0), iboBox(0), fullscreen_triangle_vao(0),
+    vaoBox(0), vboBox(0), fullscreen_triangle_vao(0),
     is_scene_loaded(false), is_clip_plane_activated_(false), drawBox(false), m_blur(true),
     projection_type(Projection::PERSPECTIVE),
 	light(glm::vec3(-0.27, -0.91, -0.33)),
@@ -54,7 +54,7 @@ Scene::Scene(int width, int height):
     sh_shadowmap_instanced(nullptr), sh_blur(nullptr), sh_accumulator(nullptr),
     sh_edge_detection(nullptr), sh_blend_weights(nullptr), sh_blend(nullptr),
     sh_spheres(nullptr), sh_shadowmap_spheres(nullptr), sh_points(nullptr),
-    sh_text(nullptr), sh_qual_line(nullptr),
+    sh_text(nullptr), sh_quad_line(nullptr),
     grid(nullptr),
     fontManager_(new Text::FontManager())
 {
@@ -101,7 +101,7 @@ Scene::Scene(int width, int height):
         sh_color_sphere        = new Shader("shaders/color_sphere.vert", "shaders/color_sphere.frag");
         sh_points              = new Shader("shaders/points.vert", "shaders/points.frag");
         sh_text                = new Shader("shaders/text.vert", "shaders/text.frag");
-        sh_qual_line           = new Shader("shaders/quad_line.vert", "shaders/quad_line.frag");
+        sh_quad_line           = new Shader("shaders/quad_line.vert", "shaders/quad_line.frag");
     }
     catch(Shader::InitializationException){
         delete sh_gbuffer;
@@ -119,7 +119,7 @@ Scene::Scene(int width, int height):
         delete sh_color_sphere;
         delete sh_points;
         delete sh_text;
-        delete sh_qual_line;
+        delete sh_quad_line;
         throw;
     }
 
@@ -251,7 +251,7 @@ Scene::~Scene(void){
 	delete sh_color_sphere;
     delete sh_points;
 	delete sh_text;
-    delete sh_qual_line;
+    delete sh_quad_line;
 
 	if(n_shapes) glDeleteVertexArrays(n_shapes, shape_vaos);
 	if(n_shapes) glDeleteBuffers(n_shapes, shape_vbos);
@@ -267,7 +267,6 @@ Scene::~Scene(void){
 
 	glDeleteVertexArrays(1, &vaoBox);
 	glDeleteBuffers(1, &vboBox);
-	glDeleteBuffers(1, &iboBox);
 
 	glDeleteVertexArrays(1, &fullscreen_triangle_vao);
 }
@@ -343,7 +342,6 @@ void Scene::load_scene(const SimConfig& config){
                 std::copy(&box_vertices[vertex_ids[4 * qid + vid]].x, &box_vertices[vertex_ids[4 * qid + vid]].z + 1, &vertex_data[20 * qid + 5 * vid]);
                 vertex_data[20 * qid + 5 * vid + 3] = float(vid & 1);
                 vertex_data[20 * qid + 5 * vid + 4] = float((vid & 2) >> 1);
-                printf("%lu, %lu\n", vid & 1, (vid & 2) >> 1);
             }
         }
 
@@ -709,7 +707,7 @@ void Scene::drawConfigurationBox(void)const{
 	//glLineWidth(fabs(-0.067f * zoom_ + 4.0f));
 
 	glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
-	sh_qual_line->setUniform("MVPMatrix", 1, MVPMatrix);
+	sh_quad_line->setUniform("MVPMatrix", 1, MVPMatrix);
 	//sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
 
 	glBindVertexArray(vaoBox);
@@ -937,7 +935,6 @@ void Scene::render(void){
 
             m_gbuffer.Bind();
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
-            glClear(GL_COLOR_BUFFER_BIT);
             m_ssao.BindTexture(Cssao::TEXTURE_TYPE_SSAO, 0);
 
             sh_blur->bind();
@@ -984,7 +981,7 @@ void Scene::render(void){
     }
 
     if(drawBox){
-        sh_qual_line->bind();
+        sh_quad_line->bind();
         {
             glEnable(GL_BLEND);
             glDepthMask(GL_TRUE);
@@ -998,7 +995,7 @@ void Scene::render(void){
     if(draw_points_end_ != draw_pids.begin()){
         glEnable(GL_BLEND);
         //glDisable(GL_DEPTH_TEST);
-        glBindVertexArray(quad_vao);
+        glBindVertexArray(fullscreen_triangle_vao);
 
         sh_points->bind();
 

@@ -56,7 +56,7 @@ void main(void){
         result += tex.r * weight;
         weights += weight;
 
-        tex = textureOffset(aoSampler, TexCoord, offset[6]);
+        tex = textureOffset(aoSampler, TexCoord, offset[7]);
         weight = step(0.9, dot(tex.gba, normal));
         result += tex.r * weight;
         weights += weight;

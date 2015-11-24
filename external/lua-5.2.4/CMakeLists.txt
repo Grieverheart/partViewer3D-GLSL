@@ -126,6 +126,10 @@ set ( SRC_LUAC src/luac.c )
 
 ## BUILD
 # Create lua library
+if(${CMAKE_C_COMPILER_ID} MATCHES "GNU" OR
+   ${CMAKE_C_COMPILER_ID} MATCHES "Clang")
+    set(CMAKE_C_FLAGS "-Wall -O3")
+endif()
 add_library ( liblua SHARED ${SRC_CORE} ${SRC_LIB} ${LUA_DLL_RC} ${LUA_DEF} )
 target_link_libraries ( liblua ${LIBS} )
 set_target_properties ( liblua PROPERTIES OUTPUT_NAME lua CLEAN_DIRECT_OUTPUT 1 )
