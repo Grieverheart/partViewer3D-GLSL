@@ -30,5 +30,5 @@
 --Add functionality for changing color, outline, etc. in point drawing mode.
 --Perhaps add the ability to draw individual particles as points.
 --Handle clipping with point drawing.
-Draw lines with shader.
+--Draw lines with shader.
 Add suport for multiple windows.

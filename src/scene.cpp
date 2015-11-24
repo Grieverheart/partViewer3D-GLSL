@@ -63,6 +63,7 @@ Scene::Scene(int width, int height):
 	skycolor(0.529, 0.808, 0.921),
     point_radius_(0.2f), point_outline_radius_(0.14f),
     point_color_(0.05, 0.05, 0.05, 0.5), point_outline_color_(0.0, 0.0, 0.0, 0.5),
+    line_width_(0.01),
     clip_plane_{0.0, 0.0, -1.0, 0.0},
 	shape_vaos(nullptr), shape_vbos(nullptr),
     particle_flags(nullptr),
@@ -674,6 +675,10 @@ void Scene::set_projection(void){
     }
 }
 
+void Scene::set_box_line_width(float linewidth){
+    line_width_ = linewidth;
+}
+
 void Scene::set_projection_type(Projection ptype){
     projection_type = ptype;
 }
@@ -681,11 +686,9 @@ void Scene::set_projection_type(Projection ptype){
 //TODO: Improve line rendering!!!
 void Scene::drawConfigurationBox(void)const{
 
-	//glLineWidth(fabs(-0.067f * zoom_ + 4.0f));
-
 	glm::mat4 MVPMatrix = projectionMatrix * viewMatrix * modelMatrix;
 	sh_quad_line->setUniform("MVPMatrix", 1, MVPMatrix);
-	//sh_gbuffer->setUniform("diffColor", 0.01f, 0.01f, 0.01f);
+	sh_quad_line->setUniform("line_width", line_width_);
 
 	glBindVertexArray(vaoBox);
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 12);

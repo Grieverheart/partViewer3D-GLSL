@@ -462,6 +462,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("set_point_outline_radius", &Scene::set_point_outline_radius, scene)
         .function_("set_point_color", &Scene::set_point_color, scene)
         .function_("set_point_outline_color", &Scene::set_point_outline_color, scene)
+        .function_("set_box_line_width", &Scene::set_box_line_width, scene)
         .function_("is_selected", &Scene::is_selected, scene)
         .function_("clear_selection", &Scene::clear_selection, scene)
         .function_("enable_clip_plane", &Scene::enable_clip_plane, scene)

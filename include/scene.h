@@ -63,6 +63,8 @@ public:
     void set_point_color(const glm::vec4&);
     void set_point_outline_color(const glm::vec4&);
 
+    void set_box_line_width(float);
+
     void set_projection_type(Projection);
 
     glm::mat4 get_view_matrix(void)const;
@@ -129,6 +131,8 @@ private:
     float point_outline_radius_;
 	glm::vec4 point_color_;
 	glm::vec4 point_outline_color_;
+
+    float line_width_;
 
     glm::vec4 clip_plane_;
 
