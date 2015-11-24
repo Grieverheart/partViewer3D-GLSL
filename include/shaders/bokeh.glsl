@@ -1,3 +1,4 @@
+static const char bokeh_frag[] = R"(
 #version 330 core
 
 uniform sampler2D bgl_RenderedTexture;
@@ -303,3 +304,17 @@ void main()
 	out_Color.rgb = col;
 	out_Color.a = 1.0;
 }
+)";
+static const char bokeh_vert[] = R"(
+#version 330 core
+
+layout(location = 0) in vec3 in_Position;
+layout(location = 2) in vec2 in_TexCoord;
+
+noperspective out vec2 pass_TexCoord;
+
+void main(void){
+	pass_TexCoord = in_TexCoord;
+	gl_Position = vec4(in_Position, 1.0);
+}
+)";

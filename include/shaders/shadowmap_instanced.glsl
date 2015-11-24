@@ -1,3 +1,10 @@
+static const char shadowmap_instanced_frag[] = R"(
+#version 330 core
+
+void main(void){
+}
+)";
+static const char shadowmap_instanced_vert[] = R"(
 #version 330 core
 
 uniform mat4 MVPMatrix;
@@ -10,3 +17,4 @@ void main(void){
     gl_ClipDistance[0] = dot(clip_plane, ModelMatrix * vec4(in_Position, 1.0));
 	gl_Position = MVPMatrix * ModelMatrix * vec4(in_Position, 1.0);
 }
+)";

@@ -1,3 +1,4 @@
+static const char blur_frag[] = R"(
 #version 330 core
 
 uniform sampler2D aoSampler;
@@ -65,3 +66,17 @@ void main(void){
     }
     else out_AO = vec4(vec3(0.0), texture(aoSampler, TexCoord).r);
 }
+)";
+static const char blur_vert[] = R"(
+#version 330 core
+
+noperspective out vec2 TexCoord;
+
+void main(void){
+	TexCoord.x = (gl_VertexID == 2)? 2.0: 0.0;
+	TexCoord.y = (gl_VertexID == 1)? 2.0: 0.0;
+    vec4 position = vec4(TexCoord * 2.0 - 1.0, 0.0, 1.0);
+	
+	gl_Position = position;
+}
+)";

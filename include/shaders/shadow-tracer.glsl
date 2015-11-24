@@ -1,3 +1,4 @@
+static const char shadow_tracer_frag[] = R"(
 #version 330 core
 
 uniform sampler2D DepthMap;
@@ -81,3 +82,4 @@ void main(void){
 		if(pixIndex.x < 0 || pixIndex.x > 600 || pixIndex.y < 0 || pixIndex.y > 600) break;
 	}
 }
+)";

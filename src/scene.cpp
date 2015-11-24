@@ -24,6 +24,24 @@
 #include "include/smaa/smaa_area.h"
 #include "include/smaa/smaa_search.h"
 
+//Include shaders
+#include "include/shaders/accumulator.glsl"
+#include "include/shaders/blur.glsl"
+#include "include/shaders/color.glsl"
+#include "include/shaders/color_sphere.glsl"
+#include "include/shaders/gbuffer.glsl"
+#include "include/shaders/gbuffer_instanced.glsl"
+#include "include/shaders/points.glsl"
+#include "include/shaders/quad_line.glsl"
+#include "include/shaders/shadowmap_instanced.glsl"
+#include "include/shaders/shadowmap_spheres.glsl"
+#include "include/shaders/spheres.glsl"
+#include "include/shaders/ssao.glsl"
+#include "include/shaders/text.glsl"
+#include "include/shaders/smaa/blend.glsl"
+#include "include/shaders/smaa/blend_weights.glsl"
+#include "include/shaders/smaa/edge_detection.glsl"
+
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
     0.0, 0.5, 0.0, 0.0,
@@ -88,43 +106,22 @@ Scene::Scene(int width, int height):
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
-    try{
-        sh_gbuffer             = new Shader("shaders/gbuffer.vert", "shaders/gbuffer.frag");
-        sh_gbuffer_instanced   = new Shader("shaders/gbuffer_instanced.vert", "shaders/gbuffer_instanced.frag");
-        sh_ssao                = new Shader("shaders/ssao.vert", "shaders/ssao.frag");
-        sh_shadowmap_instanced = new Shader("shaders/shadowmap_instanced.vert", "shaders/shadowmap_instanced.frag");
-        sh_shadowmap_spheres   = new Shader("shaders/shadowmap_spheres.vert", "shaders/shadowmap_spheres.frag");
-        sh_blur                = new Shader("shaders/blur.vert", "shaders/blur.frag");
-        sh_accumulator         = new Shader("shaders/accumulator.vert", "shaders/accumulator.frag");
-        sh_edge_detection      = new Shader("shaders/smaa/edge_detection.vert", "shaders/smaa/edge_detection.frag");
-        sh_blend_weights       = new Shader("shaders/smaa/blend_weights.vert", "shaders/smaa/blend_weights.frag");
-        sh_blend               = new Shader("shaders/smaa/blend.vert", "shaders/smaa/blend.frag");
-        sh_spheres             = new Shader("shaders/spheres.vert", "shaders/spheres.frag");
-        sh_color               = new Shader("shaders/color.vert", "shaders/color.frag");
-        sh_color_sphere        = new Shader("shaders/color_sphere.vert", "shaders/color_sphere.frag");
-        sh_points              = new Shader("shaders/points.vert", "shaders/points.frag");
-        sh_text                = new Shader("shaders/text.vert", "shaders/text.frag");
-        sh_quad_line           = new Shader("shaders/quad_line.vert", "shaders/quad_line.frag");
-    }
-    catch(Shader::InitializationException){
-        delete sh_gbuffer;
-        delete sh_gbuffer_instanced;
-        delete sh_ssao;
-        delete sh_shadowmap_instanced;
-        delete sh_blur;
-        delete sh_accumulator;
-        delete sh_edge_detection;
-        delete sh_blend_weights;
-        delete sh_blend;
-        delete sh_spheres;
-        delete sh_shadowmap_spheres;
-        delete sh_color;
-        delete sh_color_sphere;
-        delete sh_points;
-        delete sh_text;
-        delete sh_quad_line;
-        throw;
-    }
+    sh_gbuffer             = new Shader(gbuffer_vert, gbuffer_frag);
+    sh_gbuffer_instanced   = new Shader(gbuffer_instanced_vert, gbuffer_instanced_frag);
+    sh_ssao                = new Shader(ssao_vert, ssao_frag);
+    sh_shadowmap_instanced = new Shader(shadowmap_instanced_vert, shadowmap_instanced_frag);
+    sh_shadowmap_spheres   = new Shader(shadowmap_spheres_vert, shadowmap_spheres_frag);
+    sh_blur                = new Shader(blur_vert, blur_frag);
+    sh_accumulator         = new Shader(accumulator_vert, accumulator_frag);
+    sh_edge_detection      = new Shader(edge_detection_vert, edge_detection_frag);
+    sh_blend_weights       = new Shader(blend_weights_vert, blend_weights_frag);
+    sh_blend               = new Shader(blend_vert, blend_frag);
+    sh_spheres             = new Shader(spheres_vert, spheres_frag);
+    sh_color               = new Shader(color_vert, color_frag);
+    sh_color_sphere        = new Shader(color_sphere_vert, color_sphere_frag);
+    sh_points              = new Shader(points_vert, points_frag);
+    sh_text                = new Shader(text_vert, text_frag);
+    sh_quad_line           = new Shader(quad_line_vert, quad_line_frag);
 
     //TODO: Add exceptions
 	if(!m_ssao.Init(windowWidth, windowHeight)) printf("Couldn't initialize SSAO!");

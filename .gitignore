@@ -4,6 +4,7 @@
 *.swp
 *.so*
 *.dylib
+*.trace
 .DS_store
 main
 build/

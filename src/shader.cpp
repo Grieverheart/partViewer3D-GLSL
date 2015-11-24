@@ -35,92 +35,45 @@ Shader::Shader(void):
     shader_id(0)
 {}
 
-Shader::Shader(const char *vsFile, const char *fsFile, const char *gsFile):
+Shader::Shader(const char *vertexText, const char *fragmentText, const char *geometryText):
     shader_id(0)
 {
-	bool isGS = (gsFile != NULL);
-	bool isFS = (fsFile != NULL);
+	bool isGS = (geometryText != NULL);
+	bool isFS = (fragmentText != NULL);
 	
 	shader_id = glCreateProgram();
 	
     {
         unsigned int shader_vp = glCreateShader(GL_VERTEX_SHADER);
-        FILE* fp = fopen(vsFile, "rb");
-        if(!fp){
-            glDeleteShader(shader_vp);
-            glDeleteProgram(shader_id);
-            throw InitializationException("vertex", vsFile);
-        }
 
-        fseek(fp, 0, SEEK_END);
-        size_t file_size = ftell(fp);
-        char* vertexText = new char[file_size + 1];
-        fseek(fp, 0, SEEK_SET);
-        fread(vertexText, file_size, 1, fp);
-        vertexText[file_size] = 0;
-        fclose(fp);
-	
         glShaderSource(shader_vp, 1, &vertexText, 0);
         glCompileShader(shader_vp);
-        validateShader(shader_vp, vsFile);
+        validateShader(shader_vp, vertexText);
         glAttachShader(shader_id, shader_vp);
 
         glDeleteShader(shader_vp);
-
-        delete[] vertexText;
     }
 
 	if(isFS){
         unsigned int shader_fp = glCreateShader(GL_FRAGMENT_SHADER);
-        FILE* fp = fopen(fsFile, "rb");
-        if(!fp){
-            glDeleteShader(shader_fp);
-            glDeleteProgram(shader_id);
-            throw InitializationException("fragment", fsFile);
-        }
-
-        fseek(fp, 0, SEEK_END);
-        size_t file_size = ftell(fp);
-        char* fragmentText = new char[file_size + 1];
-        fseek(fp, 0, SEEK_SET);
-        fread(fragmentText, file_size, 1, fp);
-        fragmentText[file_size] = 0;
-        fclose(fp);
 
         glShaderSource(shader_fp, 1, &fragmentText, 0);
         glCompileShader(shader_fp);
-        validateShader(shader_fp, fsFile);
+        validateShader(shader_fp, fragmentText);
         glAttachShader(shader_id, shader_fp);
 
         glDeleteShader(shader_fp);
-
-        delete[] fragmentText;
     }
 
 	if(isGS){
         unsigned int shader_gp = glCreateShader(GL_GEOMETRY_SHADER);
-        FILE* fp = fopen(gsFile, "rb");
-        if(!fp){
-            glDeleteShader(shader_gp);
-            glDeleteProgram(shader_id);
-            throw InitializationException("geometry", gsFile);
-        }
-        fseek(fp, 0, SEEK_END);
-        size_t file_size = ftell(fp);
-        char* geometryText = new char[file_size + 1];
-        fseek(fp, 0, SEEK_SET);
-        fread(geometryText, file_size, 1, fp);
-        geometryText[file_size] = 0;
-        fclose(fp);
 
 		glShaderSource(shader_gp, 1, &geometryText, 0);
 		glCompileShader(shader_gp);
-		validateShader(shader_gp, gsFile);
+		validateShader(shader_gp, geometryText);
         glAttachShader(shader_id, shader_gp);
 
         glDeleteShader(shader_gp);
-
-        delete[] geometryText;
     }
 	
 	glLinkProgram(shader_id);
