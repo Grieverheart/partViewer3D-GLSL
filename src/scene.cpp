@@ -21,6 +21,9 @@
 #include "include/shader.h"
 #include "include/grid.h"
 
+#include "include/smaa/smaa_area.h"
+#include "include/smaa/smaa_search.h"
+
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
     0.0, 0.5, 0.0, 0.0,
@@ -193,46 +196,23 @@ Scene::Scene(int width, int height):
     }
 
     //Generate and load smaa textures
-    //TODO: Handle read errors!!!
-    FILE* fp = fopen("res/smaa_area.raw", "rb");
-    if(fp){
-        char* buffer = new char[160 * 560 * 2];
+    glGenTextures(1, &area_texture);
+    glBindTexture(GL_TEXTURE_2D, area_texture);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, smaa_area_tex_xlen, smaa_area_tex_ylen, 0, GL_RG, GL_UNSIGNED_BYTE, smaa_area_tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-        fread(buffer, 160 * 560 * 2, 1, fp);
-
-        glGenTextures(1, &area_texture);
-        glBindTexture(GL_TEXTURE_2D, area_texture);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RG8, 160, 560, 0, GL_RG, GL_UNSIGNED_BYTE, buffer);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        delete[] buffer;
-
-        fclose(fp);
-    }
-
-    fp = fopen("res/smaa_search.raw", "rb");
-    if(fp){
-        char* buffer = new char[66 * 33];
-
-        fread(buffer, 66 * 33, 1, fp);
-
-        glGenTextures(1, &search_texture);
-        glBindTexture(GL_TEXTURE_2D, search_texture);
-        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 66, 33, 0, GL_RED, GL_UNSIGNED_BYTE, buffer);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        delete[] buffer;
-
-        fclose(fp);
-    }
+    glGenTextures(1, &search_texture);
+    glBindTexture(GL_TEXTURE_2D, search_texture);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, smaa_search_tex_xlen, smaa_search_tex_ylen, 0, GL_RED, GL_UNSIGNED_BYTE, smaa_search_tex);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
 Scene::~Scene(void){
