@@ -499,14 +499,25 @@ void Scene::load_scene(const SimConfig& config){
 
 //TODO: Handle Orthographic projection correctly.
 bool Scene::raytrace(int x, int y, int& pid){
-    glm::mat4 imodel_matrix = glm::inverse(modelMatrix);
-    glm::vec3 o = glm::vec3(imodel_matrix * invViewMatrix * glm::vec4(glm::vec3(0.0), 1.0));
-    glm::vec4 mouse_clip = glm::vec4(2.0f * x / windowWidth - 1.0f, 1.0f - 2.0f * y / windowHeight, 0.0, 1.0);
-    glm::vec4 dir = imodel_matrix * invViewMatrix * invProjMatrix * mouse_clip;
-    dir /= dir.w;
+    glm::vec3 ray_origin, ray_dir;
+    if(projection_type == Projection::PERSPECTIVE){
+        glm::mat4 imodel_matrix = glm::inverse(modelMatrix);
+        glm::vec3 o = glm::vec3(imodel_matrix * invViewMatrix * glm::vec4(glm::vec3(0.0), 1.0));
+        glm::vec4 mouse_clip = glm::vec4(2.0f * x / windowWidth - 1.0f, 1.0f - 2.0f * y / windowHeight, 0.0f, 1.0f);
+        glm::vec4 dir = imodel_matrix * invViewMatrix * invProjMatrix * mouse_clip;
+        dir /= dir.w;
 
-    glm::vec3 ray_origin = o;
-    glm::vec3 ray_dir = glm::normalize(glm::vec3(dir) - o);
+        ray_origin = o;
+        ray_dir    = glm::normalize(glm::vec3(dir) - o);
+    }
+    else{
+        glm::mat4 imodel_matrix = glm::inverse(modelMatrix);
+        glm::vec4 mouse_clip = glm::vec4(2.0f * x / windowWidth - 1.0f, 1.0f - 2.0f * y / windowHeight, -1.0f, 1.0f);
+        glm::vec4 o = imodel_matrix * invViewMatrix * invProjMatrix * mouse_clip;
+
+        ray_origin = glm::vec3(o) / o.w;
+        ray_dir    = glm::mat3(imodel_matrix) * glm::mat3(invViewMatrix) * glm::vec3(0.0, 0.0, -1.0);
+    }
 
     if(is_clip_plane_activated_){
         float t = -(glm::dot(ray_origin, glm::vec3(clip_plane_)) + clip_plane_.w) / glm::dot(ray_dir, glm::vec3(clip_plane_));
