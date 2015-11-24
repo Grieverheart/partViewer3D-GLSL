@@ -34,7 +34,7 @@ namespace maan{
 
         template<typename T, typename...ArgsT>
         struct arg_extr<T, ArgsT...>{
-            static inline std::tuple<T&&, ArgsT&&...> get_args(lua_State* L){
+            static inline std::tuple<T, ArgsT...> get_args(lua_State* L){
                 auto args = arg_extr<ArgsT...>::get_args(L);
                 return std::tuple_cat(std::forward_as_tuple(get_LuaValue<T>(L)), std::move(args));
             }
@@ -48,7 +48,7 @@ namespace maan{
         };
 
         template<typename...ArgsT>
-        std::tuple<ArgsT&&...> get_args(lua_State* L){
+        std::tuple<ArgsT...> get_args(lua_State* L){
             return arg_extr<ArgsT...>::get_args(L);
         }
 
