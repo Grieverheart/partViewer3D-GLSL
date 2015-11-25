@@ -1,6 +1,5 @@
 #include "include/g-buffer.h"
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glcorearb.h>
+#include <GL/glew.h>
 #include <cstdio>
 
 CGBuffer::CGBuffer(void):

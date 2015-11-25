@@ -39,19 +39,21 @@ endif()
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/lua-5.2.4")
 set(BUILD_SHARED_LIBS ON)
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw-3.1.1")
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.13.0/build/cmake" EXCLUDE_FROM_ALL)
 
 find_package(OpenGL REQUIRED)
 
 include_directories(
     ${CMAKE_SOURCE_DIR}
-    "${CMAKE_SOURCE_DIR}/external/glcorearb"
     "${CMAKE_SOURCE_DIR}/external/lua-5.2.4/src"
     "${CMAKE_SOURCE_DIR}/external/glfw-3.1.1/include"
+    "${CMAKE_SOURCE_DIR}/external/glew-1.13.0/include"
     "${CMAKE_SOURCE_DIR}/external/glm-0.9.6.3"
     "${CMAKE_SOURCE_DIR}/external/maan")
 
 set(EXTERNAL_LIBS
     glfw
+    glew
     liblua)
 
 target_link_libraries(main ${OPENGL_gl_LIBRARY} ${EXTERNAL_LIBS})

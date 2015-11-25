@@ -1,6 +1,5 @@
 #include "include/Text/FontManager.h"
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glcorearb.h>
+#include <GL/glew.h>
 #include <cstdio>
 #include <cmath>
 #define STB_TRUETYPE_IMPLEMENTATION

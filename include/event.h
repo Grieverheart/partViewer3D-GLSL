@@ -21,7 +21,7 @@ public:
     //Use of the FNV-1a algorithm for hashing
 	template<size_t length>
     static constexpr uint32_t calcHash(const char (&text)[length]){
-        return FNV1aRec<length>(text, FNVoffset);
+        return FNV1aRec<length>(text, FNVoffset, 0);
     };
 
     //Comparison operators for use with set
@@ -35,29 +35,17 @@ public:
 private:
     static constexpr uint32_t FNVoffset = 2166136261u;
     static constexpr uint32_t FNVprime  = 16777619u;
-	//TODO: This more complex than intended because of VS not handling const char* parameters
-	//to constexpr functions. It also cannot handle recursive templates. Try to find a better
-	//way to write this and comply with VS.
-	template<size_t idx>
-	struct some_struct {};
+
 	template<size_t length>
-    static constexpr uint32_t FNV1aRec(const char (&text)[length], uint32_t hash){
+    static constexpr uint32_t FNV1aRec(const char (&text)[length], uint32_t hash, size_t idx){
         //NOTE: case sensitive!
-        return FNV1aRecRec<length>(text, hash, some_struct<0>());
+        return (idx == length - 1)? hash: FNV1aRec<length>(text, (hash ^ uint32_t(text[idx])) * FNVprime, idx + 1);
     }
-	template<size_t length, size_t idx>
-	static constexpr uint32_t FNV1aRecRec(const char(&text)[length], uint32_t hash, some_struct<idx>) {
-		//NOTE: case sensitive!
-		return FNV1aRecRec<length>(text, (hash ^ uint32_t(text[idx])) * FNVprime, some_struct<idx + 1>());
-	}
-	template<size_t length>
-	static constexpr uint32_t FNV1aRecRec(const char(&text)[length], uint32_t hash, some_struct<length - 1>) {
-		//NOTE: case sensitive!
-		return hash;
-	}
+
     const char *text_;
     const uint32_t hash_;
 };
+
 typedef HashedString EventType;
 
 //An abstract event. Parties should implement their own events as

@@ -1,6 +1,5 @@
 #include "include/ssao.h"
-#define GL_GLEXT_PROTOTYPES
-#include <GL/glcorearb.h>
+#include <GL/glew.h>
 #include <cstdio>
 #include "include/shader.h"
 
