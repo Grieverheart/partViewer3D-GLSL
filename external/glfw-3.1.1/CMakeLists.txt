@@ -18,36 +18,6 @@ set(LIB_SUFFIX "" CACHE STRING "Takes an empty string or 64. Directory where lib
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-#option(BUILD_SHARED_LIBS "Build shared libraries" OFF)
-#option(GLFW_BUILD_EXAMPLES "Build the GLFW example programs" ON)
-#option(GLFW_BUILD_TESTS "Build the GLFW test programs" ON)
-#option(GLFW_BUILD_DOCS "Build the GLFW documentation" ON)
-#option(GLFW_INSTALL "Generate installation target" ON)
-#option(GLFW_DOCUMENT_INTERNALS "Include internals in documentation" OFF)
-#
-#if (WIN32)
-#    option(GLFW_USE_DWM_SWAP_INTERVAL "Set swap interval even when DWM compositing is enabled" OFF)
-#    option(GLFW_USE_OPTIMUS_HPG "Force use of high-performance GPU on Optimus systems" OFF)
-#endif()
-#
-#if (APPLE)
-#    option(GLFW_BUILD_UNIVERSAL "Build GLFW as a Universal Binary" OFF)
-#    option(GLFW_USE_CHDIR "Make glfwInit chdir to Contents/Resources" ON)
-#    option(GLFW_USE_MENUBAR "Populate the menu bar on first window creation" ON)
-#    option(GLFW_USE_RETINA "Use the full resolution of Retina displays" ON)
-#else()
-#    option(GLFW_USE_EGL "Use EGL for context creation" OFF)
-#endif()
-#
-#if (UNIX AND NOT APPLE)
-#    option(GLFW_USE_WAYLAND "Use Wayland for context creation (implies EGL as well)" OFF)
-#    option(GLFW_USE_MIR     "Use Mir for context creation (implies EGL as well)" OFF)
-#endif()
-#
-#if (MSVC)
-#    option(USE_MSVC_RUNTIME_LIBRARY_DLL "Use MSVC runtime library DLL" ON)
-#endif()
-
 if (BUILD_SHARED_LIBS)
     set(_GLFW_BUILD_DLL 1)
 endif()
@@ -74,12 +44,6 @@ if (GLFW_USE_EGL)
 
     set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/CMake/modules")
     find_package(EGL REQUIRED)
-
-    if (NOT _GLFW_USE_OPENGL)
-        set(GLFW_BUILD_EXAMPLES OFF)
-        set(GLFW_BUILD_TESTS OFF)
-        message(STATUS "NOTE: Examples and tests require OpenGL")
-    endif()
 else()
     set(_GLFW_USE_OPENGL 1)
 endif()
@@ -94,14 +58,6 @@ endif()
 
 find_package(Threads REQUIRED)
 
-if (GLFW_BUILD_DOCS)
-    set(DOXYGEN_SKIP_DOT TRUE)
-    find_package(Doxygen)
-
-    if (GLFW_DOCUMENT_INTERNALS)
-        set(GLFW_INTERNAL_DOCS "${GLFW_SOURCE_DIR}/src/internal.h ${GLFW_SOURCE_DIR}/docs/internal.dox")
-    endif()
-endif()
 
 #--------------------------------------------------------------------
 # Set compiler specific flags
@@ -529,11 +485,6 @@ write_basic_package_version_file("${GLFW_BINARY_DIR}/src/glfw3ConfigVersion.cmak
                                  VERSION ${GLFW_VERSION_FULL}
                                  COMPATIBILITY SameMajorVersion)
 
-if (GLFW_BUILD_DOCS)
-    configure_file("${GLFW_SOURCE_DIR}/docs/Doxyfile.in"
-                   "${GLFW_BINARY_DIR}/docs/Doxyfile" @ONLY)
-endif()
-
 configure_file("${GLFW_SOURCE_DIR}/src/glfw_config.h.in"
                "${GLFW_BINARY_DIR}/src/glfw_config.h" @ONLY)
 
@@ -544,18 +495,6 @@ configure_file("${GLFW_SOURCE_DIR}/src/glfw3.pc.in"
 # Add subdirectories
 #--------------------------------------------------------------------
 add_subdirectory(src)
-
-if (GLFW_BUILD_EXAMPLES)
-    add_subdirectory(examples)
-endif()
-
-if (GLFW_BUILD_TESTS)
-    add_subdirectory(tests)
-endif()
-
-if (DOXYGEN_FOUND AND GLFW_BUILD_DOCS)
-    add_subdirectory(docs)
-endif()
 
 #--------------------------------------------------------------------
 # Install files other than the library

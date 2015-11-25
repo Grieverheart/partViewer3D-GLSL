@@ -38,7 +38,6 @@ set ( LUA_CPATH_DEFAULT "./?${LUA_MODULE_SUFFIX};${LUA_DIR}${LUA_CDIR}/?${LUA_MO
 if ( WIN32 AND NOT CYGWIN )
   # Windows systems
   option ( LUA_WIN "Windows specific build." ON )
-  option ( LUA_BUILD_WLUA "Build wLua interpretter without console output." ON )
   option ( LUA_BUILD_AS_DLL "Build Lua library as Dll." ${BUILD_SHARED_LIBS} )
   
   # Paths (Double escapes ne  option needed)
@@ -66,46 +65,12 @@ else ( )
 endif ( )
 
 ## SETUP
-# Optional libraries
-#find_package ( Readline )
-#if ( READLINE_FOUND )
-#  option ( LUA_USE_READLINE "Use readline in the Lua CLI." ON )
-#endif ( )
-#
-#find_package ( Curses )
-#if ( CURSES_FOUND )
-#  option ( LUA_USE_CURSES "Use curses in the Lua CLI." ON )
-#endif ( )
-
 # Setup needed variables and libraries
 if ( LUA_USE_POSIX )
   # On POSIX Lua links to standard math library "m"
   list ( APPEND LIBS m )
 endif ( )
 
-#if ( LUA_USE_DLOPEN )
-#  # Link to dynamic linker library "dl"
-#	find_library ( DL_LIBRARY NAMES dl )
-#	if ( DL_LIBRARY )
-#  	list ( APPEND LIBS ${DL_LIBRARY} )
-#	endif ( )
-#endif ( )
-#
-#if ( LUA_USE_READLINE )
-#  # Add readline
-#  include_directories ( ${READLINE_INCLUDE_DIR} )
-#  list ( APPEND LIBS ${READLINE_LIBRARY} )
-#endif ( )
-#
-#if ( LUA_USE_CURSES )
-#  # Add curses
-#  include_directories ( ${CURSES_INCLUDE_DIR} )
-#  list ( APPEND LIBS ${CURSES_LIBRARY} )
-#endif ( )
-
-## SOURCES
-# Generate luaconf.h
-#configure_file ( src/luaconf.h.in ${CMAKE_CURRENT_BINARY_DIR}/luaconf.h )
 
 # Sources and headers
 include_directories ( src ${CMAKE_CURRENT_BINARY_DIR} )
@@ -116,13 +81,6 @@ set ( SRC_LIB src/lauxlib.c src/lbaselib.c src/lbitlib.c src/lcorolib.c src/ldbl
   src/liolib.c src/lmathlib.c src/loslib.c src/lstrlib.c src/ltablib.c src/linit.c src/loadlib.c)
 set ( SRC_LUA src/lua.c )
 set ( SRC_LUAC src/luac.c )
-
-#if ( LUA_USE_RELATIVE_LOADLIB )
-#  # Use modified loadlib
-#  list ( APPEND SRC_LIB src/loadlib_rel.c )
-#else ( )
-#  list ( APPEND SRC_LIB src/loadlib.c )
-#endif ( )
 
 ## BUILD
 # Create lua library
@@ -137,25 +95,4 @@ if ( LUA_BUILD_AS_DLL )
   set_target_properties ( liblua PROPERTIES COMPILE_DEFINITIONS LUA_BUILD_AS_DLL )
 endif ()
 
-#add_executable ( lua ${SRC_LUA} src/lua.rc )
-#target_link_libraries ( lua liblua )
-
-#add_executable ( luac ${SRC_CORE} ${SRC_LIB} ${SRC_LUAC} src/luac.rc )
-#target_link_libraries ( luac ${LIBS} )
-
-# On windows a variant of the lua interpreter without console output needs to be built
-if ( LUA_BUILD_WLUA )
-    #add_executable ( wlua WIN32 src/wmain.c ${SRC_LUA} src/lua.rc )
-  target_link_libraries ( wlua liblua )
-  #install_executable ( wlua )
-endif ( )
-
-#install_executable ( lua luac )
-#install_library ( liblua )
-#install_data ( README.md )
-#install_lua_module ( strict etc/strict.lua )
-#install_header ( src/lua.h src/lualib.h src/lauxlib.h src/lua.hpp ${CMAKE_CURRENT_BINARY_DIR}/luaconf.h )
-#install_doc ( doc/ )
-#install_foo ( etc/ )
-#install_test ( test/ )
 install(TARGETS liblua LIBRARY DESTINATION ${CMAKE_SOURCE_DIR} RUNTIME DESTINATION ${CMAKE_SOURCE_DIR})
