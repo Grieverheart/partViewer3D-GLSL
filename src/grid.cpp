@@ -1,6 +1,7 @@
 #include "include/grid.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <cstdio>
+#include <algorithm>
 
 //Base IntersectionObject class
 class IntersectionObject{

@@ -11,10 +11,6 @@
 #include <exception>
 #include <vector>
 
-#ifdef _MSC_VER
-#define noexcept
-#endif
-
 class Shader;
 class Grid;
 namespace Text{

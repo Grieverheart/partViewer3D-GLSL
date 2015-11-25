@@ -5,7 +5,7 @@
 
 #ifdef _WIN32
 #define WGL_WGLEXT_PROTOTYPES
-#include <GL/wgl.h>
+//#include <GL/wgl.h>
 #include <GL/wglext.h>
 #elif __linux
 #define GLX_GLXEXT_PROTOTYPES

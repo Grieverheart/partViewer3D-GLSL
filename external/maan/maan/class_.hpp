@@ -7,6 +7,7 @@
 #include "detail/score_args.hpp"
 #include "create.hpp"
 #include "function_.hpp"
+#include <algorithm>
 
 namespace maan{
     int lua_ClassProperty(lua_State* L){

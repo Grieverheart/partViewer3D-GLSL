@@ -53,7 +53,7 @@ namespace maan{
         }
 
         template<typename T>
-        class_<T> class_(const char* name){
+        maan::class_<T> class_(const char* name){
             return maan::class_<T>(this, name);
         }
 
