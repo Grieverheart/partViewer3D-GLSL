@@ -3,7 +3,7 @@
 
 #include <glm/glm.hpp>
 #include <vector>
-#include "coord_parser.h"
+#include "simconfig.h"
 
 class IntersectionObject;
 struct AABB{
@@ -23,7 +23,7 @@ public:
 private:
     struct Item{
         IntersectionObject* object_;
-        int pid_;
+        size_t pid_;
     };
     using Cell = std::vector<const Item*>;
 

@@ -85,19 +85,18 @@ namespace{
 //TODO: Add type safety
 //box[], particles[], shapes[]
 static int luaScene_load(lua_State* L){
-    glm::mat3 box;
+    SimConfig config;
+
     for(lua_pushnil(L); lua_next(L, 1); lua_pop(L, 1)){
         long long int i = lua_tointeger(L, -2) - 1;
-        box[i % 3][i / 3] = lua_tonumber(L, -1);
+        config.box[i % 3][i / 3] = lua_tonumber(L, -1);
     }
 
-    std::vector<Particle> particles;
     for(lua_pushnil(L); lua_next(L, 2);){
-        particles.push_back(maan::get_LuaValue<Particle>(L));
+        config.particles.push_back(maan::get_LuaValue<Particle>(L));
     }
 
     //TODO: Add a is_class(lua_State* L, int idx) function to maan.
-    std::vector<Shape> shapes;
     for(lua_pushnil(L); lua_next(L, 3);){
         lua_getmetatable(L, -1);
         lua_pushstring(L, "__class_id");
@@ -119,26 +118,10 @@ static int luaScene_load(lua_State* L){
                 shape.mesh.vertices[i++] = vertex;
             }
         }
-        shapes.push_back(shape);
+        config.shapes.push_back(shape);
     }
 
     auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-
-    SimConfig config;
-    config.box = box;
-    config.n_part = particles.size();
-    config.n_shapes = shapes.size();
-    config.particles = new Particle[config.n_part];
-    config.shapes = new Shape[config.n_shapes];
-
-    {//Set particles
-        int i = 0;
-        for(auto particle: particles) config.particles[i++] = particle;
-    }
-    {//Set shapes
-        int i = 0;
-        for(auto shape: shapes) config.shapes[i++] = shape;
-    }
 
     scene->load_scene(config);
 

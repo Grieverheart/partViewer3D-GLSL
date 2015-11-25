@@ -1,7 +1,7 @@
 #ifndef __SCENE_H
 #define __SCENE_H
 
-#include "coord_parser.h"
+#include "simconfig.h"
 #include "light.h"
 #include "g-buffer.h"
 #include "accumulator.h"
@@ -24,11 +24,16 @@ enum class Projection{
 
 class Scene{
 public:
-    class GlewInitializationException: public std::exception{
+    class InitializationException: public std::exception{
     public:
+        InitializationException(const char* message):
+            message_(message)
+        {}
         virtual const char* what(void)const noexcept {
-            return "Error when initializating GLEW.";
+            return message_;
         }
+    private:
+        const char* message_;
     };
 
 	Scene(int width, int height);
@@ -102,26 +107,25 @@ public:
     void draw_text(const char* text, const Text::Properties& props);
 
 private:
-	int windowWidth;
-	int windowHeight;
+	int window_width_;
+	int window_height_;
 	float fov_, zoom_;
 	float znear_, zfar_;
     float out_radius_;
 
-	glm::mat4 projectionMatrix;
-	glm::mat4 invProjMatrix;
-	glm::mat4 viewMatrix;
-    glm::mat4 invViewMatrix;
-	glm::mat4 modelMatrix;
-    glm::mat4 lightProjectionMatrix;
-    glm::mat4 lightViewMatrix;
-    glm::mat4* model_matrices;
-    glm::vec3 view_pos;
-    glm::vec3 view_dir;
+	glm::mat4 projection_matrix_;
+	glm::mat4 inv_projection_matrix_;
+	glm::mat4 view_matrix_;
+    glm::mat4 inv_view_matrix_;
+	glm::mat4 model_matrix_;
+    glm::mat4 light_projection_matrix_;
+    glm::mat4 light_view_matrix_;
+    glm::mat4* model_matrices_;
+    glm::vec3 view_pos_;
+    glm::vec3 view_dir_;
 
-	glm::vec3 m_bgColor;
-	glm::vec3 diffcolor;
-	glm::vec3 skycolor;
+	glm::vec3 background_color_;
+	glm::vec3 sky_color_;
 
     float point_radius_;
     float point_outline_radius_;
@@ -132,67 +136,67 @@ private:
 
     glm::vec4 clip_plane_;
 
-	unsigned int* shape_vaos;
-	unsigned int* shape_vbos;
+	unsigned int* shape_vaos_;
+	unsigned int* shape_vbos_;
 
-	unsigned int* particle_flags;
-    glm::vec3* particle_colors;
+	unsigned int* particle_flags_;
+    glm::vec3* particle_colors_;
 
-    Particle* particles;
-    Shape* shapes;
-    int n_shapes;
-    int n_particles;
+    Particle* particles_;
+    Shape* shapes_;
+    int n_shapes_;
+    int n_particles_;
 
-	unsigned int vaoBox;
-	unsigned int vboBox;
-	unsigned int plane_vao;
-	unsigned int plane_vbo;
-	unsigned int quad_vao;
-	unsigned int quad_vbo;
-	unsigned int fullscreen_triangle_vao;
+	unsigned int box_vao_;
+	unsigned int box_vbo_;
+	unsigned int plane_vao_;
+	unsigned int plane_vbo_;
+	unsigned int quad_vao_;
+	unsigned int quad_vbo_;
+	unsigned int fullscreen_triangle_vao_;
 
-	unsigned int area_texture;
-	unsigned int search_texture;
+	unsigned int area_texture_;
+	unsigned int search_texture_;
 
-    std::vector<int> selected_pids;
-    std::vector<int> draw_pids;
+    std::vector<int> selected_pids_;
+    std::vector<int> draw_pids_;
     std::vector<int>::iterator draw_points_end_;
 
-	bool is_scene_loaded;
-    bool is_clip_plane_activated_;
-	bool drawBox;
-	bool m_blur;
+	bool is_scene_loaded_;
+    bool is_clip_plane_active_;
+	bool is_box_drawing_active_;
+	bool is_blur_active_;
 
-    Projection projection_type;
+    Projection projection_type_;
 
-	CLight light;
+	CLight light_;
 
-	CGBuffer m_gbuffer;
+	CGBuffer m_gbuffer_;
     //TODO: Do something about these, make them more specific!
-	Accumulator m_accumulator;
+	Accumulator m_accumulator_;
 	Accumulator m_edge_buffer;
-	Accumulator m_blend_buffer;
-	Cssao m_ssao;
-    CShadowmap m_shadowmap;
+	Accumulator m_blend_buffer_;
+	Cssao m_ssao_;
+    CShadowmap m_shadowmap_;
 
-	Shader* sh_gbuffer;
-	Shader* sh_gbuffer_instanced;
-	Shader* sh_ssao;
-	Shader* sh_shadowmap_instanced;
-	Shader* sh_blur;
-	Shader* sh_accumulator;
-	Shader* sh_edge_detection;
-	Shader* sh_blend_weights;
-	Shader* sh_blend;
-	Shader* sh_spheres;
-	Shader* sh_shadowmap_spheres;
-	Shader* sh_color;
-	Shader* sh_color_sphere;
-	Shader* sh_points;
-	Shader* sh_text;
-	Shader* sh_quad_line;
+	Shader* sh_gbuffer_;
+	Shader* sh_gbuffer_instanced_;
+	Shader* sh_ssao_;
+	Shader* sh_shadowmap_instanced_;
+	Shader* sh_blur_;
+	Shader* sh_accumulator_;
+	Shader* sh_edge_detection_;
+	Shader* sh_blend_weights_;
+	Shader* sh_blend_;
+	Shader* sh_spheres_;
+	Shader* sh_shadowmap_spheres_;
+	Shader* sh_color_;
+	Shader* sh_color_sphere_;
+	Shader* sh_points_;
+	Shader* sh_text_;
+	Shader* sh_quad_line_;
 
-    Grid* grid;
+    Grid* grid_;
 
     Text::FontManager* fontManager_;
 

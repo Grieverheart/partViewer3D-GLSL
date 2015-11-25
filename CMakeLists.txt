@@ -7,7 +7,6 @@ set(CMAKE_MACOSX_RPATH 1)
 
 set(SOURCE_FILES
     src/main.cpp
-    src/coord_parser.cpp
     src/scene.cpp
     src/event_manager.cpp
     src/shadowmap.cpp
@@ -15,7 +14,6 @@ set(SOURCE_FILES
     src/accumulator.cpp
     src/light.cpp
     src/grid.cpp
-    src/obj_parser.cpp
     src/shader.cpp
     src/register_lua_bindings.cpp
     src/ssao.cpp

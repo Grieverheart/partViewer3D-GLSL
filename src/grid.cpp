@@ -179,10 +179,13 @@ private:
 Grid::Grid(const SimConfig& config):
     cells_(nullptr)
 {
-    is_ignored = new bool[config.n_part]{};
+    size_t n_part   = config.particles.size();
+    size_t n_shapes = config.shapes.size();
+
+    is_ignored = new bool[n_part]{};
     // Find shape out_radius
-    std::vector<float> out_radii(config.n_shapes, 0);
-    for(int shape_id = 0; shape_id < config.n_shapes; ++shape_id){
+    std::vector<float> out_radii(n_shapes, 0);
+    for(size_t shape_id = 0; shape_id < n_shapes; ++shape_id){
         if(config.shapes[shape_id].type == Shape::MESH){
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
             float max = out_radii[shape_id] * out_radii[shape_id];
@@ -209,7 +212,7 @@ Grid::Grid(const SimConfig& config):
     {
         glm::vec3 min(10000.0f);
         glm::vec3 max(-10000.0f);
-        for(int i = 0; i < config.n_part; ++i){
+        for(size_t i = 0; i < n_part; ++i){
             int shape_id = config.particles[i].shape_id;
             glm::vec3 pos = config.particles[i].pos + offset;
             float size = config.particles[i].size;

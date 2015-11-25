@@ -3,7 +3,6 @@
 
 #include <cstdint>
 
-
 //A Hashed String. Stores the string and its hash which is calculated uppon construction
 class HashedString{
 public:
