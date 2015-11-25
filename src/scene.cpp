@@ -1268,17 +1268,21 @@ void Scene::draw_text(const char* text, const Text::Properties& props){
     float dx = 0;
     float dy = 0;
 
+    Text::Font* font = fontManager_->get_font(props.font_);
+    if(!font) return;
+
     glEnable(GL_BLEND);
     glBindVertexArray(quad_vao);
 	glActiveTexture(GL_TEXTURE0);
-
-    Text::Font* font = fontManager_->get_font(props.font_);
 
     sh_text->bind();
     for(const char* char_ptr = text; *char_ptr != '\0'; ++char_ptr){
         char character = *char_ptr;
         const Text::Glyph* glyph = font->get_char_glyph(character);
-        if(!glyph) return;
+        if(!glyph){
+            glDisable(GL_BLEND);
+            return;
+        }
 
         if(character == '\n'){
             dy += font->line_advance() * scale;

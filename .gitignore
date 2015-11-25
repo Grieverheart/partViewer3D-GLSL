@@ -5,6 +5,7 @@
 *.so*
 *.dylib
 *.trace
+*.dll
 .DS_store
 main
 /build/

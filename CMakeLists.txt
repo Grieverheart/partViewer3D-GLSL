@@ -39,7 +39,7 @@ endif()
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/lua-5.2.4")
 set(BUILD_SHARED_LIBS ON)
 add_subdirectory("${CMAKE_SOURCE_DIR}/external/glfw-3.1.1")
-add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.13.0/build/cmake" EXCLUDE_FROM_ALL)
+add_subdirectory("${CMAKE_SOURCE_DIR}/external/glew-1.13.0/build/cmake")
 
 find_package(OpenGL REQUIRED)
 

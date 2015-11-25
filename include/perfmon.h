@@ -10,6 +10,8 @@
 #include <ctime>
 #elif __APPLE__
 #include <mach/mach_time.h>
+#else
+#error Not implemented for current platform.
 #endif
 
 #ifdef _MSC_VER
@@ -79,15 +81,13 @@ public:
 #ifdef _WIN32
         LARGE_INTEGER li;
         QueryPerformanceCounter(&li);
-        return li.QuadPart / cpu_freq;
+        return li.QuadPart * NS_IN_SEC / cpu_freq;
 #elif __linux
         struct timespec ts;
         clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
         return ts.tv_sec * NS_IN_SEC + ts.tv_nsec;
 #elif __APPLE__
         return mach_absolute_time() * orwl_timebase;
-#else
-#error Not implemented for current platform.
 #endif
     }
 

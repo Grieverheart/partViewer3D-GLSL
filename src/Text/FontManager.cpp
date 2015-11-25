@@ -34,7 +34,6 @@ Glyph::Glyph(const stbtt_fontinfo* info, uint32_t character, float scale):
     int x0, y0, x1, y1;
     if(stbtt_GetCodepointBox(info, character, &x0, &y0, &x1, &y1)){
         top_bearing_ = y1 * scale;
-        printf("%f\n", top_bearing_);
     }
 }
 
