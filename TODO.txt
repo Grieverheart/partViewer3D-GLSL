@@ -31,4 +31,5 @@
 --Perhaps add the ability to draw individual particles as points.
 --Handle clipping with point drawing.
 --Draw lines with shader.
+Try out bokeh.
 Add suport for multiple windows.

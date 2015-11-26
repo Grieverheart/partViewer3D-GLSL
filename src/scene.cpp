@@ -52,20 +52,20 @@ enum ParticleFlags{
 Scene::Scene(int width, int height):
     window_width_(width), window_height_(height),
     fov_(60.0f), zoom_(0.0f),
-	model_matrix_(1.0),
-	background_color_(glm::vec3(44, 114, 220) / 255.0f),
-	sky_color_(0.529, 0.808, 0.921),
+    model_matrix_(1.0),
+    background_color_(glm::vec3(44, 114, 220) / 255.0f),
+    sky_color_(0.529, 0.808, 0.921),
     point_radius_(0.2f), point_outline_radius_(0.14f),
     point_color_(0.05, 0.05, 0.05, 0.5), point_outline_color_(0.0, 0.0, 0.0, 0.5),
     line_width_(0.01),
     clip_plane_{0.0, 0.0, -1.0, 0.0},
-	shape_vaos_(nullptr), shape_vbos_(nullptr),
+    shape_vaos_(nullptr), shape_vbos_(nullptr),
     particle_flags_(nullptr),
     particles_(nullptr), shapes_(nullptr), n_shapes_(0), n_particles_(0),
     box_vao_(0), box_vbo_(0), fullscreen_triangle_vao_(0),
     is_scene_loaded_(false), is_clip_plane_active_(false), is_box_drawing_active_(false), is_blur_active_(true),
     projection_type_(Projection::PERSPECTIVE),
-	light_(glm::vec3(-0.27, -0.91, -0.33)),
+    light_(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer_(nullptr), sh_gbuffer_instanced_(nullptr), sh_ssao_(nullptr),
     sh_shadowmap_instanced_(nullptr), sh_blur_(nullptr), sh_accumulator_(nullptr),
     sh_edge_detection_(nullptr), sh_blend_weights_(nullptr), sh_blend_(nullptr),
@@ -75,17 +75,17 @@ Scene::Scene(int width, int height):
     fontManager_(new Text::FontManager())
 {
     glewExperimental = GL_TRUE;
-	GLenum error = glewInit(); //Enable GLEW
-	if(error != GLEW_OK) throw InitializationException("Error initializing GLEW.\n");
-	glError(__FILE__, __LINE__);
+    GLenum error = glewInit(); //Enable GLEW
+    if(error != GLEW_OK) throw InitializationException("Error initializing GLEW.\n");
+    glError(__FILE__, __LINE__);
 
-	int glVersion[2] = {-1, 1};
-	glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
-	glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
+    int glVersion[2] = {-1, 1};
+    glGetIntegerv(GL_MAJOR_VERSION, &glVersion[0]);
+    glGetIntegerv(GL_MINOR_VERSION, &glVersion[1]);
 
-	printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
-	printf("Renderer used: %s\n", glGetString(GL_RENDERER));
-	printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+    printf("Using OpenGL: %d.%d\n", glVersion[0], glVersion[1]);
+    printf("Renderer used: %s\n", glGetString(GL_RENDERER));
+    printf("Shading Language: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 #ifdef _WIN32
     wglSwapIntervalEXT(0);
@@ -99,10 +99,10 @@ Scene::Scene(int width, int height):
     }
 #endif
 
-	glDisable(GL_BLEND);
+    glDisable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+    glCullFace(GL_BACK);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
@@ -123,12 +123,12 @@ Scene::Scene(int width, int height):
     sh_text_                = new Shader(text_vert, text_frag);
     sh_quad_line_           = new Shader(quad_line_vert, quad_line_frag);
 
-	if(!m_ssao_.Init(window_width_, window_height_)         ||
-	   !m_shadowmap_.Init(window_width_, window_height_)    ||
-	   !m_gbuffer_.Init(window_width_, window_height_)      ||
-	   !m_accumulator_.Init(window_width_, window_height_)  ||
-	   !m_edge_buffer.Init(window_width_, window_height_)   ||
-	   !m_blend_buffer_.Init(window_width_, window_height_)
+    if(!m_ssao_.Init(window_width_, window_height_)         ||
+       !m_shadowmap_.Init(window_width_, window_height_)    ||
+       !m_gbuffer_.Init(window_width_, window_height_)      ||
+       !m_accumulator_.Init(window_width_, window_height_)  ||
+       !m_edge_buffer.Init(window_width_, window_height_)   ||
+       !m_blend_buffer_.Init(window_width_, window_height_)
     ){
         throw InitializationException("Couldn't initialize FBO!\n");
     }
@@ -215,25 +215,25 @@ Scene::Scene(int width, int height):
 }
 
 Scene::~Scene(void){
-	delete sh_gbuffer_; // GLSL Shader
-	delete sh_gbuffer_instanced_; // GLSL Shader
-	delete sh_ssao_;
-	delete sh_shadowmap_instanced_;
-	delete sh_blur_;
-	delete sh_accumulator_;
-	delete sh_edge_detection_;
-	delete sh_blend_weights_;
-	delete sh_blend_;
-	delete sh_spheres_;
-	delete sh_shadowmap_spheres_;
-	delete sh_color_;
-	delete sh_color_sphere_;
+    delete sh_gbuffer_; // GLSL Shader
+    delete sh_gbuffer_instanced_; // GLSL Shader
+    delete sh_ssao_;
+    delete sh_shadowmap_instanced_;
+    delete sh_blur_;
+    delete sh_accumulator_;
+    delete sh_edge_detection_;
+    delete sh_blend_weights_;
+    delete sh_blend_;
+    delete sh_spheres_;
+    delete sh_shadowmap_spheres_;
+    delete sh_color_;
+    delete sh_color_sphere_;
     delete sh_points_;
-	delete sh_text_;
+    delete sh_text_;
     delete sh_quad_line_;
 
-	if(n_shapes_) glDeleteVertexArrays(n_shapes_, shape_vaos_);
-	if(n_shapes_) glDeleteBuffers(n_shapes_, shape_vbos_);
+    if(n_shapes_) glDeleteVertexArrays(n_shapes_, shape_vaos_);
+    if(n_shapes_) glDeleteBuffers(n_shapes_, shape_vbos_);
 
     delete[] shape_vaos_;
     delete[] shape_vbos_;
@@ -244,10 +244,10 @@ Scene::~Scene(void){
 
     delete grid_;
 
-	glDeleteVertexArrays(1, &box_vao_);
-	glDeleteBuffers(1, &box_vbo_);
+    glDeleteVertexArrays(1, &box_vao_);
+    glDeleteBuffers(1, &box_vbo_);
 
-	glDeleteVertexArrays(1, &fullscreen_triangle_vao_);
+    glDeleteVertexArrays(1, &fullscreen_triangle_vao_);
 }
 
 void Scene::load_scene(const SimConfig& config){
@@ -351,18 +351,18 @@ void Scene::load_scene(const SimConfig& config){
     set_projection();
 
     light_projection_matrix_ = glm::ortho(-out_radius_, out_radius_, -out_radius_, out_radius_, 0.0f, 2.0f * out_radius_);
-	view_matrix_            = glm::lookAt(view_pos_, view_pos_ + view_dir_, glm::vec3(0.0, 1.0, 0.0));
+    view_matrix_             = glm::lookAt(view_pos_, view_pos_ + view_dir_, glm::vec3(0.0, 1.0, 0.0));
     inv_view_matrix_         = glm::inverse(view_matrix_);
     light_view_matrix_       = glm::lookAt(-out_radius_ * light_.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
     n_shapes_ = config.shapes.size();
 
-	shape_vaos_ = new unsigned int[n_shapes_]{};
-	shape_vbos_ = new unsigned int[n_shapes_]{};
+    shape_vaos_ = new unsigned int[n_shapes_]{};
+    shape_vbos_ = new unsigned int[n_shapes_]{};
 
     shapes_          = new Shape[n_shapes_];
-	particle_flags_  = new unsigned int[n_particles_]{};
-	particle_colors_ = new glm::vec3[n_particles_];
+    particle_flags_  = new unsigned int[n_particles_]{};
+    particle_colors_ = new glm::vec3[n_particles_];
     model_matrices_  = new glm::mat4[n_particles_];
 
     glm::mat4 tMatrix = glm::translate(
@@ -424,70 +424,70 @@ void Scene::load_scene(const SimConfig& config){
 
     //TODO: Move shader uniform initialization to constructor
 
-	// SSAO Uniforms
+    // SSAO Uniforms
     glm::mat2 iproj = glm::mat2(inv_projection_matrix_[2][2], inv_projection_matrix_[2][3],
                                 inv_projection_matrix_[3][2], inv_projection_matrix_[3][3]);
 
-	sh_ssao_->bind();
-	{
-		m_ssao_.UploadUniforms(*sh_ssao_);
-		sh_ssao_->setUniform("NormalMap", 0);
-		sh_ssao_->setUniform("DepthMap", 1);
-		sh_ssao_->setUniform("depth_iproj", 1, iproj);
-		sh_ssao_->setUniform("projection_matrix_", 1, projection_matrix_);
-		sh_ssao_->setUniform("inv_projection_matrix_", 1, inv_projection_matrix_);
-	}
+    sh_ssao_->bind();
+    {
+        m_ssao_.UploadUniforms(*sh_ssao_);
+        sh_ssao_->setUniform("NormalMap", 0);
+        sh_ssao_->setUniform("DepthMap", 1);
+        sh_ssao_->setUniform("depth_iproj", 1, iproj);
+        sh_ssao_->setUniform("projectionMatrix", 1, projection_matrix_);
+        sh_ssao_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
+    }
 
-	// Blur Uniforms
-	sh_blur_->bind();
-	{
-		sh_blur_->setUniform("aoSampler", 0);
-		sh_blur_->setUniform("use_blur", int(is_blur_active_));
-	}
+    // Blur Uniforms
+    sh_blur_->bind();
+    {
+        sh_blur_->setUniform("aoSampler", 0);
+        sh_blur_->setUniform("use_blur", int(is_blur_active_));
+    }
 
-	// Edge Detection Uniforms
-	sh_edge_detection_->bind();
-	{
-		sh_edge_detection_->setUniform("colorTex", 0);
-		sh_edge_detection_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
-	}
+    // Edge Detection Uniforms
+    sh_edge_detection_->bind();
+    {
+        sh_edge_detection_->setUniform("colorTex", 0);
+        sh_edge_detection_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
+    }
 
-	// Blend weights Uniforms
-	sh_blend_weights_->bind();
-	{
-		sh_blend_weights_->setUniform("edgesTex", 0);
-		sh_blend_weights_->setUniform("areaTex", 1);
-		sh_blend_weights_->setUniform("searchTex", 2);
-		sh_blend_weights_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
-	}
+    // Blend weights Uniforms
+    sh_blend_weights_->bind();
+    {
+        sh_blend_weights_->setUniform("edgesTex", 0);
+        sh_blend_weights_->setUniform("areaTex", 1);
+        sh_blend_weights_->setUniform("searchTex", 2);
+        sh_blend_weights_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
+    }
 
-	// Blend Uniforms
-	sh_blend_->bind();
-	{
-		sh_blend_->setUniform("colorTex", 0);
-		sh_blend_->setUniform("blendTex", 1);
-		sh_blend_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
-	}
+    // Blend Uniforms
+    sh_blend_->bind();
+    {
+        sh_blend_->setUniform("colorTex", 0);
+        sh_blend_->setUniform("blendTex", 1);
+        sh_blend_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
+    }
 
-	// Accumulator Uniforms
-	sh_accumulator_->bind();
-	{
-		sh_accumulator_->setUniform("ColorMap", 0);
-		sh_accumulator_->setUniform("NormalMap", 1);
-		sh_accumulator_->setUniform("DepthMap", 2);
-		sh_accumulator_->setUniform("LightDepthMap", 3);
-		sh_accumulator_->setUniform("depth_iproj", 1, iproj);
-		sh_accumulator_->setUniform("skyColor", 1, sky_color_);
-		sh_accumulator_->setUniform("inv_projection_matrix_", 1, inv_projection_matrix_);
-	}
+    // Accumulator Uniforms
+    sh_accumulator_->bind();
+    {
+        sh_accumulator_->setUniform("ColorMap", 0);
+        sh_accumulator_->setUniform("NormalMap", 1);
+        sh_accumulator_->setUniform("DepthMap", 2);
+        sh_accumulator_->setUniform("LightDepthMap", 3);
+        sh_accumulator_->setUniform("depth_iproj", 1, iproj);
+        sh_accumulator_->setUniform("skyColor", 1, sky_color_);
+        sh_accumulator_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
+    }
 
-	sh_text_->bind();
-	{
-		glm::mat4 projection_matrix_ = glm::ortho(0.0f, (float)window_width_, 0.0f, (float)window_height_);
-		sh_text_->setUniform("projection_matrix_", 1, projection_matrix_);
-		sh_text_->setUniform("inSampler", 0);
-		sh_text_->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
-	}
+    sh_text_->bind();
+    {
+        glm::mat4 projection_matrix_ = glm::ortho(0.0f, (float)window_width_, 0.0f, (float)window_height_);
+        sh_text_->setUniform("projectionMatrix", 1, projection_matrix_);
+        sh_text_->setUniform("inSampler", 0);
+        sh_text_->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+    }
 
     sh_points_->bind();
     {
@@ -593,9 +593,9 @@ void Scene::set_point_outline_color(const glm::vec4& color){
 }
 
 void Scene::wsize_changed(int w, int h){
-	window_width_ = w;
-	window_height_ = h;
-	glViewport(0, 0, window_width_, window_height_);
+    window_width_ = w;
+    window_height_ = h;
+    glViewport(0, 0, window_width_, window_height_);
 
     set_projection();
 
@@ -608,21 +608,21 @@ void Scene::wsize_changed(int w, int h){
     sh_ssao_->bind();
     m_ssao_.Resize(window_width_, window_height_, sh_ssao_);
 
-	// Edge Detection Uniforms
+    // Edge Detection Uniforms
     glm::vec2 texel_size = glm::vec2(1.0f / window_width_, 1.0f / window_height_);
 
-	sh_edge_detection_->bind();
+    sh_edge_detection_->bind();
     sh_edge_detection_->setUniform("texel_size", 1, texel_size);
 
-	sh_blend_weights_->bind();
+    sh_blend_weights_->bind();
     sh_blend_weights_->setUniform("texel_size", 1, texel_size);
 
-	sh_blend_->bind();
+    sh_blend_->bind();
     sh_blend_->setUniform("texel_size", 1, texel_size);
 
-	sh_text_->bind();
-    glm::mat4 projection_matrix_ = glm::ortho(0.0f, (float)window_width_, 0.0f, (float)window_height_);
-    sh_text_->setUniform("projection_matrix_", 1, projection_matrix_);
+    sh_text_->bind();
+    glm::mat4 projection_matrix = glm::ortho(0.0f, (float)window_width_, 0.0f, (float)window_height_);
+    sh_text_->setUniform("projectionMatrix", 1, projection_matrix);
 }
 
 void Scene::process(void){
@@ -632,18 +632,18 @@ void Scene::process(void){
     glm::mat2 iproj = glm::mat2(inv_projection_matrix_[2][2], inv_projection_matrix_[2][3],
                                 inv_projection_matrix_[3][2], inv_projection_matrix_[3][3]);
 
-	sh_ssao_->bind();
-	{
-		sh_ssao_->setUniform("depth_iproj", 1, iproj);
-		sh_ssao_->setUniform("projection_matrix_", 1, projection_matrix_);
-		sh_ssao_->setUniform("inv_projection_matrix_", 1, inv_projection_matrix_);
-	}
+    sh_ssao_->bind();
+    {
+        sh_ssao_->setUniform("depth_iproj", 1, iproj);
+        sh_ssao_->setUniform("projectionMatrix", 1, projection_matrix_);
+        sh_ssao_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
+    }
 
-	sh_accumulator_->bind();
-	{
-		sh_accumulator_->setUniform("depth_iproj", 1, iproj);
-		sh_accumulator_->setUniform("inv_projection_matrix_", 1, inv_projection_matrix_);
-	}
+    sh_accumulator_->bind();
+    {
+        sh_accumulator_->setUniform("depth_iproj", 1, iproj);
+        sh_accumulator_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
+    }
 
     draw_points_end_ = std::partition(draw_pids_.begin(), draw_pids_.end(),
         [=](int i) -> bool {
@@ -698,21 +698,22 @@ void Scene::set_projection_type(Projection ptype){
 //TODO: Improve line rendering!!!
 void Scene::drawConfigurationBox(void)const{
 
-	glm::mat4 MVPMatrix = projection_matrix_ * view_matrix_ * model_matrix_;
-	sh_quad_line_->setUniform("MVPMatrix", 1, MVPMatrix);
-	sh_quad_line_->setUniform("line_width", line_width_);
+    glm::mat4 MVPMatrix = projection_matrix_ * view_matrix_ * model_matrix_;
+    sh_quad_line_->setUniform("MVPMatrix", 1, MVPMatrix);
+    sh_quad_line_->setUniform("line_width", line_width_);
 
-	glBindVertexArray(box_vao_);
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 12);
-	glDrawArrays(GL_TRIANGLE_STRIP, 12, 12);
+    glBindVertexArray(box_vao_);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 12);
+    glDrawArrays(GL_TRIANGLE_STRIP, 12, 12);
 }
 
 void Scene::render(void){
     if(!is_scene_loaded_) return;
+    glUseProgram(0);
 
-	glDepthMask(GL_TRUE);
-	glEnable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
+    glDepthMask(GL_TRUE);
+    glEnable(GL_CULL_FACE);
+    glEnable(GL_DEPTH_TEST);
 
     //Pre-clear the accumulator.
     m_accumulator_.Bind();
@@ -954,18 +955,18 @@ void Scene::render(void){
 
             sh_accumulator_->bind();
             {
-                sh_accumulator_->setUniform("inv_projection_matrix_", 1, inv_projection_matrix_);
+                sh_accumulator_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
                 sh_accumulator_->setUniform("skyColor", 1, sky_color_);
 
                 glm::mat4 depth_matrix = biasMatrix * light_projection_matrix_ * light_view_matrix_ * inv_view_matrix_;
                 sh_accumulator_->setUniform("depth_matrix", 1, depth_matrix);
 
                 glm::vec3 lightViewDirection = glm::mat3(view_matrix_) * light_.direction_;
-                sh_accumulator_->setUniform("light_.direction", 1, lightViewDirection);
-                sh_accumulator_->setUniform("light_.Si", light_.specular_);
-                sh_accumulator_->setUniform("light_.Di", light_.diffuse_);
-                sh_accumulator_->setUniform("light_.Ai", light_.ambient_);
-                sh_accumulator_->setUniform("light_.Intensity", light_.intensity_);
+                sh_accumulator_->setUniform("light.direction", 1, lightViewDirection);
+                sh_accumulator_->setUniform("light.Si", light_.specular_);
+                sh_accumulator_->setUniform("light.Di", light_.diffuse_);
+                sh_accumulator_->setUniform("light.Ai", light_.ambient_);
+                sh_accumulator_->setUniform("light.Intensity", light_.intensity_);
 
                 glDrawArrays(GL_TRIANGLES, 0, 3);
             }
@@ -1165,7 +1166,7 @@ void Scene::toggle_box(void){
 
 void Scene::set_view_position(const glm::vec3& pos){
     view_pos_ = pos;
-	view_matrix_    = glm::lookAt(view_pos_, view_pos_ + view_dir_, glm::vec3(0.0, 1.0, 0.0));
+    view_matrix_    = glm::lookAt(view_pos_, view_pos_ + view_dir_, glm::vec3(0.0, 1.0, 0.0));
     inv_view_matrix_ = glm::inverse(view_matrix_);
 }
 
@@ -1175,7 +1176,7 @@ const glm::vec3& Scene::get_view_position(void)const{
 
 void Scene::set_view_direction(const glm::vec3& dir){
     view_dir_ = dir;
-	view_matrix_    = glm::lookAt(view_pos_, view_pos_ + view_dir_, glm::vec3(0.0, 1.0, 0.0));
+    view_matrix_    = glm::lookAt(view_pos_, view_pos_ + view_dir_, glm::vec3(0.0, 1.0, 0.0));
     inv_view_matrix_ = glm::inverse(view_matrix_);
 }
 
@@ -1274,7 +1275,7 @@ void Scene::draw_text(const char* text, const Text::Properties& props){
 
     glEnable(GL_BLEND);
     glBindVertexArray(quad_vao_);
-	glActiveTexture(GL_TEXTURE0);
+    glActiveTexture(GL_TEXTURE0);
 
     sh_text_->bind();
     for(const char* char_ptr = text; *char_ptr != '\0'; ++char_ptr){
@@ -1303,7 +1304,7 @@ void Scene::draw_text(const char* text, const Text::Properties& props){
 
         glm::mat4 model_matrix_ = glm::scale(glm::mat4(1.0f), glm::vec3(width, -height, 1.0f));
         model_matrix_ = glm::translate(glm::mat4(1.0f), glm::vec3(x, y, 0.0f)) * model_matrix_;
-        sh_text_->setUniform("model_matrix_", 1, model_matrix_);
+        sh_text_->setUniform("modelMatrix", 1, model_matrix_);
         sh_text_->setUniform("inColor", 1, props.color_);
         glBindTexture(GL_TEXTURE_2D, (GLuint)glyph->tex_id());
     
