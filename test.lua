@@ -69,6 +69,66 @@ local function load_obj(filepath)
     --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), normal1))
     --end
 
+    ---- Generate a platelet mesh
+
+    --local function rotate_vector(vector, angle, axis)
+    --    local cos_angle = math.cos(angle)
+    --    local sin_angle = math.sin(angle)
+
+    --    return cos_angle * vector + sin_angle * (glm.cross(axis, vector)) +
+    --           (1.0 - cos_angle) * glm.dot(axis, vector) * axis
+    --end
+
+    --local mesh = Mesh()
+
+    --local subdivision = 50
+    --local subdivision_side = 20
+
+    --local sin_pi_4 = math.sin(math.pi * 0.25)
+    --local cos_pi_4 = math.cos(math.pi * 0.25)
+    --local factor  = 2.0 * math.pi / subdivision
+
+    --local height = 1.0
+    --local radius = 1.0
+
+    --for i = 1, subdivision do
+    --    local theta1 = factor * i
+    --    local theta2 = factor * (i + 1)
+    --    local x1 = radius * math.sin(theta1)
+    --    local z1 = radius * math.cos(theta1)
+    --    local x2 = radius * math.sin(theta2)
+    --    local z2 = radius * math.cos(theta2)
+
+    --    -- platelet bottom
+    --    mesh:add_vertex(Vertex(glm.vec3(x1,  -height * 0.5, z1), glm.vec3(0.0, -1.0, 0.0)))
+    --    mesh:add_vertex(Vertex(glm.vec3(0.0, -height * 0.5, 0.0), glm.vec3(0.0, -1.0, 0.0)))
+    --    mesh:add_vertex(Vertex(glm.vec3(x2,  -height * 0.5, z2), glm.vec3(0.0, -1.0, 0.0)))
+    --    -- platelet top
+    --    mesh:add_vertex(Vertex(glm.vec3(x2,  height * 0.5, z2), glm.vec3(0.0, 1.0, 0.0)))
+    --    mesh:add_vertex(Vertex(glm.vec3(0.0, height * 0.5, 0.0), glm.vec3(0.0, 1.0, 0.0)))
+    --    mesh:add_vertex(Vertex(glm.vec3(x1,  height * 0.5, z1), glm.vec3(0.0, 1.0, 0.0)))
+
+    --    local p_vec1 = glm.vec3(0.0, -0.5 * height, 0.0)
+    --    local p_vec2 = glm.vec3(0.0, -0.5 * height, 0.0)
+    --    -- Rest of cone
+    --    for j = 1, subdivision_side do
+    --        local angle = j * math.pi / subdivision_side
+    --        local vec1 = rotate_vector(glm.vec3(0.0, -0.5 * height, 0.0), angle, glm.normalize(glm.vec3(-z1, 0.0, x1)))
+    --        local vec2 = rotate_vector(glm.vec3(0.0, -0.5 * height, 0.0), angle, glm.normalize(glm.vec3(-z2, 0.0, x2)))
+
+    --        mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1) + p_vec1, p_vec1))
+    --        mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2) + p_vec2, p_vec2))
+    --        mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1) + vec1, vec1))
+
+    --        mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1) + vec1, vec1))
+    --        mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2) + p_vec2, p_vec2))
+    --        mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2) + vec2, vec2))
+
+    --        p_vec1 = vec1
+    --        p_vec2 = vec2
+    --    end
+    --end
+
     return mesh
 end
 
@@ -102,7 +162,7 @@ local function load_scene(filepath)
     -- Read shape data
     local shape_id, shape_info = string.match(fp:read(), '(%d+)%s+(.*)')
     shape_id = tonumber(shape_id) + 1
-    local shape_type, shape_info = string.match(shape_info, '(.+)%s+(.*)')
+    local shape_type, shape_info = string.match(shape_info, '([0-z]+)%s*(.*)')
 
     if string.lower(shape_type) == 'sphere' then
         shapes[shape_id] = Sphere()
