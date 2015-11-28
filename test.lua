@@ -1,5 +1,6 @@
 
 local function load_obj(filepath)
+    print("Loading "..tostring(filepath)..".")
     local vertices = {}
     local vertex_normals = {}
     local face_indices = {}
@@ -159,18 +160,21 @@ local function load_scene(filepath)
         particle.size = 1.0
         particles[pid] = particle
     end
-    -- Read shape data
-    local shape_id, shape_info = string.match(fp:read(), '(%d+)%s+(.*)')
-    shape_id = tonumber(shape_id) + 1
-    local shape_type, shape_info = string.match(shape_info, '([0-z]+)%s*(.*)')
 
-    if string.lower(shape_type) == 'sphere' then
-        shapes[shape_id] = Sphere()
-    elseif string.lower(shape_type) == 'polyhedron' then
-        shapes[shape_id] = load_obj("obj/"..shape_info..".obj")
-    else
-        fp:close()
-        error("Unknown shape type, "..shape_type)
+    -- Read shape data
+    for line in fp:lines() do
+        local shape_id, shape_info = string.match(line, '(%d+)%s+(.*)')
+        shape_id = tonumber(shape_id) + 1
+        local shape_type, shape_info = string.match(shape_info, '([0-z]+)%s*(.*)')
+
+        if string.lower(shape_type) == 'sphere' then
+            shapes[shape_id] = Sphere()
+        elseif string.lower(shape_type) == 'polyhedron' then
+            shapes[shape_id] = load_obj("obj/"..shape_info..".obj")
+        else
+            fp:close()
+            error("Unknown shape type, "..shape_type)
+        end
     end
 
     fp:close()
@@ -186,6 +190,7 @@ end
 
 function OnInit(argv)
     scene.zoom(12.5)
+    scene.set_background_color(glm.vec3(1.0))
 
     if argv[2] ~= nil then
         print("Loading "..argv[2])
