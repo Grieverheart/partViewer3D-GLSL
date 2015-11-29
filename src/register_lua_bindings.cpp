@@ -2,6 +2,7 @@
 #include "include/particle.h"
 #include "include/shape.h"
 #include "include/scene.h"
+#include <glm/gtc/matrix_access.hpp>
 #include <vector>
 
 extern "C"{
@@ -44,23 +45,6 @@ static int luaScene_raytrace(lua_State* L){
 
     return 1;
 }
-
-//TODO: Implement these. We first need to register glm::mat4, but it's a bit of
-//a pain in the ass to do properly because we first need to be able to overload
-//operators based on argument types.
-
-//static int luaScene_get_view_matrix(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_projection_matrix(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
-//static int luaScene_get_model_matrix(lua_State* L){
-//    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
-//    return 0;
-//}
 
 namespace{
     struct Sphere{};
@@ -431,7 +415,39 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
             .def_readwrite("y", &glm::vec4::y)
             .def_readwrite("z", &glm::vec4::z)
             .def_readwrite("w", &glm::vec4::w)
-            .endef();
+            .endef()
+        //TODO: Matrix access.
+        .class_<glm::mat3>("mat3")
+            .def_constructor<float>()
+            .def_constructor<glm::mat3>()
+            .def_constructor<glm::mat4>()
+            .def_operator<maan::add, glm::mat3>()
+            .def_operator<maan::sub, glm::mat3>()
+            .def_operator<maan::mul, glm::mat3>()
+            .def_operator<maan::mul, glm::vec3>()
+            .def_operator<maan::add, float>()
+            .def_operator<maan::sub, float>()
+            .def_operator<maan::mul, float>()
+            .endef()
+        .function_("column", (glm::vec3 (*)(const glm::mat3&, int index)) glm::column)
+        .function_("row", (glm::vec3 (*)(const glm::mat3&, int index)) glm::row)
+        .function_("inverse", (glm::mat3 (*)(const glm::mat3&)) glm::inverse)
+        .function_("transpose", (glm::mat3 (*)(const glm::mat3&)) glm::transpose)
+        .class_<glm::mat4>("mat4")
+            .def_constructor<float>()
+            .def_constructor<glm::mat4>()
+            .def_operator<maan::add, glm::mat4>()
+            .def_operator<maan::sub, glm::mat4>()
+            .def_operator<maan::mul, glm::mat4>()
+            .def_operator<maan::mul, glm::vec4>()
+            .def_operator<maan::add, float>()
+            .def_operator<maan::sub, float>()
+            .def_operator<maan::mul, float>()
+            .endef()
+        .function_("column", (glm::vec4 (*)(const glm::mat4&, int index)) glm::column)
+        .function_("row", (glm::vec4 (*)(const glm::mat4&, int index)) glm::row)
+        .function_("inverse", (glm::mat4 (*)(const glm::mat4&)) glm::inverse)
+        .function_("transpose", (glm::mat4 (*)(const glm::mat4&)) glm::transpose);
 
     maan::module_(L, "scene")
         .function_("zoom", &Scene::zoom, scene)
@@ -458,6 +474,9 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("set_ssao_radius", &Scene::set_ssao_radius, scene)
         .function_("get_ssao_radius", &Scene::get_ssao_radius, scene)
         .function_("set_clip_plane", &Scene::set_clip_plane, scene)
+        .function_("get_view_matrix", &Scene::get_view_matrix, scene)
+        .function_("get_projection_matrix", &Scene::get_projection_matrix, scene)
+        .function_("get_model_matrix", &Scene::get_model_matrix, scene)
         .function_("get_view_position", &Scene::get_view_position, scene)
         .function_("set_view_position", &Scene::set_view_position, scene)
         .function_("get_view_direction", &Scene::get_view_direction, scene)
@@ -477,9 +496,6 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("get_light_direction", &Scene::get_light_direction, scene)
         .function_("set_light_direction", &Scene::set_light_direction, scene)
         .function_("draw_text", &Scene::draw_text, scene);
-
-    //maan::module_(L, "window")
-    //    .function_("size", &Scene::zoom, scene);
 
 #define ADD_CLASS_FUNCTION(cls, name)\
     {#name, lua ##cls##_##name},
