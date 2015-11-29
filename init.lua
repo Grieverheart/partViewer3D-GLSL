@@ -190,7 +190,7 @@ end
 
 function OnInit(argv)
     scene.zoom(12.5)
-    scene.set_background_color(glm.vec3(1.0))
+    --scene.set_background_color(glm.vec3(1.0))
 
     if argv[2] ~= nil then
         print("Loading "..argv[2])

@@ -3,7 +3,7 @@ static const char quad_line_frag[] = R"(
 
 uniform float line_width;
 
-smooth in vec2 pass_Barycentric;
+noperspective in vec2 pass_Barycentric;
 layout(location = 0) out vec4 outColor;
 
 void main(void){
@@ -21,7 +21,7 @@ uniform mat4 MVPMatrix;
 layout(location = 0) in vec3 in_Position;
 layout(location = 1) in vec2 in_Barycentric;
 
-smooth out vec2 pass_Barycentric;
+noperspective out vec2 pass_Barycentric;
 
 void main(void){
 
