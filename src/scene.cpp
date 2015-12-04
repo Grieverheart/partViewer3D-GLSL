@@ -326,6 +326,7 @@ void Scene::load_scene(const SimConfig& config){
 
         glBindBuffer(GL_ARRAY_BUFFER, box_vbo_);
         glBufferData(GL_ARRAY_BUFFER, sizeof(float) * 120, vertex_data, GL_STATIC_DRAW);
+        delete[] vertex_data;
     }
 
     out_radius_ = glm::length(glm::vec3(
@@ -375,6 +376,7 @@ void Scene::load_scene(const SimConfig& config){
     );
 
     //Count shape instances and copy particles_
+    draw_pids_.clear();
     for(int i = 0; i < n_particles_; ++i){
         particle_colors_[i] = glm::vec3(77, 27, 147) / 255.0f;
         draw_pids_.push_back(i);

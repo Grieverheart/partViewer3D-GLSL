@@ -145,17 +145,17 @@ local function load_scene(filepath)
 
     -- Read box data
     local idx = 1
-    for match in string.gmatch(fp:read(), '([%d.-]+)') do
+    for match in string.gmatch(fp:read(), '(%S+)') do
         box[idx] = tonumber(match)
         idx = idx + 1
     end
 
     -- Read particle data
     for pid = 1, n_part do
-        local match = string.gmatch(fp:read(), '([%d.-]+)')
+        local match = string.gmatch(fp:read(), '(%S+)')
         local particle = Particle()
         particle.pos = glm.vec3(tonumber(match()), tonumber(match()), tonumber(match()))
-        particle.rot = glm.vec4(tonumber(match()), tonumber(match()), tonumber(match()), tonumber(match()))
+        particle.rot = glm.vec4(math.pi * tonumber(match()) / 180.0, tonumber(match()), tonumber(match()), tonumber(match()))
         particle.shape_id = tonumber(match())
         particle.size = 1.0
         particles[pid] = particle
@@ -332,6 +332,7 @@ function OnFrame()
     frame_id = frame_id + 1
     --print(frame_id)
     props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+    --props = TextProperties("/usr/share/fonts/levien-inconsolata/Inconsolata.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
     --props = TextProperties("/Users/nicktasios/Library/Fonts/Menlo for Powerline.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
     --props = TextProperties("C:\\Windows\\Fonts\\consola.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
     scene.draw_text(tostring(frame_id), props)

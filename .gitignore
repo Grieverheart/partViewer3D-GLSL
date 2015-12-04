@@ -9,3 +9,4 @@
 .DS_store
 main
 /build/
+obj/
