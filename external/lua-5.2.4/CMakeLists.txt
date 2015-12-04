@@ -39,7 +39,7 @@ if ( WIN32 AND NOT CYGWIN )
   # Windows systems
   option ( LUA_WIN "Windows specific build." ON )
   option ( LUA_BUILD_AS_DLL "Build Lua library as Dll." ${BUILD_SHARED_LIBS} )
-  
+
   # Paths (Double escapes ne  option needed)
   set ( LUA_DIRSEP "\\\\" )
   string ( REPLACE " /" ${LUA_DIRSEP} LUA_DIR "${LUA_DIR}" )
@@ -50,7 +50,7 @@ if ( WIN32 AND NOT CYGWIN )
 else ( )
   # Posix systems (incl. Cygwin)
   option ( LUA_USE_POSIX "Use POSIX features." ON )
-  #option ( LUA_USE_DLOPEN "Use dynamic linker to load modules." ON )
+  option ( LUA_USE_DLOPEN "Use dynamic linker to load modules." ON )
   option ( LUA_USE_MKSTEMP "Use mkstep." ON )
   option ( LUA_USE_ISATTY "Use tty." ON )
   option ( LUA_USE_POPEN "Use popen." ON )
@@ -69,15 +69,25 @@ endif ( )
 if ( LUA_USE_POSIX )
   # On POSIX Lua links to standard math library "m"
   list ( APPEND LIBS m )
+  add_definitions(-DLUA_USE_POSIX)
+endif ( )
+
+if ( LUA_USE_DLOPEN )
+  # Link to dynamic linker library "dl"
+    find_library ( DL_LIBRARY NAMES dl )
+    if ( DL_LIBRARY )
+    list ( APPEND LIBS ${DL_LIBRARY} )
+    endif ( )
+    add_definitions(-DLUA_USE_DLOPEN)
 endif ( )
 
 
 # Sources and headers
 include_directories ( src ${CMAKE_CURRENT_BINARY_DIR} )
-set ( SRC_CORE src/lapi.c src/lcode.c src/lctype.c src/ldebug.c src/ldo.c src/ldump.c 
-  src/lfunc.c src/lgc.c src/llex.c src/lmem.c src/lobject.c src/lopcodes.c src/lparser.c 
+set ( SRC_CORE src/lapi.c src/lcode.c src/lctype.c src/ldebug.c src/ldo.c src/ldump.c
+  src/lfunc.c src/lgc.c src/llex.c src/lmem.c src/lobject.c src/lopcodes.c src/lparser.c
   src/lstate.c src/lstring.c src/ltable.c src/ltm.c src/lundump.c src/lvm.c src/lzio.c )
-set ( SRC_LIB src/lauxlib.c src/lbaselib.c src/lbitlib.c src/lcorolib.c src/ldblib.c 
+set ( SRC_LIB src/lauxlib.c src/lbaselib.c src/lbitlib.c src/lcorolib.c src/ldblib.c
   src/liolib.c src/lmathlib.c src/loslib.c src/lstrlib.c src/ltablib.c src/linit.c src/loadlib.c)
 set ( SRC_LUA src/lua.c )
 set ( SRC_LUAC src/luac.c )
