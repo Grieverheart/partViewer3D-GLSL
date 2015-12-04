@@ -32,104 +32,6 @@ local function load_obj(filepath)
         end
     end
 
-    ---- Generate a cone mesh
-
-    --local mesh = Mesh()
-
-    --local subdivision = 50
-
-    --local sin_pi_4 = math.sin(math.pi * 0.25)
-    --local cos_pi_4 = math.cos(math.pi * 0.25)
-    --local factor  = 2.0 * math.pi / subdivision
-
-    --for i = 1, subdivision do
-    --    local theta1 = factor * i
-    --    local theta2 = factor * (i + 1)
-    --    local x1 = math.sin(theta1)
-    --    local z1 = math.cos(theta1)
-    --    local x2 = math.sin(theta2)
-    --    local z2 = math.cos(theta2)
-
-    --    -- Cone base
-    --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), glm.vec3(0.0, -1.0, 0.0)))
-    --    mesh:add_vertex(Vertex(glm.vec3(0.0, 0.0, 0.0), glm.vec3(0.0, -1.0, 0.0)))
-    --    mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2), glm.vec3(0.0, -1.0, 0.0)))
-
-    --    local theta3 = factor * (i - 0.5)
-    --    local theta4 = factor * (i + 0.5)
-    --    local theta5 = factor * (i + 1.5)
-    --    local normal1 = glm.normalize(glm.vec3(sin_pi_4 * math.sin(theta3), cos_pi_4, sin_pi_4 * math.cos(theta3)))
-    --    local normal2 = glm.normalize(glm.vec3(sin_pi_4 * math.sin(theta4), cos_pi_4, sin_pi_4 * math.cos(theta4)))
-    --    local normal3 = glm.normalize(glm.vec3(sin_pi_4 * math.sin(theta5), cos_pi_4, sin_pi_4 * math.cos(theta5)))
-    --    normal1 = 0.5 * (normal1 + normal2)
-    --    normal3 = 0.5 * (normal2 + normal3)
-
-    --    -- Rest of cone
-    --    mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2), normal3))
-    --    mesh:add_vertex(Vertex(glm.vec3(0.0, 1.0, 0.0), normal2))
-    --    mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1), normal1))
-    --end
-
-    ---- Generate a platelet mesh
-
-    --local function rotate_vector(vector, angle, axis)
-    --    local cos_angle = math.cos(angle)
-    --    local sin_angle = math.sin(angle)
-
-    --    return cos_angle * vector + sin_angle * (glm.cross(axis, vector)) +
-    --           (1.0 - cos_angle) * glm.dot(axis, vector) * axis
-    --end
-
-    --local mesh = Mesh()
-
-    --local subdivision = 50
-    --local subdivision_side = 20
-
-    --local sin_pi_4 = math.sin(math.pi * 0.25)
-    --local cos_pi_4 = math.cos(math.pi * 0.25)
-    --local factor  = 2.0 * math.pi / subdivision
-
-    --local height = 1.0
-    --local radius = 1.0
-
-    --for i = 1, subdivision do
-    --    local theta1 = factor * i
-    --    local theta2 = factor * (i + 1)
-    --    local x1 = radius * math.sin(theta1)
-    --    local z1 = radius * math.cos(theta1)
-    --    local x2 = radius * math.sin(theta2)
-    --    local z2 = radius * math.cos(theta2)
-
-    --    -- platelet bottom
-    --    mesh:add_vertex(Vertex(glm.vec3(x1,  -height * 0.5, z1), glm.vec3(0.0, -1.0, 0.0)))
-    --    mesh:add_vertex(Vertex(glm.vec3(0.0, -height * 0.5, 0.0), glm.vec3(0.0, -1.0, 0.0)))
-    --    mesh:add_vertex(Vertex(glm.vec3(x2,  -height * 0.5, z2), glm.vec3(0.0, -1.0, 0.0)))
-    --    -- platelet top
-    --    mesh:add_vertex(Vertex(glm.vec3(x2,  height * 0.5, z2), glm.vec3(0.0, 1.0, 0.0)))
-    --    mesh:add_vertex(Vertex(glm.vec3(0.0, height * 0.5, 0.0), glm.vec3(0.0, 1.0, 0.0)))
-    --    mesh:add_vertex(Vertex(glm.vec3(x1,  height * 0.5, z1), glm.vec3(0.0, 1.0, 0.0)))
-
-    --    local p_vec1 = glm.vec3(0.0, -0.5 * height, 0.0)
-    --    local p_vec2 = glm.vec3(0.0, -0.5 * height, 0.0)
-    --    -- Rest of cone
-    --    for j = 1, subdivision_side do
-    --        local angle = j * math.pi / subdivision_side
-    --        local vec1 = rotate_vector(glm.vec3(0.0, -0.5 * height, 0.0), angle, glm.normalize(glm.vec3(-z1, 0.0, x1)))
-    --        local vec2 = rotate_vector(glm.vec3(0.0, -0.5 * height, 0.0), angle, glm.normalize(glm.vec3(-z2, 0.0, x2)))
-
-    --        mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1) + p_vec1, p_vec1))
-    --        mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2) + p_vec2, p_vec2))
-    --        mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1) + vec1, vec1))
-
-    --        mesh:add_vertex(Vertex(glm.vec3(x1, 0.0, z1) + vec1, vec1))
-    --        mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2) + p_vec2, p_vec2))
-    --        mesh:add_vertex(Vertex(glm.vec3(x2, 0.0, z2) + vec2, vec2))
-
-    --        p_vec1 = vec1
-    --        p_vec2 = vec2
-    --    end
-    --end
-
     return mesh
 end
 
@@ -181,20 +83,15 @@ local function load_scene(filepath)
 
     scene.load(box, particles, shapes)
 
-    --pos = scene.get_view_position()
-    --pos.x = pos.x + 12.0
-    --scene.set_view_position(pos)
-
     return true
 end
 
 function OnInit(argv)
     scene.zoom(12.5)
-    --scene.set_background_color(glm.vec3(1.0))
 
-    if argv[2] ~= nil then
-        print("Loading "..argv[2])
-        return load_scene(argv[2])
+    if argv[1] ~= nil then
+        print("Loading "..argv[1])
+        return load_scene(argv[1])
     else
         print("Configuration not provided!")
         return false
@@ -327,14 +224,14 @@ function OnMouseScroll(y)
     scene.zoom(y)
 end
 
-frame_id = 0
-function OnFrame()
-    frame_id = frame_id + 1
-    --print(frame_id)
-    props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
-    --props = TextProperties("/usr/share/fonts/levien-inconsolata/Inconsolata.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
-    --props = TextProperties("/Users/nicktasios/Library/Fonts/Menlo for Powerline.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
-    --props = TextProperties("C:\\Windows\\Fonts\\consola.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
-    scene.draw_text(tostring(frame_id), props)
-    --scene.draw_text("Hello World!", props)
-end
+--frame_id = 0
+--function OnFrame()
+--    --frame_id = frame_id + 1
+--    --print(frame_id)
+--    --props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+--    --props = TextProperties("/usr/share/fonts/levien-inconsolata/Inconsolata.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+--    --props = TextProperties("/Users/nicktasios/Library/Fonts/Menlo for Powerline.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+--    --props = TextProperties("C:\\Windows\\Fonts\\consola.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+--    --scene.draw_text(tostring(frame_id), props)
+--    --scene.draw_text("Hello World!", props)
+--end

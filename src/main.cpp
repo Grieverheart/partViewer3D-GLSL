@@ -2,9 +2,9 @@
 #include "include/event_manager.h"
 #include "include/events.h"
 #include "include/register_lua_bindings.h"
-#include "include/perfmon.h"
 #include <GLFW/glfw3.h>
 #include <cstdio>
+#include <cstring>
 extern "C"{
 #include <lua.h>
 #include <lauxlib.h>
@@ -192,23 +192,20 @@ int main(int argc,char *argv[] ){
 
     register_lua_bindings(L, scene, window);
 
-    if(luaL_dofile(L, "init.lua")){
+    int arg_start = 1;
+    char lua_script[128] = "init.lua";
+    if(strncmp(argv[1], "-f", 2) == 0){
+        strncpy(lua_script, argv[2], sizeof(lua_script));
+        arg_start = 3;
+    }
+
+    if(luaL_dofile(L, lua_script)){
         printf("There was an error.\n %s\n", lua_tostring(L, -1));
     }
 
-
-    PerfMon perf;
-    double start_time = perf.get_time_ns();
-
-    call_lua_OnInit(L, argc, argv);
-
-    printf("%f\n", 1.0e-9 * (perf.get_time_ns() - start_time));
-
-    start_time = perf.get_time_ns();
-    int frame = 0;
+    call_lua_OnInit(L, argc - arg_start, argv + arg_start);
 
     while(!glfwWindowShouldClose(window) && running){
-        ++frame;
         evt_mgr->processQueue();
         scene->process();
 
@@ -218,7 +215,6 @@ int main(int argc,char *argv[] ){
 
         glfwSwapBuffers(window);
         glfwPollEvents();
-        if(frame % 100 == 0) printf("%f\n", 1.0e9 * frame / (perf.get_time_ns() - start_time));
     }
 
 	lua_close(L);

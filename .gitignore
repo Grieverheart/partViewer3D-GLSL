@@ -10,3 +10,5 @@
 main
 /build/
 obj/
+*.lua
+!init.lua
