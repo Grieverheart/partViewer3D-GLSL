@@ -86,7 +86,9 @@ local function load_scene(filepath)
     return true
 end
 
+local start_time = 0
 function OnInit(argv)
+    start_time = os.clock()
     scene.zoom(12.5)
 
     if argv[1] ~= nil then
@@ -100,6 +102,7 @@ end
 
 local projection_toggle = false
 local clip_toggle = false
+local draw_fps = false
 function OnKey(key, action, mods)
     if key == keyboard.key['b'] then
         if action == keyboard.action.release then
@@ -128,6 +131,10 @@ function OnKey(key, action, mods)
                 scene.disable_clip_plane();
             end
             clip_toggle = not clip_toggle;
+        end
+    elseif key == keyboard.key['r'] and mods == keyboard.mod['ctrl'] then
+        if action == keyboard.action.release then
+            draw_fps = not draw_fps
         end
     end
 end
@@ -224,14 +231,18 @@ function OnMouseScroll(y)
     scene.zoom(y)
 end
 
---frame_id = 0
---function OnFrame()
---    --frame_id = frame_id + 1
---    --print(frame_id)
---    --props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
---    --props = TextProperties("/usr/share/fonts/levien-inconsolata/Inconsolata.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
---    --props = TextProperties("/Users/nicktasios/Library/Fonts/Menlo for Powerline.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
---    --props = TextProperties("C:\\Windows\\Fonts\\consola.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
---    --scene.draw_text(tostring(frame_id), props)
---    --scene.draw_text("Hello World!", props)
---end
+local fps = 0
+local frames = 0
+function OnFrame()
+    frames = frames + 1
+    props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+    local end_time = os.clock()
+    if end_time - start_time > 0.2 then
+        fps = math.floor(frames / (end_time - start_time))
+        start_time = end_time
+        frames = 0
+    end
+    if draw_fps == true then
+        scene.draw_text(tostring(fps), props)
+    end
+end
