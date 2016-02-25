@@ -142,10 +142,7 @@ private:
 	unsigned int* particle_flags_;
     glm::vec3* particle_colors_;
 
-    Particle* particles_;
-    Shape* shapes_;
-    int n_shapes_;
-    int n_particles_;
+    SimConfig* config_;
 
 	unsigned int box_vao_;
 	unsigned int box_vbo_;
@@ -162,7 +159,6 @@ private:
     std::vector<int> draw_pids_;
     std::vector<int>::iterator draw_points_end_;
 
-	bool is_scene_loaded_;
     bool is_clip_plane_active_;
 	bool is_box_drawing_active_;
 	bool is_blur_active_;

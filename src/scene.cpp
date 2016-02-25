@@ -61,9 +61,9 @@ Scene::Scene(int width, int height):
     clip_plane_{0.0, 0.0, -1.0, 0.0},
     shape_vaos_(nullptr), shape_vbos_(nullptr),
     particle_flags_(nullptr),
-    particles_(nullptr), shapes_(nullptr), n_shapes_(0), n_particles_(0),
+    config_(nullptr),
     box_vao_(0), box_vbo_(0), fullscreen_triangle_vao_(0),
-    is_scene_loaded_(false), is_clip_plane_active_(false), is_box_drawing_active_(false), is_blur_active_(true),
+    is_clip_plane_active_(false), is_box_drawing_active_(false), is_blur_active_(true),
     projection_type_(Projection::PERSPECTIVE),
     light_(glm::vec3(-0.27, -0.91, -0.33)),
     sh_gbuffer_(nullptr), sh_gbuffer_instanced_(nullptr), sh_ssao_(nullptr),
@@ -232,17 +232,19 @@ Scene::~Scene(void){
     delete sh_text_;
     delete sh_quad_line_;
 
-    if(n_shapes_) glDeleteVertexArrays(n_shapes_, shape_vaos_);
-    if(n_shapes_) glDeleteBuffers(n_shapes_, shape_vbos_);
+    if(config_){
+        glDeleteVertexArrays(config_->shapes.size(), shape_vaos_);
+        glDeleteBuffers(config_->shapes.size(), shape_vbos_);
+    }
 
     delete[] shape_vaos_;
     delete[] shape_vbos_;
-    delete[] shapes_;
     delete[] model_matrices_;
     delete[] particle_flags_;
     delete[] particle_colors_;
 
     delete grid_;
+    delete config_;
 
     glDeleteVertexArrays(1, &box_vao_);
     glDeleteBuffers(1, &box_vbo_);
@@ -251,25 +253,19 @@ Scene::~Scene(void){
 }
 
 void Scene::load_scene(const SimConfig& config){
-    if(is_scene_loaded_){
-        glDeleteBuffers(n_shapes_, shape_vbos_);
-        glDeleteVertexArrays(n_shapes_, shape_vaos_);
+    if(config_){
+        glDeleteBuffers(config_->shapes.size(), shape_vbos_);
+        glDeleteVertexArrays(config_->shapes.size(), shape_vaos_);
+        delete config_;
         delete grid_;
-        delete[] particles_;
         delete[] shape_vaos_;
         delete[] shape_vbos_;
-        delete[] shapes_;
         delete[] model_matrices_;
         delete[] particle_flags_;
         delete[] particle_colors_;
     }
 
-    is_scene_loaded_ = true;
-
-    grid_ = new Grid(config);
-
-    n_particles_ = config.particles.size();
-    particles_ = new Particle[n_particles_];
+    config_ = new SimConfig(config);
 
     //Configuration box
     {
@@ -356,15 +352,15 @@ void Scene::load_scene(const SimConfig& config){
     inv_view_matrix_         = glm::inverse(view_matrix_);
     light_view_matrix_       = glm::lookAt(-out_radius_ * light_.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-    n_shapes_ = config.shapes.size();
+    size_t n_particles = config.particles.size();
+    size_t n_shapes = config.shapes.size();
 
-    shape_vaos_ = new unsigned int[n_shapes_]{};
-    shape_vbos_ = new unsigned int[n_shapes_]{};
+    shape_vaos_ = new unsigned int[n_shapes]{};
+    shape_vbos_ = new unsigned int[n_shapes]{};
 
-    shapes_          = new Shape[n_shapes_];
-    particle_flags_  = new unsigned int[n_particles_]{};
-    particle_colors_ = new glm::vec3[n_particles_];
-    model_matrices_  = new glm::mat4[n_particles_];
+    particle_flags_  = new unsigned int[n_particles]{};
+    particle_colors_ = new glm::vec3[n_particles];
+    model_matrices_  = new glm::mat4[n_particles];
 
     glm::mat4 tMatrix = glm::translate(
         glm::mat4(1.0),
@@ -377,10 +373,9 @@ void Scene::load_scene(const SimConfig& config){
 
     //Count shape instances and copy particles_
     draw_pids_.clear();
-    for(int i = 0; i < n_particles_; ++i){
+    for(size_t i = 0; i < n_particles; ++i){
         particle_colors_[i] = glm::vec3(77, 27, 147) / 255.0f;
         draw_pids_.push_back(i);
-        particles_[i] = config.particles[i];
 
         glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[i].pos);
         glm::mat4 rLocalMatrix = glm::rotate(
@@ -392,12 +387,10 @@ void Scene::load_scene(const SimConfig& config){
         model_matrices_[i] = tLocalMatrix * rLocalMatrix;
     }
 
-    glGenVertexArrays(n_shapes_, shape_vaos_);
-    glGenBuffers(n_shapes_, shape_vbos_);
+    glGenVertexArrays(n_shapes, shape_vaos_);
+    glGenBuffers(n_shapes, shape_vbos_);
 
-    for(int shape_id = 0; shape_id < n_shapes_; ++shape_id){
-        shapes_[shape_id] = config.shapes[shape_id];
-
+    for(size_t shape_id = 0; shape_id < n_shapes; ++shape_id){
         glBindVertexArray(shape_vaos_[shape_id]);
         if(config.shapes[shape_id].type == Shape::MESH){
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
@@ -502,6 +495,8 @@ void Scene::load_scene(const SimConfig& config){
 
 //TODO: Handle Orthographic projection correctly.
 bool Scene::raytrace(int x, int y, int& pid){
+    if(!grid_) grid_ = new Grid(*config_);
+
     glm::vec3 ray_origin, ray_dir;
     if(projection_type_ == Projection::PERSPECTIVE){
         glm::mat4 imodel_matrix = glm::inverse(model_matrix_);
@@ -653,9 +648,9 @@ void Scene::process(void){
         }
     );
 
-    double* depths = new double[n_particles_];
+    double* depths = new double[config_->particles.size()];
     auto mv_matrix = view_matrix_ * model_matrix_;
-    for(int i = 0; i < n_particles_; ++i){
+    for(size_t i = 0; i < config_->particles.size(); ++i){
         auto pos = mv_matrix * model_matrices_[i] * glm::vec4(0.0, 0.0, 0.0, 1.0);
         depths[i] = pos.z / pos.w;
     }
@@ -710,7 +705,7 @@ void Scene::drawConfigurationBox(void)const{
 }
 
 void Scene::render(void){
-    if(!is_scene_loaded_) return;
+    if(!config_) return;
     glUseProgram(0);
 
     glDepthMask(GL_TRUE);
@@ -733,11 +728,11 @@ void Scene::render(void){
 
             glViewport(0, 0, window_width_ * 2, window_height_ * 2);
 
-            for(int shape_id = 0; shape_id < n_shapes_; ++shape_id){
+            for(size_t shape_id = 0; shape_id < config_->shapes.size(); ++shape_id){
                 glBindVertexArray(shape_vaos_[shape_id]);
 
-                if(shapes_[shape_id].type == Shape::MESH){
-                    int n_vertices = shapes_[shape_id].mesh.n_vertices;
+                if(config_->shapes[shape_id].type == Shape::MESH){
+                    size_t n_vertices = config_->shapes[shape_id].mesh.n_vertices;
                     if(is_clip_plane_active_){
                         glEnable(GL_STENCIL_TEST);
                         glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
@@ -755,7 +750,7 @@ void Scene::render(void){
 
                     for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
                         auto pid = *pid_itr;
-                        if((particles_[pid].shape_id != shape_id) ||
+                        if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_shadowmap_instanced_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
                         glDrawArrays(GL_TRIANGLES, 0, n_vertices);
@@ -797,7 +792,7 @@ void Scene::render(void){
 
                     for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
                         auto pid = *pid_itr;
-                        if((particles_[pid].shape_id != shape_id) ||
+                        if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_shadowmap_spheres_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
                         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -814,10 +809,10 @@ void Scene::render(void){
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-            for(int shape_id = 0; shape_id < n_shapes_; ++shape_id){
+            for(size_t shape_id = 0; shape_id < config_->shapes.size(); ++shape_id){
                 glBindVertexArray(shape_vaos_[shape_id]);
-                if(shapes_[shape_id].type == Shape::MESH){
-                    int n_vertices = shapes_[shape_id].mesh.n_vertices;
+                if(config_->shapes[shape_id].type == Shape::MESH){
+                    int n_vertices = config_->shapes[shape_id].mesh.n_vertices;
                     if(is_clip_plane_active_){
                         glEnable(GL_STENCIL_TEST);
                         glStencilOpSeparate(GL_FRONT, GL_KEEP, GL_INCR_WRAP, GL_INCR_WRAP);
@@ -836,7 +831,7 @@ void Scene::render(void){
 
                     for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
                         auto pid = *pid_itr;
-                        if((particles_[pid].shape_id != shape_id) ||
+                        if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_gbuffer_instanced_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
                         sh_gbuffer_instanced_->setUniform("in_Color", 1, particle_colors_[pid]);
@@ -892,7 +887,7 @@ void Scene::render(void){
 
                     for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
                         auto pid = *pid_itr;
-                        if((particles_[pid].shape_id != shape_id) ||
+                        if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_spheres_->setUniform("in_Color", 1, particle_colors_[pid]);
                         sh_spheres_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
@@ -1016,15 +1011,15 @@ void Scene::render(void){
     //"Selection Pass"
     glEnable(GL_STENCIL_TEST);
     for(auto selected_pid: selected_pids_){
-        int shape_id = particles_[selected_pid].shape_id;
+        int shape_id = config_->particles[selected_pid].shape_id;
 
         glBindVertexArray(shape_vaos_[shape_id]);
         glEnable(GL_DEPTH_TEST);
         glStencilMask(0xFF);
         glClear(GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-        if(shapes_[shape_id].type == Shape::MESH){
-            int n_vertices = shapes_[shape_id].mesh.n_vertices;
+        if(config_->shapes[shape_id].type == Shape::MESH){
+            int n_vertices = config_->shapes[shape_id].mesh.n_vertices;
             sh_color_->bind();
 
             glStencilFunc(GL_ALWAYS, 1, 0xFF);

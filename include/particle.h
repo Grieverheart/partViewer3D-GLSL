@@ -2,7 +2,7 @@
 #define PV_PARTICLE_H
 
 struct Particle{
-    int shape_id;
+    size_t shape_id;
     //Axis-angle
     glm::vec4 rot;
     glm::vec3 pos;
