@@ -15,7 +15,7 @@ struct Shape{
         if(type == MESH){
             mesh.n_vertices = other.mesh.n_vertices;
             mesh.vertices = new Vertex[mesh.n_vertices];
-            for(int i = 0; i < mesh.n_vertices; ++i){
+            for(size_t i = 0; i < mesh.n_vertices; ++i){
                 mesh.vertices[i] = other.mesh.vertices[i];
             }
         }
@@ -28,7 +28,7 @@ struct Shape{
 
     struct Mesh{
         Vertex* vertices;
-        int n_vertices;
+        size_t n_vertices;
     };
 
     struct Sphere{};

@@ -8,7 +8,9 @@
 *.dll
 .DS_store
 main
+Data/
 /build/
+lualibs/
 obj/
 *.lua
 !init.lua

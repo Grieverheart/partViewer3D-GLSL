@@ -189,7 +189,7 @@ Grid::Grid(const SimConfig& config):
         if(config.shapes[shape_id].type == Shape::MESH){
             const Shape::Mesh& mesh = config.shapes[shape_id].mesh;
             float max = out_radii[shape_id] * out_radii[shape_id];
-            for(int vid = 1; vid < mesh.n_vertices; ++vid){
+            for(size_t vid = 1; vid < mesh.n_vertices; ++vid){
                 float dot = glm::dot(mesh.vertices[vid]._coord, mesh.vertices[vid]._coord);
                 if(dot > max){
                     max = dot;
@@ -218,7 +218,7 @@ Grid::Grid(const SimConfig& config):
             float size = config.particles[i].size;
 
             if(config.shapes[shape_id].type == Shape::MESH){
-                for(int fid = 0; fid < config.shapes[shape_id].mesh.n_vertices; fid += 3){
+                for(size_t fid = 0; fid < config.shapes[shape_id].mesh.n_vertices; fid += 3){
                     const Vertex* vertices = config.shapes[shape_id].mesh.vertices + fid;
                     glm::vec3 vertex_pos[] = {vertices[0]._coord, vertices[1]._coord, vertices[2]._coord};
                     glm::vec4 rot = config.particles[i].rot;

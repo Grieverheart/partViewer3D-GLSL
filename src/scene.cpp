@@ -325,11 +325,31 @@ void Scene::load_scene(const SimConfig& config){
         delete[] vertex_data;
     }
 
+    std::vector<double> shape_outradii(config.shapes.size());
+    for(size_t sid = 0; sid < config.shapes.size(); ++sid){
+        if(config.shapes[sid].type == Shape::MESH){
+            const Shape::Mesh& mesh = config.shapes[sid].mesh;
+            double max_vertex = 0.0;
+            for(size_t vid = 0; vid < mesh.n_vertices; ++vid){
+                double dist = glm::length(mesh.vertices[vid]._coord);
+                if(dist > max_vertex) max_vertex = dist;
+            }
+            shape_outradii[sid] = max_vertex;
+        }
+        else shape_outradii[sid] = 1.0;
+    }
+
+    double max_outradius = 0.0;
+    for(auto particle: config.particles){
+        double outradius = particle.size * shape_outradii[particle.shape_id];
+        if(outradius > max_outradius) max_outradius = outradius;
+    }
+
     out_radius_ = glm::length(glm::vec3(
         (config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
         (config.box[1][1] + config.box[1][2]) / 2.0,
         config.box[2][2] / 2.0
-    )) + 1.0;
+    )) + max_outradius;
 
     float init_zoom = -4.0;
     for(int i = 0; i < 3; i++){
