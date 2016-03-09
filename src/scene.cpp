@@ -258,6 +258,7 @@ void Scene::load_scene(const SimConfig& config){
         glDeleteVertexArrays(config_->shapes.size(), shape_vaos_);
         delete config_;
         delete grid_;
+        grid_ = nullptr;
         delete[] shape_vaos_;
         delete[] shape_vbos_;
         delete[] model_matrices_;
@@ -404,7 +405,7 @@ void Scene::load_scene(const SimConfig& config){
             glm::vec3(config.particles[i].rot.y, config.particles[i].rot.z, config.particles[i].rot.w)
         );
 
-        model_matrices_[i] = tLocalMatrix * rLocalMatrix;
+        model_matrices_[i] = tLocalMatrix * rLocalMatrix * glm::scale(glm::mat4(1.0), glm::vec3(config.particles[i].size));
     }
 
     glGenVertexArrays(n_shapes, shape_vaos_);
@@ -515,7 +516,12 @@ void Scene::load_scene(const SimConfig& config){
 
 //TODO: Handle Orthographic projection correctly.
 bool Scene::raytrace(int x, int y, int& pid){
-    if(!grid_) grid_ = new Grid(*config_);
+    if(!grid_){
+        grid_ = new Grid(*config_);
+        for(size_t pid = 0; pid < config_->particles.size(); ++pid){
+            if(particle_flags_[pid] & ParticleFlags::Hidden) grid_->ignore_id(pid);
+        }
+    }
 
     glm::vec3 ray_origin, ray_dir;
     if(projection_type_ == Projection::PERSPECTIVE){
@@ -565,14 +571,14 @@ void Scene::clear_selection(void){
 void Scene::hide_particle(int pid){
     if(!(particle_flags_[pid] & ParticleFlags::Hidden)){
         particle_flags_[pid] |= ParticleFlags::Hidden;
-        grid_->ignore_id(pid);
+        if(grid_) grid_->ignore_id(pid);
     }
 }
 
 void Scene::unhide_particle(int pid){
     if(particle_flags_[pid] & ParticleFlags::Hidden){
         particle_flags_[pid] &= ~ParticleFlags::Hidden;
-        grid_->unignore_id(pid);
+        if(grid_) grid_->unignore_id(pid);
     }
 }
 
@@ -643,6 +649,7 @@ void Scene::wsize_changed(int w, int h){
 }
 
 void Scene::process(void){
+    if(!config_) return;
     set_projection();
     light_view_matrix_ = glm::lookAt(-out_radius_ * light_.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
@@ -805,7 +812,6 @@ void Scene::render(void){
                     sh_shadowmap_spheres_->bind();
 
                     sh_shadowmap_spheres_->setUniform("clip", is_clip_plane_active_);
-                    sh_shadowmap_spheres_->setUniform("radius", 0.5f);
                     sh_shadowmap_spheres_->setUniform("clip_plane", 1, clip_plane_);
                     sh_shadowmap_spheres_->setUniform("MVMatrix", 1, light_view_matrix_ * model_matrix_);
                     sh_shadowmap_spheres_->setUniform("ProjectionMatrix", 1, light_projection_matrix_);
@@ -814,6 +820,7 @@ void Scene::render(void){
                         auto pid = *pid_itr;
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
+                        sh_shadowmap_spheres_->setUniform("radius", config_->particles[pid].size);
                         sh_shadowmap_spheres_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
                         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
                     }
@@ -900,7 +907,6 @@ void Scene::render(void){
                     else{
                         sh_spheres_->setUniform("perspective_scale", 1.0f);
                     }
-                    sh_spheres_->setUniform("radius", 0.5f);
                     sh_spheres_->setUniform("MVMatrix", 1, view_matrix_ * model_matrix_);
                     sh_spheres_->setUniform("ProjectionMatrix", 1, projection_matrix_);
                     sh_spheres_->setUniform("InvProjectionMatrix", 1, inv_projection_matrix_);
@@ -909,6 +915,7 @@ void Scene::render(void){
                         auto pid = *pid_itr;
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
+                        sh_spheres_->setUniform("radius", config_->particles[pid].size);
                         sh_spheres_->setUniform("in_Color", 1, particle_colors_[pid]);
                         sh_spheres_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
                         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1064,19 +1071,21 @@ void Scene::render(void){
 
             float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
 
+            float radius = config_->particles[selected_pid].size;
+
             glm::mat4 mv_matrix = view_matrix_ * model_matrix_ * model_matrices_[selected_pid];
             sh_color_sphere_->setUniform("mv_matrix", 1, mv_matrix);
             sh_color_sphere_->setUniform("projection_matrix", 1, projection_matrix_);
             sh_color_sphere_->setUniform("iprojection_matrix", 1, inv_projection_matrix_);
             sh_color_sphere_->setUniform("perspective_scale", perspective_scale);
-            sh_color_sphere_->setUniform("radius", 0.5f);
+            sh_color_sphere_->setUniform("radius", radius);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
             glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
             glStencilMask(0x00);
             glDisable(GL_DEPTH_TEST);
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            sh_color_sphere_->setUniform("radius", 1.1f * 0.5f);
+            sh_color_sphere_->setUniform("radius", 1.1f * radius);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
 

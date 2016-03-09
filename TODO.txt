@@ -31,6 +31,8 @@
 --Perhaps add the ability to draw individual particles as points.
 --Handle clipping with point drawing.
 --Draw lines with shader.
+Add support for snapshots to png (with transparency).
+Add support for creating movies.
 Try out bokeh.
 Add suport for multiple windows.
 Add documentation.
