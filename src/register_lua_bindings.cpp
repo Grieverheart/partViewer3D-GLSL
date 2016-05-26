@@ -13,7 +13,7 @@ extern "C"{
 #include <maan/maan.hpp>
 
 static int luaScene_set_projection_type(lua_State* L){
-    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
     lua_pushstring(L, "perspective");
     lua_pushstring(L, "orthographic");
     if(lua_rawequal(L, 1, 2)){
@@ -30,7 +30,7 @@ static int luaScene_set_projection_type(lua_State* L){
 }
 
 static int luaScene_raytrace(lua_State* L){
-    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 
     int x = lua_tointeger(L, 1);
     int y = lua_tointeger(L, 2);
@@ -105,16 +105,25 @@ static int luaScene_load(lua_State* L){
         config.shapes.push_back(shape);
     }
 
-    auto scene = static_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 
     scene->load_scene(config);
 
     return 0;
 }
 
+static int luaScene_raw_load(lua_State* L){
+    void* raw_config = lua_touserdata(L, 1);
+    if(raw_config){
+        auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
+        scene->load_scene(*reinterpret_cast<SimConfig*>(raw_config));
+    }
+    return 0;
+}
+
 static int luaWindow_size(lua_State* L){
     int width, height;
-    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
     glfwGetWindowSize(window, &width, &height);
     lua_pushinteger(L, width);
     lua_pushinteger(L, height);
@@ -123,7 +132,7 @@ static int luaWindow_size(lua_State* L){
 
 static int luaWindow_position(lua_State* L){
     int x, y;
-    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
     glfwGetWindowPos(window, &x, &y);
     lua_pushinteger(L, x);
     lua_pushinteger(L, y);
@@ -131,7 +140,7 @@ static int luaWindow_position(lua_State* L){
 }
 
 static int luaWindow_set_size(lua_State* L){
-    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
     int width = lua_tointeger(L, 1);
     int height = lua_tointeger(L, 2);
     glfwSetWindowSize(window, width, height);
@@ -139,7 +148,7 @@ static int luaWindow_set_size(lua_State* L){
 }
 
 static int luaWindow_set_position(lua_State* L){
-    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
     int x = lua_tointeger(L, 1);
     int y = lua_tointeger(L, 2);
     glfwSetWindowPos(window, x, y);
@@ -147,7 +156,7 @@ static int luaWindow_set_position(lua_State* L){
 }
 
 static int luaWindow_set_title(lua_State* L){
-    auto window = static_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
+    auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
     const char* title = lua_tostring(L, 1);
     glfwSetWindowTitle(window, title);
     return 0;
@@ -503,13 +512,14 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
     {
         luaL_Reg funcs[] = {
             ADD_CLASS_FUNCTION(Scene, load)
+            ADD_CLASS_FUNCTION(Scene, raw_load)
             ADD_CLASS_FUNCTION(Scene, set_projection_type)
             ADD_CLASS_FUNCTION(Scene, raytrace)
             {NULL, NULL}
         };
 
         lua_getglobal(L, "scene");
-        lua_pushlightuserdata(L, static_cast<void*>(scene));
+        lua_pushlightuserdata(L, reinterpret_cast<void*>(scene));
         luaL_setfuncs(L, funcs, 1);
         lua_pop(L, 1);
     }
