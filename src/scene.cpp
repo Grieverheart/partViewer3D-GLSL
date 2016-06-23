@@ -19,6 +19,10 @@
 #include "include/smaa/smaa_area.h"
 #include "include/smaa/smaa_search.h"
 
+#define STBIW_ASSERT
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "include/stb_image_write.h"
+
 //Include shaders
 #include "include/shaders/accumulator.glsl"
 #include "include/shaders/blur.glsl"
@@ -1340,6 +1344,37 @@ void Scene::draw_text(const char* text, const Text::Properties& props){
     }
 
     glDisable(GL_BLEND);
+}
+
+void Scene::save_snapshot(const char* path)const{
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+    char* data = new char[3 * window_width_ * window_height_ * sizeof(GLubyte)];
+    //glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glReadPixels(0, 0, window_width_, window_height_, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    //TODO: Optimize
+    {
+        int w = window_width_, h = window_height_;
+        int depth = 3;
+        unsigned char temp;
+        unsigned char* wdata = (unsigned char*) data;
+
+        // @OPTIMIZE: use a bigger temp buffer and memcpy multiple pixels at once
+        for (int row = 0; row < (h >> 1); row++) {
+            for (int col = 0; col < w; col++) {
+               for (int z = 0; z < depth; z++) {
+                   temp = wdata[(row * w + col) * depth + z];
+                   wdata[(row * w + col) * depth + z] = wdata[((h - row - 1) * w + col) * depth + z];
+                   wdata[((h - row - 1) * w + col) * depth + z] = temp;
+             }
+          }
+        }
+    }
+
+    int has_error = !stbi_write_png(path, window_width_, window_height_, 3, data, 3 * window_width_ * sizeof(GLubyte));
+    if(has_error){
+        printf("Error saving image %s\n", path);
+    }
 }
 
 

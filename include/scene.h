@@ -106,6 +106,8 @@ public:
 
     void draw_text(const char* text, const Text::Properties& props);
 
+    void save_snapshot(const char* path)const;
+
 private:
 	int window_width_;
 	int window_height_;

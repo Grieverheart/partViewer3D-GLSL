@@ -504,7 +504,8 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("set_sky_color", &Scene::set_sky_color, scene)
         .function_("get_light_direction", &Scene::get_light_direction, scene)
         .function_("set_light_direction", &Scene::set_light_direction, scene)
-        .function_("draw_text", &Scene::draw_text, scene);
+        .function_("draw_text", &Scene::draw_text, scene)
+        .function_("save_snapshot", &Scene::save_snapshot, scene);
 
 #define ADD_CLASS_FUNCTION(cls, name)\
     {#name, lua ##cls##_##name},
