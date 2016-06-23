@@ -57,6 +57,7 @@ Scene::Scene(int width, int height):
     window_width_(width), window_height_(height),
     fov_(60.0f), zoom_(0.0f),
     model_matrix_(1.0),
+    model_matrices_(nullptr),
     background_color_(glm::vec3(44, 114, 220) / 255.0f),
     sky_color_(0.529, 0.808, 0.921),
     point_radius_(0.2f), point_outline_radius_(0.14f),
@@ -66,6 +67,7 @@ Scene::Scene(int width, int height):
     shape_vaos_(nullptr), shape_vbos_(nullptr),
     particle_flags_(nullptr),
     config_(nullptr),
+    particle_colors_(nullptr),
     box_vao_(0), box_vbo_(0), fullscreen_triangle_vao_(0),
     is_clip_plane_active_(false), is_box_drawing_active_(false), is_blur_active_(true),
     projection_type_(Projection::PERSPECTIVE),
@@ -679,26 +681,28 @@ void Scene::process(void){
         }
     );
 
-    double* depths = new double[config_->particles.size()];
-    auto mv_matrix = view_matrix_ * model_matrix_;
-    for(size_t i = 0; i < config_->particles.size(); ++i){
-        auto pos = mv_matrix * model_matrices_[i] * glm::vec4(0.0, 0.0, 0.0, 1.0);
-        depths[i] = pos.z / pos.w;
+    if(config_){
+        double* depths = new double[config_->particles.size()];
+        auto mv_matrix = view_matrix_ * model_matrix_;
+        for(size_t i = 0; i < config_->particles.size(); ++i){
+            auto pos = mv_matrix * model_matrices_[i] * glm::vec4(0.0, 0.0, 0.0, 1.0);
+            depths[i] = pos.z / pos.w;
+        }
+
+        std::sort(draw_pids_.begin(), draw_points_end_,
+            [depths](int i, int j) -> bool {
+                return (depths[i] < depths[j]);
+            }
+        );
+
+        std::sort(draw_points_end_, draw_pids_.end(),
+            [depths](int i, int j) -> bool {
+                return (depths[i] > depths[j]);
+            }
+        );
+
+        delete[] depths;
     }
-
-    std::sort(draw_pids_.begin(), draw_points_end_,
-        [depths](int i, int j) -> bool {
-            return (depths[i] < depths[j]);
-        }
-    );
-
-    std::sort(draw_points_end_, draw_pids_.end(),
-        [depths](int i, int j) -> bool {
-            return (depths[i] > depths[j]);
-        }
-    );
-
-    delete[] depths;
 }
 
 void Scene::set_projection(void){

@@ -17,7 +17,7 @@ static Scene* scene          = nullptr;
 static EventManager* evt_mgr = nullptr;
 static lua_State* L          = nullptr;
 
-static void call_lua_OnInit(lua_State* L, int argc, char* argv[]){
+static bool call_lua_OnInit(lua_State* L, int argc, char* argv[]){
     lua_getglobal(L, "OnInit");
     if(!lua_isnil(L, -1)){
         lua_createtable(L, argc, 0);
@@ -28,9 +28,12 @@ static void call_lua_OnInit(lua_State* L, int argc, char* argv[]){
         }
         if(lua_pcall(L, 1, 1, 0)){
             printf("There was an error.\n %s\n", lua_tostring(L, -1));
+            return false;
         }
+        return lua_toboolean(L, -1);
     }
-    else lua_pop(L, 1);
+    lua_pop(L, 1);
+    return false;
 }
 
 static void call_lua_OnFrame(lua_State* L){
@@ -194,7 +197,7 @@ int main(int argc,char *argv[] ){
 
     int arg_start = 1;
     char lua_script[128] = "init.lua";
-    if(strncmp(argv[1], "-f", 2) == 0){
+    if(argc > 1 && strncmp(argv[1], "-f", 2) == 0){
         strncpy(lua_script, argv[2], sizeof(lua_script));
         arg_start = 3;
     }

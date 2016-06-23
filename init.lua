@@ -91,13 +91,13 @@ function OnInit(argv)
     start_time = os.clock()
     scene.zoom(12.5)
 
-    if argv[1] ~= nil then
+    if #argv > 0 and argv[1] ~= nil then
         print("Loading "..argv[1])
         return load_scene(argv[1])
-    else
-        print("Configuration not provided!")
-        return false
     end
+
+    print("Configuration not provided!")
+    return false
 end
 
 local projection_toggle = false
