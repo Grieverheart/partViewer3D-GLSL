@@ -9,14 +9,14 @@ cmake_minimum_required ( VERSION 2.8 )
 
 ## CONFIGURATION
 # Default configuration (we assume POSIX by default)
-set ( LUA_PATH "LUA_PATH" CACHE STRING "Environment variable to use as package.path." )
-set ( LUA_CPATH "LUA_CPATH" CACHE STRING "Environment variable to use as package.cpath." )
-set ( LUA_INIT "LUA_INIT" CACHE STRING "Environment variable for initial script." )
+set ( LUA_PATH "LUA_PATH") #Environment variable to use as package.path.
+set ( LUA_CPATH "LUA_CPATH") #Environment variable to use as package.cpath.
+set ( LUA_INIT "LUA_INIT") #Environment variable for initial script.
 
-option ( LUA_ANSI "Use only ansi features." OFF )
-option ( LUA_USE_RELATIVE_LOADLIB "Use modified loadlib.c with support for relative paths on posix systems." ON )
-option ( LUA_COMPAT_ALL "Enable backwards compatibility options." ON )
-set ( LUA_IDSIZE 60 CACHE NUMBER "gives the maximum size for the description of the source." )
+set ( LUA_ANSI OFF ) #"Use only ansi features." 
+set ( LUA_USE_RELATIVE_LOADLIB ON ) #Use modified loadlib.c with support for relative paths on posix systems. 
+set ( LUA_COMPAT_ALL ON ) #Enable backwards compatibility options. 
+set ( LUA_IDSIZE 60 ) #Gives the maximum size for the description of the source. 
 
 #2DO: LUAI_* and LUAL_* settings, for now defaults are used.
 set ( LUA_DIRSEP "/" )
@@ -29,7 +29,7 @@ if ( LUA_USE_RELATIVE_LOADLIB )
   string ( REGEX REPLACE "[^!/]+" ".." LUA_DIR "!/${INSTALL_BIN}/" )
 else ( )
   # Direct path to installation
-  set ( LUA_DIR ${CMAKE_INSTALL_PREFIX} CACHE STRING "Destination from which modules will be resolved. See INSTALL_LMOD and INSTALL_CMOD." )
+  set ( LUA_DIR ${CMAKE_INSTALL_PREFIX}) #Destination from which modules will be resolved. See INSTALL_LMOD and INSTALL_CMOD. 
 endif ( )
 
 set ( LUA_PATH_DEFAULT "./?.lua;${LUA_DIR}${LUA_LDIR}/?.lua;${LUA_DIR}${LUA_LDIR}/?/init.lua" )
@@ -37,8 +37,8 @@ set ( LUA_CPATH_DEFAULT "./?${LUA_MODULE_SUFFIX};${LUA_DIR}${LUA_CDIR}/?${LUA_MO
 
 if ( WIN32 AND NOT CYGWIN )
   # Windows systems
-  option ( LUA_WIN "Windows specific build." ON )
-  option ( LUA_BUILD_AS_DLL "Build Lua library as Dll." ${BUILD_SHARED_LIBS} )
+  set ( LUA_WIN ON ) #Windows specific build. 
+  set ( LUA_BUILD_AS_DLL ${BUILD_SHARED_LIBS} ) #Build Lua library as Dll. 
 
   # Paths (Double escapes ne  option needed)
   set ( LUA_DIRSEP "\\\\" )
@@ -49,18 +49,18 @@ if ( WIN32 AND NOT CYGWIN )
   string ( REPLACE "/" ${LUA_DIRSEP} LUA_CPATH_DEFAULT "${LUA_CPATH_DEFAULT}" )
 else ( )
   # Posix systems (incl. Cygwin)
-  option ( LUA_USE_POSIX "Use POSIX features." ON )
-  option ( LUA_USE_DLOPEN "Use dynamic linker to load modules." ON )
-  option ( LUA_USE_MKSTEMP "Use mkstep." ON )
-  option ( LUA_USE_ISATTY "Use tty." ON )
-  option ( LUA_USE_POPEN "Use popen." ON )
-  option ( LUA_USE_ULONGJMP "Use ulongjmp" ON )
-  option ( LUA_USE_GMTIME_R "Use GTIME_R" ON )
+  set ( LUA_USE_POSIX ON ) #Use POSIX features. 
+  set ( LUA_USE_DLOPEN ON ) #Use dynamic linker to load modules. 
+  set ( LUA_USE_MKSTEMP ON ) #Use mkstep. 
+  set ( LUA_USE_ISATTY ON ) #Use tty. 
+  set ( LUA_USE_POPEN ON ) #Use popen. 
+  set ( LUA_USE_ULONGJMP ON ) #Use ulongjmp 
+  set ( LUA_USE_GMTIME_R ON ) #Use GTIME_R 
   # Apple and Linux specific
   if ( LINUX OR APPLE )
-    option ( LUA_USE_STRTODHEX "Assume 'strtod' handles hexa formats" ON )
-    option ( LUA_USE_AFORMAT "Assume 'printf' handles 'aA' specifiers" ON )
-    option ( LUA_USE_LONGLONG "Assume support for long long" ON )
+      set ( LUA_USE_STRTODHEX ON ) #Assume 'strtod' handles hexa formats 
+      set ( LUA_USE_AFORMAT ON ) #Assume 'printf' handles 'aA' specifiers 
+      set ( LUA_USE_LONGLONG ON ) #Assume support for long long 
   endif ( )
 endif ( )
 
