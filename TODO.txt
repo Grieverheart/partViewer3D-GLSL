@@ -31,8 +31,9 @@
 --Perhaps add the ability to draw individual particles as points.
 --Handle clipping with point drawing.
 --Draw lines with shader.
-Add support for snapshots to png (with transparency).
-Add support for creating movies.
+--Add support for snapshots to png.
+Fix shadow depth bias.
+Optimize shadowmap depth range by calculating the intersection of view frustrum with the simulation box.
+Optimize view depth range by calculating the intersection of view frustrum with the simulation box.
 Try out bokeh.
-Add suport for multiple windows.
 Add documentation.

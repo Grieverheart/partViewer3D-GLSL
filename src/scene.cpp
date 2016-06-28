@@ -1352,14 +1352,14 @@ void Scene::draw_text(const char* text, const Text::Properties& props){
 
 void Scene::save_snapshot(const char* path)const{
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
-    char* data = new char[3 * window_width_ * window_height_ * sizeof(GLubyte)];
+    const int depth = 3;
+    char* data = new char[depth * window_width_ * window_height_ * sizeof(GLubyte)];
     //glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadPixels(0, 0, window_width_, window_height_, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     //TODO: Optimize
     {
         int w = window_width_, h = window_height_;
-        int depth = 3;
         unsigned char temp;
         unsigned char* wdata = (unsigned char*) data;
 
@@ -1375,7 +1375,7 @@ void Scene::save_snapshot(const char* path)const{
         }
     }
 
-    int has_error = !stbi_write_png(path, window_width_, window_height_, 3, data, 3 * window_width_ * sizeof(GLubyte));
+    int has_error = !stbi_write_png(path, window_width_, window_height_, depth, data, depth * window_width_ * sizeof(GLubyte));
     if(has_error){
         printf("Error saving image %s\n", path);
     }

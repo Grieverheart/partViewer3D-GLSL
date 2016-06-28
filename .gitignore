@@ -6,6 +6,7 @@
 *.dylib
 *.trace
 *.dll
+*.png
 .DS_store
 main
 Data/
