@@ -36,7 +36,7 @@ namespace maan{
         struct arg_extr<T, ArgsT...>{
             static inline std::tuple<T, ArgsT...> get_args(lua_State* L){
                 auto args = arg_extr<ArgsT...>::get_args(L);
-                return std::tuple_cat(std::forward_as_tuple(get_LuaValue<T>(L)), std::move(args));
+                return std::tuple_cat(std::tuple<T>(get_LuaValue<T>(L)), std::move(args));
             }
         };
 

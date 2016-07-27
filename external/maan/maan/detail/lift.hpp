@@ -16,14 +16,14 @@ namespace maan{namespace detail{
     struct lift_impl<Sequence<Indices...>>{
         template<
             class F, typename... ArgsT,
-            typename R = typename std::result_of<F(ArgsT...)>::type
+            typename R = typename std::result_of<typename std::decay<F>::type(ArgsT...)>::type
         >
         static auto lift(F&& func, std::tuple<ArgsT...>&& args) -> R {
             return func(std::forward<ArgsT>(std::get<Indices>(args))...);
         }
         template<
             class F, class U, typename... ArgsT,
-            typename R = typename std::result_of<F(U, ArgsT...)>::type
+            typename R = typename std::result_of<typename std::decay<F>::type(U, ArgsT...)>::type
         >
         static auto lift(F&& func, U&& arg, std::tuple<ArgsT...>&& args) -> R {
             return func(std::forward<U>(arg), std::forward<ArgsT>(std::get<Indices>(args))...);
@@ -33,7 +33,7 @@ namespace maan{namespace detail{
     template<
         class F, typename... ArgsT,
         typename Sequence = typename generator<sizeof...(ArgsT)>::type,
-        typename R = typename std::result_of<F(ArgsT...)>::type
+        typename R = typename std::result_of<typename std::decay<F>::type(ArgsT...)>::type
     >
     auto lift(F&& func, std::tuple<ArgsT...>&& args) -> R {
         return lift_impl<Sequence>::lift(
@@ -44,7 +44,7 @@ namespace maan{namespace detail{
     template<
         class F, class U, typename... ArgsT,
         typename Sequence = typename generator<sizeof...(ArgsT)>::type,
-        typename R = typename std::result_of<F(U, ArgsT...)>::type
+        typename R = typename std::result_of<typename std::decay<F>::type(U, ArgsT...)>::type
     >
     auto lift(F&& func, U&& arg, std::tuple<ArgsT...>&& args) -> R {
         return lift_impl<Sequence>::lift(

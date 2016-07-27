@@ -353,6 +353,7 @@ static void register_mouse_buttons(lua_State* L){
     lua_pop(L, 2);
 }
 
+//TODO: Add copy constructors
 bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
 
     maan::module_(L)
