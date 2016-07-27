@@ -32,6 +32,7 @@
 --Handle clipping with point drawing.
 --Draw lines with shader.
 --Add support for snapshots to png.
+If my understanding is correct, RGB values should be reaise to gamma first.
 Fix shadow depth bias.
 Optimize shadowmap depth range by calculating the intersection of view frustrum with the simulation box.
 Optimize view depth range by calculating the intersection of view frustrum with the simulation box.

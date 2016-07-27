@@ -19,6 +19,7 @@ void main(void){
     float r2 = radius * radius;
     if(dotp > r2) discard;
 
+    //TODO: This is wrong, it should be (radius - outline_radius)**2
     outColor = (dotp > (r2 - outline_radius * outline_radius))? outline_color: color;
 
     pos += sphere_position;
