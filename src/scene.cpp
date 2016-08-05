@@ -275,12 +275,8 @@ void Scene::load_scene(const SimConfig& config){
     config_ = new SimConfig(config);
 
     //Configuration box
+    glm::vec3 offset(-0.5f * (glm::column(config.box, 0) + glm::column(config.box, 1) + glm::column(config.box, 2)));
     {
-        glm::vec3 offset(
-            -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
-            -(config.box[1][1] + config.box[1][2]) / 2.0,
-            -config.box[2][2] / 2.0
-        );
 
         ////////////////////////
         //                    //
@@ -346,17 +342,11 @@ void Scene::load_scene(const SimConfig& config){
         else shape_outradii[sid] = 1.0;
     }
 
-    double max_outradius = 0.0;
+    out_radius_ = 0.0;
     for(auto particle: config.particles){
-        double outradius = particle.size * shape_outradii[particle.shape_id];
-        if(outradius > max_outradius) max_outradius = outradius;
+        float length = glm::length(particle.pos + offset) + particle.size * shape_outradii[particle.shape_id];
+        if(length > out_radius_) out_radius_ = length;
     }
-
-    out_radius_ = glm::length(glm::vec3(
-        (config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
-        (config.box[1][1] + config.box[1][2]) / 2.0,
-        config.box[2][2] / 2.0
-    )) + max_outradius;
 
     float init_zoom = -4.0;
     for(int i = 0; i < 3; i++){
@@ -389,14 +379,7 @@ void Scene::load_scene(const SimConfig& config){
     particle_colors_ = new glm::vec3[n_particles];
     model_matrices_  = new glm::mat4[n_particles];
 
-    glm::mat4 tMatrix = glm::translate(
-        glm::mat4(1.0),
-        glm::vec3(
-            -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
-            -(config.box[1][1] + config.box[1][2]) / 2.0,
-            -config.box[2][2] / 2.0
-        )
-    );
+    glm::mat4 tMatrix = glm::translate(glm::mat4(1.0), offset);
 
     //Count shape instances and copy particles_
     draw_pids_.clear();
