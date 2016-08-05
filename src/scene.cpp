@@ -303,7 +303,12 @@ void Scene::load_scene(const SimConfig& config){
             /* 7 */ glm::column(config.box, 0) + glm::column(config.box, 1) + glm::column(config.box, 2),
         };
 
-        for(size_t i = 0; i < 8; ++i) box_vertices[i] += offset;
+        out_radius_ = 0.0;
+        for(size_t i = 0; i < 8; ++i){
+            box_vertices[i] += offset;
+            float dist = glm::length(box_vertices[i]);
+            if(dist > out_radius_) out_radius_ = dist;
+        }
 
         size_t vertex_ids[] = {
             0, 1, 3, 5, //bottom
@@ -342,7 +347,6 @@ void Scene::load_scene(const SimConfig& config){
         else shape_outradii[sid] = 1.0;
     }
 
-    out_radius_ = 0.0;
     for(auto particle: config.particles){
         float length = glm::length(particle.pos + offset) + particle.size * shape_outradii[particle.shape_id];
         if(length > out_radius_) out_radius_ = length;
