@@ -359,6 +359,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
     maan::module_(L)
         .class_<Particle>("Particle")
             .def_constructor<>()
+            .def_constructor<const Particle&>()
             .def_readwrite("shape_id", &Particle::shape_id)
             .def_readwrite("rot", &Particle::rot)
             .def_readwrite("pos", &Particle::pos)
