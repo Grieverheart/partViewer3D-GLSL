@@ -1,5 +1,6 @@
 #include "include/grid.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/matrix_access.hpp>
 #include <cstdio>
 #include <algorithm>
 
@@ -202,11 +203,7 @@ Grid::Grid(const SimConfig& config):
         }
     }
 
-    glm::vec3 offset(
-        -(config.box[0][0] + config.box[0][1] + config.box[0][2]) / 2.0,
-        -(config.box[1][1] + config.box[1][2]) / 2.0,
-        -config.box[2][2] / 2.0
-    );
+    glm::vec3 offset(-0.5f * (glm::column(config.box, 0) + glm::column(config.box, 1) + glm::column(config.box, 2)));
 
 	// Find Scene Extends and allocate IntersectionObjects
     {
@@ -236,7 +233,7 @@ Grid::Grid(const SimConfig& config):
                 }
             }
             else{
-                Sphere* sphere = new Sphere(pos, 0.5);
+                Sphere* sphere = new Sphere(pos, size);
                 auto aabb = sphere->get_AABB();
                 for(int j = 0; j < 3; ++j){
                     if(aabb.bounds_[0][j] < min[j]) min[j] = aabb.bounds_[0][j];
