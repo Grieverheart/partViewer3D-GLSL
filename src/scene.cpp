@@ -1341,7 +1341,7 @@ void Scene::save_snapshot(const char* path)const{
     glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
     const int depth = 3;
     char* data = new char[depth * window_width_ * window_height_ * sizeof(GLubyte)];
-    //glPixelStorei(GL_PACK_ALIGNMENT, 1);
+    glPixelStorei(GL_PACK_ALIGNMENT, 1);
     glReadPixels(0, 0, window_width_, window_height_, GL_RGB, GL_UNSIGNED_BYTE, data);
 
     //TODO: Optimize
