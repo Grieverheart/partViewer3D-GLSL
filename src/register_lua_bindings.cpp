@@ -356,42 +356,6 @@ static void register_mouse_buttons(lua_State* L){
 //TODO: Add copy constructors
 bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
 
-    maan::module_(L)
-        .class_<Particle>("Particle")
-            .def_constructor<>()
-            .def_constructor<const Particle&>()
-            .def_readwrite("shape_id", &Particle::shape_id)
-            .def_readwrite("rot", &Particle::rot)
-            .def_readwrite("pos", &Particle::pos)
-            .def_readwrite("size", &Particle::size)
-            .endef()
-        //Register Vertex
-        .class_<Vertex>("Vertex")
-            .def_constructor<const glm::vec3&, const glm::vec3&>()
-            .def_readwrite("coord", &Vertex::_coord)
-            .def_readwrite("normal", &Vertex::_normal)
-            .endef()
-        //Register shape
-        .class_<Sphere>("Sphere")
-            .def_constructor<>()
-            .endef()
-        //Register Mesh
-        .class_<Mesh>("Mesh")
-            .def_constructor<>()
-            .def("add_vertex", &Mesh::add_vertex)
-            .def("get_vertex", &Mesh::get_vertex)
-            .def("get_num_vertices", &Mesh::get_num_vertices)
-            .endef()
-        .class_<Text::Properties>("TextProperties")
-            .def_constructor<>()
-            .def_constructor<const char*, int, const glm::vec4&, int, int>()
-            .def_readwrite("color", &Text::Properties::color_)
-            .def_readwrite("font", &Text::Properties::font_)
-            .def_readwrite("width", &Text::Properties::width_)
-            .def_readwrite("x", &Text::Properties::x_)
-            .def_readwrite("y", &Text::Properties::y_)
-            .endef();
-
     maan::module_(L, "glm")
         //Register vec3
         .class_<glm::vec3>("vec3")
@@ -461,6 +425,41 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("transpose", (glm::mat4 (*)(const glm::mat4&)) glm::transpose);
 
     maan::module_(L, "scene")
+        .class_<Particle>("Particle")
+            .def_constructor<>()
+            .def_constructor<const Particle&>()
+            .def_readwrite("shape_id", &Particle::shape_id)
+            .def_readwrite("rot", &Particle::rot)
+            .def_readwrite("pos", &Particle::pos)
+            .def_readwrite("size", &Particle::size)
+            .endef()
+        //TODO: Remove the vertex class
+        //Register Vertex
+        .class_<Vertex>("Vertex")
+            .def_constructor<const glm::vec3&, const glm::vec3&>()
+            .def_readwrite("coord", &Vertex::_coord)
+            .def_readwrite("normal", &Vertex::_normal)
+            .endef()
+        //Register shape
+        .class_<Sphere>("Sphere")
+            .def_constructor<>()
+            .endef()
+        //Register Mesh
+        .class_<Mesh>("Mesh")
+            .def_constructor<>()
+            .def("add_vertex", &Mesh::add_vertex)
+            .def("get_vertex", &Mesh::get_vertex)
+            .def("get_num_vertices", &Mesh::get_num_vertices)
+            .endef()
+        .class_<Text::Properties>("TextProperties")
+            .def_constructor<>()
+            .def_constructor<const char*, int, const glm::vec4&, int, int>()
+            .def_readwrite("color", &Text::Properties::color_)
+            .def_readwrite("font", &Text::Properties::font_)
+            .def_readwrite("width", &Text::Properties::width_)
+            .def_readwrite("x", &Text::Properties::x_)
+            .def_readwrite("y", &Text::Properties::y_)
+            .endef()
         .function_("zoom", &Scene::zoom, scene)
         .function_("rotate", &Scene::rotate, scene)
         .function_("select_particle", &Scene::select_particle, scene)
