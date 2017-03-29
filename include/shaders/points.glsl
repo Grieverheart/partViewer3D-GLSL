@@ -16,11 +16,10 @@ layout(location = 0) out vec4 outColor;
 void main(void){
     vec3 pos = vec3(TexCoord, 0.0);
     float dotp = dot(pos, pos);
-    float r2 = radius * radius;
-    if(dotp > r2) discard;
+    if(dotp > radius * radius) discard;
 
     //TODO: This is wrong, it should be (radius - outline_radius)**2
-    outColor = (dotp > (r2 - outline_radius * outline_radius))? outline_color: color;
+    outColor = (dotp > pow(radius - outline_radius, 2))? outline_color: color;
 
     pos += sphere_position;
 
