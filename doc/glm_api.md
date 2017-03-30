@@ -138,7 +138,7 @@ Multiplication between a `mat3` and a float. Is equivalent to `mat3 * mat3(float
 
 A 4x4 matrix of type `float`. The elements are stored in column-major order.
 
-### Function Reference:
+## Function Reference:
 
 #### <a name="cross"><a/> `cross(vec3 va, vec3 vb)`
 Vector cross product between vectors `va` and `vb`.
