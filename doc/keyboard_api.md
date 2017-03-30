@@ -2,9 +2,9 @@
 
 The `keyboard` module contains three tables containing values for all the keys you can press. Note that some keys may not be available on your keyboard or system. The three tables are the following:
 
-* [action]()
-* [mod]()
-* [key]()
+* [action](#action)
+* [mod](#mod)
+* [key](#key)
 
 Values are accessed by their string key, i.e. `keyboard.key['m']` returns the value of key M.
 
