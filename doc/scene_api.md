@@ -13,6 +13,8 @@ The following classes are exposed to the Lua API:
 Along with the following functions:
 
 * [load](#load)
+* [draw_text](#draw_text)
+* [save_snapshot](#save_snapshot)
 * [zoom](#zoom)
 * [rotate](#rotate)
 * [select_particle](#select_particle)
@@ -58,8 +60,6 @@ Along with the following functions:
 * [set_sky_color](#set_sky_color)
 * [get_light_direction](#get_light_direction)
 * [set_light_direction](#set_light_direction)
-* [draw_text](#draw_text)
-* [save_snapshot](#save_snapshot)
 
 ## Class Reference:
 
