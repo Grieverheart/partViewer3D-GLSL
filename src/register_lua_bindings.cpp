@@ -453,7 +453,7 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
             .endef()
         .class_<Text::Properties>("TextProperties")
             .def_constructor<>()
-            .def_constructor<const char*, int, const glm::vec4&, int, int>()
+            .def_constructor<const char*, float, const glm::vec4&, int, int>()
             .def_readwrite("color", &Text::Properties::color_)
             .def_readwrite("font", &Text::Properties::font_)
             .def_readwrite("width", &Text::Properties::width_)
