@@ -50,7 +50,9 @@ public:
 
     bool raytrace(int x, int y, int& pid);
     void select_particle(int pid);
+    //TODO: Rename to is_particle_selected
     bool is_selected(int pid)const;
+    //TODO: Rename to clear_particle_selection
     void clear_selection(void);
 
     void hide_particle(int pid);
@@ -106,6 +108,7 @@ public:
 
     void draw_text(const char* text, const Text::Properties& props);
 
+    //TODO: Rename to save_snapshot_png
     void save_snapshot(const char* path)const;
 
 private:
