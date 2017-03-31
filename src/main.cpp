@@ -210,11 +210,9 @@ int main(int argc,char *argv[] ){
 
     while(!glfwWindowShouldClose(window) && running){
         evt_mgr->processQueue();
-        scene->process();
-
-        scene->render();
-
         call_lua_OnFrame(L);
+        scene->process();
+        scene->render();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
