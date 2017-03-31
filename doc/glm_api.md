@@ -29,7 +29,9 @@ A three-component vector of type `float`.
 
 ### Class Members:
 
-`float x`, `float y`, `float z`
+#### `float x`
+#### `float y`
+#### `float z`
 
 ### Class Methods:
 
@@ -66,7 +68,10 @@ A four-component vector of type `float`.
 
 ### Class Members:
 
-`float x`, `float y`, `float z`, `float w`
+#### `float x`
+#### `float y`
+#### `float z`
+#### `float w`
 
 ### Class Methods:
 
