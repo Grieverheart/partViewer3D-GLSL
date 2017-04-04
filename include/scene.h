@@ -46,6 +46,7 @@ public:
 
     void rotate(float angle, const glm::vec3& axis);
 
+    //TODO: Change this function to do something more obvious.
 	void zoom(float dz);
 
     bool raytrace(int x, int y, int& pid);
@@ -54,6 +55,8 @@ public:
     bool is_selected(int pid)const;
     //TODO: Rename to clear_particle_selection
     void clear_selection(void);
+    //TODO: Add function to change selection rendering color.
+    //TODO: Add function to change selection rendering size.
 
     void hide_particle(int pid);
     void unhide_particle(int pid);
@@ -95,6 +98,7 @@ public:
     void set_light_ambient_intensity(float);
     float get_light_intensity(void)const;
     void set_light_intensity(float);
+    //TODO: Make a toggle.
     void set_ssao_blur(bool);
     bool is_ssao_blur_enabled(void)const;
     void set_ssao_radius(float);
