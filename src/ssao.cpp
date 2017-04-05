@@ -1,5 +1,6 @@
 #include "include/ssao.h"
 #include <GL/glew.h>
+#include <glm/glm.hpp>
 #include <cstdio>
 #include "include/shader.h"
 
@@ -55,7 +56,8 @@ void Cssao::CreateNoise(void){
 }
 
 bool Cssao::Init(unsigned int WindowWidth, unsigned int WindowHeight){
-	m_noiseScale = glm::ivec2(WindowWidth / m_noise_size, WindowHeight / m_noise_size);
+	m_noiseScale[0] = WindowWidth / m_noise_size;
+    m_noiseScale[1] = WindowHeight / m_noise_size;
 	
 	CreateKernel();
 	CreateNoise();
@@ -106,7 +108,7 @@ void Cssao::BindTexture(SSAO_TEXTURE_TYPE type, int attachment_point)const{
 void Cssao::UploadUniforms(const Shader& shader)const{
 	shader.setUniform("noise", 2);
 	shader.setUniform("kernelSize", (int)m_kernel_size);
-	shader.setUniform("noiseScale", 1, m_noiseScale);
+	shader.setUniform("noiseScale", 1, glm::ivec2(m_noiseScale[0], m_noiseScale[1]));
 	shader.setUniform("kernel[0]", m_kernel_size, m_kernel[0]);
 	shader.setUniform("RADIUS", m_RADIUS);
 }
@@ -124,8 +126,9 @@ void Cssao::UpdateUniforms(const Shader& shader){
 void Cssao::Resize(unsigned int WindowWidth, unsigned int WindowHeight, Shader const *shader){
 	glBindTexture(GL_TEXTURE_2D, m_ssaoTexture);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, WindowWidth, WindowHeight, 0, GL_RGBA, GL_FLOAT, NULL);
-	m_noiseScale = glm::ivec2(WindowWidth / m_noise_size, WindowHeight / m_noise_size);
-	shader->setUniform("noiseScale", 1, m_noiseScale);
+	m_noiseScale[0] = WindowWidth / m_noise_size;
+    m_noiseScale[1] = WindowHeight / m_noise_size;
+	shader->setUniform("noiseScale", 1, glm::ivec2(m_noiseScale[0], m_noiseScale[1]));
 }
 
 

@@ -1,8 +1,7 @@
 #ifndef PV_GRID_H
 #define PV_GRID_H
 
-#include <glm/glm.hpp>
-#include <vector>
+#include <glm/fwd.hpp>
 #include "simconfig.h"
 
 class IntersectionObject;
@@ -21,14 +20,12 @@ public:
     void ignore_id(int pid);
     void unignore_id(int pid);
 private:
-    struct Item{
-        IntersectionObject* object_;
-        size_t pid_;
-    };
-    using Cell = std::vector<const Item*>;
+    struct Item;
+    struct Cell;
 
-    Cell* cells_;
-    std::vector<Item> items_;
+    Cell** cells_;
+    Item* items_;
+    size_t n_items_;
     AABB scene_bounds_;
     glm::vec3 cell_size_;
     int n_cells_[3];

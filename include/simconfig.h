@@ -1,15 +1,14 @@
 #ifndef PV_SIMCONFIG_H
 #define PV_SIMCONFIG_H
 
-#include <glm/glm.hpp>
-#include <vector>
+#include <glm/fwd.hpp>
 #include "shape.h"
 #include "particle.h"
 
 struct SimConfig{
-    std::vector<Particle> particles;
-    std::vector<Shape> shapes;
-    //TODO: Should we consider spherical boxes differently?
+    Particle* particles;
+    Shape* shapes;
+    size_t n_particles, n_shapes;
     glm::mat3 box;
 };
 

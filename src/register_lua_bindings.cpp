@@ -66,7 +66,7 @@ namespace{
     };
 }
 
-//TODO: Add type safety
+//TODO: Add type safety, and logic validation
 //box[], particles[], shapes[]
 static int luaScene_load(lua_State* L){
     SimConfig config;
@@ -76,11 +76,19 @@ static int luaScene_load(lua_State* L){
         config.box[i % 3][i / 3] = lua_tonumber(L, -1);
     }
 
+    config.n_particles = lua_rawlen(L, 2);
+    config.particles = new Particle[config.n_particles];
+
+    size_t pid = 0;
     for(lua_pushnil(L); lua_next(L, 2);){
-        config.particles.push_back(maan::get_LuaValue<Particle>(L));
+        config.particles[pid++] = maan::get_LuaValue<Particle>(L);
     }
 
+    config.n_shapes = lua_rawlen(L, 3);
+    config.shapes = new Shape[config.n_shapes];
+
     //TODO: Add a is_class(lua_State* L, int idx) function to maan.
+    size_t sid = 0;
     for(lua_pushnil(L); lua_next(L, 3);){
         lua_getmetatable(L, -1);
         lua_pushstring(L, "__class_id");
@@ -102,7 +110,7 @@ static int luaScene_load(lua_State* L){
                 shape.mesh.vertices[i++] = vertex;
             }
         }
-        config.shapes.push_back(shape);
+        config.shapes[sid++] = shape;
     }
 
     auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));

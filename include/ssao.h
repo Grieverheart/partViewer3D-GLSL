@@ -1,7 +1,7 @@
 #ifndef __SSAO_H
 #define __SSAO_H
 
-#include <glm/glm.hpp>
+#include <glm/fwd.hpp>
 #include <random>
 
 class Shader;
@@ -45,7 +45,7 @@ private:
 	bool m_update;
 	bool m_update_kernel;
 	
-	glm::ivec2 m_noiseScale;
+	int m_noiseScale[2];
 	glm::vec3 *m_kernel;
 	glm::vec3 *m_noise;
 

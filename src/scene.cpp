@@ -19,7 +19,7 @@
 #include "include/smaa/smaa_area.h"
 #include "include/smaa/smaa_search.h"
 
-#define STBIW_ASSERT
+#define STBIW_ASSERT(x) (void)(x)
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "include/stb_image_write.h"
 
@@ -40,6 +40,8 @@
 #include "include/shaders/smaa/blend.glsl"
 #include "include/shaders/smaa/blend_weights.glsl"
 #include "include/shaders/smaa/edge_detection.glsl"
+
+//TODO: Change iteration type of draw_pids_, selected_pids_.
 
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
@@ -70,6 +72,8 @@ Scene::Scene(int width, int height):
     particle_colors_(nullptr),
     config_(nullptr),
     box_vao_(0), box_vbo_(0), fullscreen_triangle_vao_(0),
+    selected_pids_(nullptr), num_selected_pids_(0),
+    draw_pids_(nullptr),
     is_clip_plane_active_(false), is_box_drawing_active_(false), is_blur_active_(true),
     projection_type_(Projection::PERSPECTIVE),
     light_(glm::vec3(-0.27, -0.91, -0.33)),
@@ -315,8 +319,8 @@ Scene::~Scene(void){
     delete sh_quad_line_;
 
     if(config_){
-        glDeleteVertexArrays(config_->shapes.size(), shape_vaos_);
-        glDeleteBuffers(config_->shapes.size(), shape_vbos_);
+        glDeleteVertexArrays(config_->n_shapes, shape_vaos_);
+        glDeleteBuffers(config_->n_shapes, shape_vbos_);
     }
 
     delete[] shape_vaos_;
@@ -324,8 +328,13 @@ Scene::~Scene(void){
     delete[] model_matrices_;
     delete[] particle_flags_;
     delete[] particle_colors_;
+    delete[] draw_pids_;
+    delete[] selected_pids_;
 
     delete grid_;
+
+    delete[] config_->particles;
+    delete[] config_->shapes;
     delete config_;
 
     glDeleteVertexArrays(1, &box_vao_);
@@ -336,9 +345,13 @@ Scene::~Scene(void){
 
 void Scene::load_scene(const SimConfig& config){
     if(config_){
-        glDeleteBuffers(config_->shapes.size(), shape_vbos_);
-        glDeleteVertexArrays(config_->shapes.size(), shape_vaos_);
+        glDeleteBuffers(config_->n_shapes, shape_vbos_);
+        glDeleteVertexArrays(config_->n_shapes, shape_vaos_);
+
+        delete[] config_->particles;
+        delete[] config_->shapes;
         delete config_;
+
         delete grid_;
         grid_ = nullptr;
         delete[] shape_vaos_;
@@ -346,9 +359,18 @@ void Scene::load_scene(const SimConfig& config){
         delete[] model_matrices_;
         delete[] particle_flags_;
         delete[] particle_colors_;
+        num_selected_pids_ = 0;
+        delete[] selected_pids_;
+        delete[] draw_pids_;
     }
 
-    config_ = new SimConfig(config);
+    config_ = new SimConfig();
+    config_->box = config.box;
+    config_->n_particles = config.n_particles;
+    config_->n_shapes = config.n_shapes;
+    //These are set in the two loops later in this function
+    config_->particles = new Particle[config.n_particles];
+    config_->shapes = new Shape[config.n_shapes];
 
     //Configuration box
     glm::vec3 offset(-0.5f * (glm::column(config.box, 0) + glm::column(config.box, 1) + glm::column(config.box, 2)));
@@ -409,8 +431,9 @@ void Scene::load_scene(const SimConfig& config){
         delete[] vertex_data;
     }
 
-    std::vector<double> shape_outradii(config.shapes.size());
-    for(size_t sid = 0; sid < config.shapes.size(); ++sid){
+    double* shape_outradii = new double[config.n_shapes];
+    for(size_t sid = 0; sid < config.n_shapes; ++sid){
+        config_->shapes[sid] = config.shapes[sid];
         if(config.shapes[sid].type == Shape::MESH){
             const Shape::Mesh& mesh = config.shapes[sid].mesh;
             double max_vertex = 0.0;
@@ -423,10 +446,13 @@ void Scene::load_scene(const SimConfig& config){
         else shape_outradii[sid] = 1.0;
     }
 
-    for(auto particle: config.particles){
+    for(size_t pid = 0; pid < config.n_particles; ++pid){
+        const auto& particle = config.particles[pid];
+        config_->particles[pid] = particle;
         float length = glm::length(particle.pos + offset) + particle.size * shape_outradii[particle.shape_id];
         if(length > out_radius_) out_radius_ = length;
     }
+    delete[] shape_outradii;
 
     float init_zoom = -4.0;
     for(int i = 0; i < 3; i++){
@@ -447,25 +473,23 @@ void Scene::load_scene(const SimConfig& config){
     inv_view_matrix_         = glm::inverse(view_matrix_);
     light_view_matrix_       = glm::lookAt(-out_radius_ * light_.direction_, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
 
-    size_t n_particles = config.particles.size();
-    size_t n_shapes = config.shapes.size();
-
-    shape_vaos_ = new unsigned int[n_shapes]{};
-    shape_vbos_ = new unsigned int[n_shapes]{};
+    size_t n_particles = config.n_particles;
+    size_t n_shapes = config.n_shapes;
 
     particle_flags_  = new unsigned int[n_particles]{};
     particle_colors_ = new glm::vec3[n_particles];
     model_matrices_  = new glm::mat4[n_particles];
 
-    glm::mat4 tMatrix = glm::translate(glm::mat4(1.0), offset);
 
+    selected_pids_ = new int[n_particles];
+    draw_pids_     = new int[n_particles];
     //Count shape instances and copy particles_
-    draw_pids_.clear();
     for(size_t i = 0; i < n_particles; ++i){
+        selected_pids_[i] = -1;
         particle_colors_[i] = glm::vec3(77, 27, 147) / 255.0f;
-        draw_pids_.push_back(i);
+        draw_pids_[i] = i;
 
-        glm::mat4 tLocalMatrix = glm::translate(tMatrix, config.particles[i].pos);
+        glm::mat4 tLocalMatrix = glm::translate(glm::mat4(1.0), offset + config.particles[i].pos);
         glm::mat4 rLocalMatrix = glm::rotate(
             glm::mat4(1.0),
             config.particles[i].rot.x,
@@ -474,6 +498,9 @@ void Scene::load_scene(const SimConfig& config){
 
         model_matrices_[i] = tLocalMatrix * rLocalMatrix * glm::scale(glm::mat4(1.0), glm::vec3(config.particles[i].size));
     }
+
+    shape_vaos_ = new unsigned int[n_shapes]{};
+    shape_vbos_ = new unsigned int[n_shapes]{};
 
     glGenVertexArrays(n_shapes, shape_vaos_);
     glGenBuffers(n_shapes, shape_vbos_);
@@ -510,7 +537,7 @@ void Scene::load_scene(const SimConfig& config){
 bool Scene::raytrace(int x, int y, int& pid){
     if(!grid_){
         grid_ = new Grid(*config_);
-        for(size_t pid = 0; pid < config_->particles.size(); ++pid){
+        for(size_t pid = 0; pid < config_->n_particles; ++pid){
             if(particle_flags_[pid] & ParticleFlags::Hidden) grid_->ignore_id(pid);
         }
     }
@@ -545,19 +572,24 @@ bool Scene::raytrace(int x, int y, int& pid){
 }
 
 void Scene::select_particle(int pid){
-    auto iter = std::find(selected_pids_.begin(), selected_pids_.end(), pid);
-    if(iter != selected_pids_.end()){
-        selected_pids_.erase(iter);
+    for(size_t i = 0; i < num_selected_pids_; ++i){
+        if(selected_pids_[i] == pid){
+            selected_pids_[i] = selected_pids_[num_selected_pids_ - 1];
+            selected_pids_[num_selected_pids_ - 1] = -1;
+            --num_selected_pids_;
+            return;
+        }
     }
-    else selected_pids_.push_back(pid);
+
+    selected_pids_[num_selected_pids_++] = pid;
 }
 
 bool Scene::is_particle_selected(int pid)const{
-    return std::any_of(selected_pids_.begin(), selected_pids_.end(), [pid](int id) -> bool {return id == pid;});
+    return std::any_of(selected_pids_, selected_pids_ + config_->n_particles, [pid](int id) -> bool {return id == pid;});
 }
 
 void Scene::clear_particle_selections(void){
-    selected_pids_.clear();
+    for(size_t i = 0; i < num_selected_pids_; ++i) selected_pids_[i] = -1;
 }
 
 void Scene::hide_particle(int pid){
@@ -672,27 +704,28 @@ void Scene::process(void){
         sh_accumulator_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
     }
 
-    draw_points_end_ = std::partition(draw_pids_.begin(), draw_pids_.end(),
+    //TODO: alculate pointer offset
+    draw_points_end_ = std::partition(draw_pids_, draw_pids_ + config_->n_particles,
         [=](int i) -> bool {
             return (particle_flags_[i] & ParticleFlags::Point);
         }
     );
 
     if(config_){
-        double* depths = new double[config_->particles.size()];
+        double* depths = new double[config_->n_particles];
         auto mv_matrix = view_matrix_ * model_matrix_;
-        for(size_t i = 0; i < config_->particles.size(); ++i){
+        for(size_t i = 0; i < config_->n_particles; ++i){
             auto pos = mv_matrix * model_matrices_[i] * glm::vec4(0.0, 0.0, 0.0, 1.0);
             depths[i] = pos.z / pos.w;
         }
 
-        std::sort(draw_pids_.begin(), draw_points_end_,
+        std::sort(draw_pids_, draw_points_end_,
             [depths](int i, int j) -> bool {
                 return (depths[i] < depths[j]);
             }
         );
 
-        std::sort(draw_points_end_, draw_pids_.end(),
+        std::sort(draw_points_end_, draw_pids_ + config_->n_particles,
             [depths](int i, int j) -> bool {
                 return (depths[i] > depths[j]);
             }
@@ -751,7 +784,7 @@ void Scene::render(void){
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
 
-    if(draw_points_end_ != draw_pids_.end()){
+    if(draw_points_end_ != draw_pids_ + config_->n_particles){
         //"Shadow Pass"
         {
             m_shadowmap_.Bind();
@@ -760,7 +793,7 @@ void Scene::render(void){
 
             glViewport(0, 0, window_width_ * 2, window_height_ * 2);
 
-            for(size_t shape_id = 0; shape_id < config_->shapes.size(); ++shape_id){
+            for(size_t shape_id = 0; shape_id < config_->n_shapes; ++shape_id){
                 glBindVertexArray(shape_vaos_[shape_id]);
 
                 if(config_->shapes[shape_id].type == Shape::MESH){
@@ -780,7 +813,7 @@ void Scene::render(void){
                     sh_shadowmap_instanced_->setUniform("MVPMatrix", 1, light_projection_matrix_ * light_view_matrix_ * model_matrix_);
                     sh_shadowmap_instanced_->setUniform("clip_plane", 1, clip_plane_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
                         auto pid = *pid_itr;
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
@@ -821,7 +854,7 @@ void Scene::render(void){
                     sh_shadowmap_spheres_->setUniform("MVMatrix", 1, light_view_matrix_ * model_matrix_);
                     sh_shadowmap_spheres_->setUniform("ProjectionMatrix", 1, light_projection_matrix_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
                         auto pid = *pid_itr;
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
@@ -841,7 +874,7 @@ void Scene::render(void){
 
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-            for(size_t shape_id = 0; shape_id < config_->shapes.size(); ++shape_id){
+            for(size_t shape_id = 0; shape_id < config_->n_shapes; ++shape_id){
                 glBindVertexArray(shape_vaos_[shape_id]);
                 if(config_->shapes[shape_id].type == Shape::MESH){
                     int n_vertices = config_->shapes[shape_id].mesh.n_vertices;
@@ -861,7 +894,7 @@ void Scene::render(void){
                     sh_gbuffer_instanced_->setUniform("MVMatrix", 1, view_matrix_ * model_matrix_);
                     sh_gbuffer_instanced_->setUniform("ProjectionMatrix", 1, projection_matrix_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
                         auto pid = *pid_itr;
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
@@ -915,7 +948,7 @@ void Scene::render(void){
                     sh_spheres_->setUniform("ProjectionMatrix", 1, projection_matrix_);
                     sh_spheres_->setUniform("InvProjectionMatrix", 1, inv_projection_matrix_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_.end(); ++pid_itr){
+                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
                         auto pid = *pid_itr;
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
@@ -1013,7 +1046,7 @@ void Scene::render(void){
     }
 
     //"Point Drawing Pass"
-    if(draw_points_end_ != draw_pids_.begin()){
+    if(draw_points_end_ != draw_pids_){
         glEnable(GL_BLEND);
         //glDisable(GL_DEPTH_TEST);
         glBindVertexArray(fullscreen_triangle_vao_);
@@ -1028,7 +1061,7 @@ void Scene::render(void){
             sh_points_->setUniform("clip_plane", 1, clip_plane_);
         }
 
-        for(auto pid_itr = draw_pids_.begin(); pid_itr != draw_points_end_; ++pid_itr){
+        for(auto pid_itr = draw_pids_; pid_itr != draw_points_end_; ++pid_itr){
             auto pid = *pid_itr;
             if(particle_flags_[pid] & ParticleFlags::Hidden) continue;
             sh_points_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
@@ -1041,7 +1074,9 @@ void Scene::render(void){
 
     //"Selection Pass"
     glEnable(GL_STENCIL_TEST);
-    for(auto selected_pid: selected_pids_){
+    //TODO: Do something nicer.
+    for(size_t selected_pid_itr = 0; selected_pid_itr < num_selected_pids_; ++selected_pid_itr){
+        int selected_pid = selected_pids_[selected_pid_itr];
         int shape_id = config_->particles[selected_pid].shape_id;
 
         glBindVertexArray(shape_vaos_[shape_id]);

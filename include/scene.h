@@ -9,7 +9,6 @@
 #include "shadowmap.h"
 #include "Text/Properties.h"
 #include <exception>
-#include <vector>
 
 class Shader;
 class Grid;
@@ -159,9 +158,11 @@ private:
 	unsigned int area_texture_;
 	unsigned int search_texture_;
 
-    std::vector<int> selected_pids_;
-    std::vector<int> draw_pids_;
-    std::vector<int>::iterator draw_points_end_;
+    int* selected_pids_;
+    size_t num_selected_pids_;
+
+    int* draw_pids_;
+    int* draw_points_end_;
 
     bool is_clip_plane_active_;
 	bool is_box_drawing_active_;
