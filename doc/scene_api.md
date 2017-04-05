@@ -14,7 +14,7 @@ Along with the following functions:
 
 * [load](#load)
 * [draw_text](#draw_text)
-* [save_snapshot](#save_snapshot)
+* [save_snapshot_png](#save_snapshot_png)
 * [get_fov_degrees](#get_fov_degrees)
 * [set_fov_degrees](#set_fov_degrees)
 * [rotate](#rotate)
@@ -163,7 +163,7 @@ Load a scene for rendering. The `box` parameter should be a parallelepiped conta
 #### <a name="draw_text"><a/>`draw_text(string text, TextProperties props)`
 Draw the text given by the string `text`, with text properties `props` on the screen.
 
-#### <a name="save_snapshot"><a/>`save_snapshot(string path)`
+#### <a name="save_snapshot_png"><a/>`save_snapshot_png(string path)`
 Save a snapshot of the current window view in PNG format at path `path`.
 
 #### <a name="get_fov_degrees"><a/> `get_fov_degrees() -> float`

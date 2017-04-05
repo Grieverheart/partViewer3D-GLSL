@@ -107,8 +107,7 @@ public:
 
     void draw_text(const char* text, const Text::Properties& props);
 
-    //TODO: Rename to save_snapshot_png
-    void save_snapshot(const char* path)const;
+    void save_snapshot_png(const char* path)const;
 
 private:
 	int window_width_;
