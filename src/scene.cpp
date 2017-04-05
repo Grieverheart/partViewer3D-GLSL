@@ -1249,8 +1249,8 @@ void Scene::set_light_intensity(float intensity){
     light_.intensity_ = intensity;
 }
 
-void Scene::set_ssao_blur(bool value){
-    is_blur_active_ = value;
+void Scene::toggle_ssao_blur(void){
+    is_blur_active_ = !is_blur_active_;
 }
 
 bool Scene::is_ssao_blur_enabled(void)const{

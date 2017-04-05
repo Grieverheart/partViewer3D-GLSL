@@ -94,8 +94,7 @@ public:
     void set_light_ambient_intensity(float);
     float get_light_intensity(void)const;
     void set_light_intensity(float);
-    //TODO: Make a toggle.
-    void set_ssao_blur(bool);
+    void toggle_ssao_blur(void);
     bool is_ssao_blur_enabled(void)const;
     void set_ssao_radius(float);
     float get_ssao_radius(void)const;

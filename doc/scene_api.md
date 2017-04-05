@@ -34,7 +34,7 @@ Along with the following functions:
 * [enable_clip_plane](#enable_clip_plane)
 * [disable_clip_plane](#disable_clip_plane)
 * [set_clip_plane](#set_clip_plane)
-* [set_ssao_blur](#set_ssao_blur)
+* [toggle_ssao_blur](#toggle_ssao_blur)
 * [is_ssao_blur_enabled](#is_ssao_blur_enabled)
 * [set_ssao_num_samples](#set_ssao_num_samples)
 * [get_ssao_num_samples](#get_ssao_num_samples)
@@ -223,8 +223,8 @@ Disable the special clip plane which.
 #### <a name="set_clip_plane"><a/>`set_clip_plane(glm.vec4 plane)`
 Set the clip plane to `plane`. The x, y, and z components of `plane` represent the plane normal, while the w component represents the distance of the plane along its normal.
 
-#### <a name="set_ssao_blur"><a/>`set_ssao_blur(bool val)`
-Enable or disable the ssao blur, based on the value of `val`.
+#### <a name="toggle_ssao_blur"><a/>`toggle_ssao_blur()`
+Toggle the ssao blur effect. The blur effect is enabled by default.
 
 #### <a name="is_ssao_blur_enabled"><a/>`is_ssao_blur_enabled() -> bool`
 Check if SSAO blur is enabled.
