@@ -190,7 +190,7 @@ Clear all particle selections.
 Set the color of the particle selection outline to `color`.
 
 #### <a name="set_particle_selection_width_fraction"><a/> `set_particle_selection_width_fraction(float fraction)`
-Set the width of the particle selection outline to `fraction`, given as a fraction of the size of the particle.
+Set the width of the particle selection outline to `fraction`, given as a fraction of the size of the particle. Negative fractions are clamped to 0.
 
 #### <a name="hide_particle"><a/>`hide_particle(int i)`
 Hide particle `i`. Particle `i` is ignored by the renderer and thus not drawn.

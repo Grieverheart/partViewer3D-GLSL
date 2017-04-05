@@ -140,6 +140,7 @@ Scene::Scene(int width, int height):
         throw InitializationException("Couldn't initialize FBO!\n");
     }
 
+    //Set shader uniforms.
     sh_color_->bind();
     {
         sh_color_->setUniform("color", 1, glm::vec3(1.0, 1.0, 0.0));
@@ -148,6 +149,70 @@ Scene::Scene(int width, int height):
     sh_color_sphere_->bind();
     {
         sh_color_sphere_->setUniform("color", 1, glm::vec3(1.0, 1.0, 0.0));
+    }
+
+    sh_ssao_->bind();
+    {
+        m_ssao_.UploadUniforms(*sh_ssao_);
+        sh_ssao_->setUniform("NormalMap", 0);
+        sh_ssao_->setUniform("DepthMap", 1);
+    }
+
+    // Blur Uniforms
+    sh_blur_->bind();
+    {
+        sh_blur_->setUniform("aoSampler", 0);
+        sh_blur_->setUniform("use_blur", int(is_blur_active_));
+    }
+
+    // Edge Detection Uniforms
+    sh_edge_detection_->bind();
+    {
+        sh_edge_detection_->setUniform("colorTex", 0);
+        sh_edge_detection_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
+    }
+
+    // Blend weights Uniforms
+    sh_blend_weights_->bind();
+    {
+        sh_blend_weights_->setUniform("edgesTex", 0);
+        sh_blend_weights_->setUniform("areaTex", 1);
+        sh_blend_weights_->setUniform("searchTex", 2);
+        sh_blend_weights_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
+    }
+
+    // Blend Uniforms
+    sh_blend_->bind();
+    {
+        sh_blend_->setUniform("colorTex", 0);
+        sh_blend_->setUniform("blendTex", 1);
+        sh_blend_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
+    }
+
+    // Accumulator Uniforms
+    sh_accumulator_->bind();
+    {
+        sh_accumulator_->setUniform("ColorMap", 0);
+        sh_accumulator_->setUniform("NormalMap", 1);
+        sh_accumulator_->setUniform("DepthMap", 2);
+        sh_accumulator_->setUniform("LightDepthMap", 3);
+        sh_accumulator_->setUniform("skyColor", 1, sky_color_);
+    }
+
+    sh_text_->bind();
+    {
+        glm::mat4 projection_matrix_ = glm::ortho(0.0f, (float)window_width_, 0.0f, (float)window_height_);
+        sh_text_->setUniform("projectionMatrix", 1, projection_matrix_);
+        sh_text_->setUniform("inSampler", 0);
+        sh_text_->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
+    }
+
+    sh_points_->bind();
+    {
+        sh_points_->setUniform("radius", point_radius_);
+        sh_points_->setUniform("outline_radius", point_outline_radius_);
+        sh_points_->setUniform("color", 1, point_color_);
+        sh_points_->setUniform("outline_color", 1, point_outline_color_);
     }
 
     glGenVertexArrays(1, &fullscreen_triangle_vao_);
@@ -372,8 +437,6 @@ void Scene::load_scene(const SimConfig& config){
     znear_ = -init_zoom - out_radius_;
     zfar_  = -init_zoom + 2.0 * out_radius_;
 
-
-    //TODO: Move these to constructor with some other default values
     view_pos_ = glm::vec3(0.0, 0.0, -init_zoom);
     view_dir_ = -view_pos_;
 
@@ -442,83 +505,8 @@ void Scene::load_scene(const SimConfig& config){
     }
     glBindVertexArray(0);
 
-    //TODO: Move shader uniform initialization to constructor
-
-    // SSAO Uniforms
-    glm::mat2 iproj = glm::mat2(inv_projection_matrix_[2][2], inv_projection_matrix_[2][3],
-                                inv_projection_matrix_[3][2], inv_projection_matrix_[3][3]);
-
-    sh_ssao_->bind();
-    {
-        m_ssao_.UploadUniforms(*sh_ssao_);
-        sh_ssao_->setUniform("NormalMap", 0);
-        sh_ssao_->setUniform("DepthMap", 1);
-        sh_ssao_->setUniform("depth_iproj", 1, iproj);
-        sh_ssao_->setUniform("projectionMatrix", 1, projection_matrix_);
-        sh_ssao_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
-    }
-
-    // Blur Uniforms
-    sh_blur_->bind();
-    {
-        sh_blur_->setUniform("aoSampler", 0);
-        sh_blur_->setUniform("use_blur", int(is_blur_active_));
-    }
-
-    // Edge Detection Uniforms
-    sh_edge_detection_->bind();
-    {
-        sh_edge_detection_->setUniform("colorTex", 0);
-        sh_edge_detection_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
-    }
-
-    // Blend weights Uniforms
-    sh_blend_weights_->bind();
-    {
-        sh_blend_weights_->setUniform("edgesTex", 0);
-        sh_blend_weights_->setUniform("areaTex", 1);
-        sh_blend_weights_->setUniform("searchTex", 2);
-        sh_blend_weights_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
-    }
-
-    // Blend Uniforms
-    sh_blend_->bind();
-    {
-        sh_blend_->setUniform("colorTex", 0);
-        sh_blend_->setUniform("blendTex", 1);
-        sh_blend_->setUniform("texel_size", 1, glm::vec2(1.0f / window_width_, 1.0f / window_height_));
-    }
-
-    // Accumulator Uniforms
-    sh_accumulator_->bind();
-    {
-        sh_accumulator_->setUniform("ColorMap", 0);
-        sh_accumulator_->setUniform("NormalMap", 1);
-        sh_accumulator_->setUniform("DepthMap", 2);
-        sh_accumulator_->setUniform("LightDepthMap", 3);
-        sh_accumulator_->setUniform("depth_iproj", 1, iproj);
-        sh_accumulator_->setUniform("skyColor", 1, sky_color_);
-        sh_accumulator_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
-    }
-
-    sh_text_->bind();
-    {
-        glm::mat4 projection_matrix_ = glm::ortho(0.0f, (float)window_width_, 0.0f, (float)window_height_);
-        sh_text_->setUniform("projectionMatrix", 1, projection_matrix_);
-        sh_text_->setUniform("inSampler", 0);
-        sh_text_->setUniform("inColor", 1, glm::vec4(1.0f, 1.0f, 0.0f, 1.0f));
-    }
-
-    sh_points_->bind();
-    {
-        sh_points_->setUniform("radius", point_radius_);
-        sh_points_->setUniform("outline_radius", point_outline_radius_);
-        sh_points_->setUniform("color", 1, point_color_);
-        sh_points_->setUniform("outline_color", 1, point_outline_color_);
-    }
 }
 
-//TODO: Handle Orthographic projection correctly.
 bool Scene::raytrace(int x, int y, int& pid){
     if(!grid_){
         grid_ = new Grid(*config_);
@@ -594,7 +582,6 @@ void Scene::toggle_particle_point_drawing(int pid){
     particle_flags_[pid] ^= ParticleFlags::Point;
 }
 
-//TODO: Perhaps add a should_update_point_uniforms.
 void Scene::set_point_radius(float radius){
     point_radius_ = radius;
     sh_points_->bind();
@@ -918,7 +905,6 @@ void Scene::render(void){
                     sh_spheres_->setUniform("clip", is_clip_plane_active_);
                     sh_spheres_->setUniform("clip_plane", 1, clip_plane_);
 
-                    //TODO: Move this to a better place
                     if(projection_type_ == Projection::PERSPECTIVE){
                         sh_spheres_->setUniform("perspective_scale", 1.0f / cosf(0.5f * glm::radians(fov_)));
                     }
