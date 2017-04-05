@@ -49,10 +49,8 @@ public:
 	float get_fov_degrees(void);
     bool raytrace(int x, int y, int& pid);
     void select_particle(int pid);
-    //TODO: Rename to is_particle_selected
-    bool is_selected(int pid)const;
-    //TODO: Rename to clear_particle_selection
-    void clear_selection(void);
+    bool is_particle_selected(int pid)const;
+    void clear_particle_selections(void);
     //TODO: Add function to change selection rendering color.
     //TODO: Add function to change selection rendering size.
 

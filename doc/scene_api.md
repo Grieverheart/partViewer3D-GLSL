@@ -19,8 +19,8 @@ Along with the following functions:
 * [set_fov_degrees](#set_fov_degrees)
 * [rotate](#rotate)
 * [select_particle](#select_particle)
-* [is_selected](#is_selected)
-* [clear_selection](#clear_selection)
+* [is_particle_selected](#is_particle_selected)
+* [clear_particle_selections](#clear_particle_selections)
 * [hide_particle](#hide_particle)
 * [unhide_particle](#unhide_particle)
 * [set_particle_color](#set_particle_color)
@@ -178,10 +178,10 @@ Rotate the scene by `angle` radians around `axis`.
 #### <a name="select_particle"><a/>`select_particle(int i)`
 Set particle `i` as selected. This enables the selection drawing for that particle.
 
-#### <a name="is_selected"><a/>`is_selected(int i)`
+#### <a name="is_particle_selected"><a/>`is_particle_selected(int i)`
 Check if particle `i` is selected.
 
-#### <a name="clear_selection"><a/>`clear_selection()`
+#### <a name="clear_particle_selections"><a/>`clear_particle_selections()`
 Clear all particle selections.
 
 #### <a name="hide_particle"><a/>`hide_particle(int i)`

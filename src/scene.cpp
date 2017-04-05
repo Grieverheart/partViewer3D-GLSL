@@ -553,11 +553,11 @@ void Scene::select_particle(int pid){
     else selected_pids_.push_back(pid);
 }
 
-bool Scene::is_selected(int pid)const{
+bool Scene::is_particle_selected(int pid)const{
     return std::any_of(selected_pids_.begin(), selected_pids_.end(), [pid](int id) -> bool {return id == pid;});
 }
 
-void Scene::clear_selection(void){
+void Scene::clear_particle_selections(void){
     selected_pids_.clear();
 }
 
