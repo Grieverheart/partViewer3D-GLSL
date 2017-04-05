@@ -63,6 +63,7 @@ Scene::Scene(int width, int height):
     point_radius_(0.2f), point_outline_radius_(0.14f),
     point_color_(0.05, 0.05, 0.05, 0.5), point_outline_color_(0.0, 0.0, 0.0, 0.5),
     line_width_(0.01),
+    selection_width_(0.1),
     clip_plane_{0.0, 0.0, -1.0, 0.0},
     shape_vaos_(nullptr), shape_vbos_(nullptr),
     particle_flags_(nullptr),
@@ -137,6 +138,16 @@ Scene::Scene(int width, int height):
        !m_blend_buffer_.Init(window_width_, window_height_)
     ){
         throw InitializationException("Couldn't initialize FBO!\n");
+    }
+
+    sh_color_->bind();
+    {
+        sh_color_->setUniform("color", 1, glm::vec3(1.0, 1.0, 0.0));
+    }
+
+    sh_color_sphere_->bind();
+    {
+        sh_color_sphere_->setUniform("color", 1, glm::vec3(1.0, 1.0, 0.0));
     }
 
     glGenVertexArrays(1, &fullscreen_triangle_vao_);
@@ -608,6 +619,18 @@ void Scene::set_point_outline_color(const glm::vec4& color){
     sh_points_->setUniform("outline_color", 1, point_outline_color_);
 }
 
+void Scene::set_particle_selection_color(const glm::vec3& color){
+    sh_color_->bind();
+    sh_color_->setUniform("color", 1, color);
+    sh_color_sphere_->bind();
+    sh_color_sphere_->setUniform("color", 1, color);
+}
+
+void Scene::set_particle_selection_width_fraction(float width){
+    selection_width_ = width;
+    if(selection_width_ < 0.0) selection_width_ = 0.0;
+}
+
 void Scene::wsize_changed(int w, int h){
     window_width_ = w;
     window_height_ = h;
@@ -1054,7 +1077,7 @@ void Scene::render(void){
             glStencilMask(0x00);
             glDisable(GL_DEPTH_TEST);
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.1));
+            mvp_matrix = mvp_matrix * glm::scale(glm::mat4(1.0), glm::vec3(1.0 + selection_width_));
             sh_color_->setUniform("mvp_matrix", 1, mvp_matrix);
             glDrawArrays(GL_TRIANGLES, 0, n_vertices);
         }
@@ -1080,7 +1103,7 @@ void Scene::render(void){
             glStencilMask(0x00);
             glDisable(GL_DEPTH_TEST);
             glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-            sh_color_sphere_->setUniform("radius", 1.1f * radius);
+            sh_color_sphere_->setUniform("radius", (1.0f + selection_width_) * radius);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         }
 

@@ -1,6 +1,7 @@
 static const char color_sphere_frag[] = R"(
 #version 330 core
 
+uniform vec3 color;
 uniform float radius;
 
 noperspective in vec3 ray_origin;
@@ -23,7 +24,7 @@ bool intersect_sphere(in vec3 position, in float radius, in vec3 ray_r0, in vec3
 void main(void){
     vec3 ray_dir_ = normalize(ray_dir);
     if(!intersect_sphere(sphere_position, radius, ray_origin, ray_dir_)) discard;
-    outColor = vec3(1.0, 1.0, 0.0);
+    outColor = color;
 }
 )";
 static const char color_sphere_vert[] = R"(

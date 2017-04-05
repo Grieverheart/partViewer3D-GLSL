@@ -51,8 +51,6 @@ public:
     void select_particle(int pid);
     bool is_particle_selected(int pid)const;
     void clear_particle_selections(void);
-    //TODO: Add function to change selection rendering color.
-    //TODO: Add function to change selection rendering size.
 
     void hide_particle(int pid);
     void unhide_particle(int pid);
@@ -64,6 +62,8 @@ public:
     void set_point_outline_radius(float);
     void set_point_color(const glm::vec4&);
     void set_point_outline_color(const glm::vec4&);
+    void set_particle_selection_color(const glm::vec3&);
+    void set_particle_selection_width_fraction(float);
 
     void set_box_line_width(float);
 
@@ -136,6 +136,7 @@ private:
 	glm::vec4 point_outline_color_;
 
     float line_width_;
+    float selection_width_;
 
     glm::vec4 clip_plane_;
 

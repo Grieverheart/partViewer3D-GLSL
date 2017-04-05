@@ -1,10 +1,11 @@
 static const char color_frag[] = R"(
 #version 330 core
 
+uniform vec3 color;
 layout(location = 0) out vec3 outColor;
 
 void main(void){
-	outColor = vec3(1.0, 1.0, 0.0);
+	outColor = color;
 }
 )";
 static const char color_vert[] = R"(

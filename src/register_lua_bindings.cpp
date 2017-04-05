@@ -472,6 +472,8 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .function_("set_point_outline_radius", &Scene::set_point_outline_radius, scene)
         .function_("set_point_color", &Scene::set_point_color, scene)
         .function_("set_point_outline_color", &Scene::set_point_outline_color, scene)
+        .function_("set_particle_selection_color", &Scene::set_particle_selection_color, scene)
+        .function_("set_particle_selection_width_fraction", &Scene::set_particle_selection_width_fraction, scene)
         .function_("set_box_line_width", &Scene::set_box_line_width, scene)
         .function_("is_particle_selected", &Scene::is_particle_selected, scene)
         .function_("clear_particle_selections", &Scene::clear_particle_selections, scene)

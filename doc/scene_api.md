@@ -21,6 +21,8 @@ Along with the following functions:
 * [select_particle](#select_particle)
 * [is_particle_selected](#is_particle_selected)
 * [clear_particle_selections](#clear_particle_selections)
+* [set_particle_selection_color](#set_particle_selection_color)
+* [set_particle_selection_width_fraction](#set_particle_selection_width_fraction)
 * [hide_particle](#hide_particle)
 * [unhide_particle](#unhide_particle)
 * [set_particle_color](#set_particle_color)
@@ -183,6 +185,12 @@ Check if particle `i` is selected.
 
 #### <a name="clear_particle_selections"><a/>`clear_particle_selections()`
 Clear all particle selections.
+
+#### <a name="set_particle_selection_color"><a/> `set_particle_selection_color(glm.vec3 color)`
+Set the color of the particle selection outline to `color`.
+
+#### <a name="set_particle_selection_width_fraction"><a/> `set_particle_selection_width_fraction(float fraction)`
+Set the width of the particle selection outline to `fraction`, given as a fraction of the size of the particle.
 
 #### <a name="hide_particle"><a/>`hide_particle(int i)`
 Hide particle `i`. Particle `i` is ignored by the renderer and thus not drawn.
