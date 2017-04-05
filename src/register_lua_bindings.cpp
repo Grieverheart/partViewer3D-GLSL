@@ -117,6 +117,9 @@ static int luaScene_load(lua_State* L){
 
     scene->load_scene(config);
 
+    delete[] config.particles;
+    delete[] config.shapes;
+
     return 0;
 }
 

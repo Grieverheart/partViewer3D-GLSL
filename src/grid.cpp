@@ -280,6 +280,7 @@ Grid::Grid(const SimConfig& config):
 
     //Insert Objects in grid
     for(size_t iid = 0; iid < n_items_; ++iid){
+        items_[iid] = items[iid];
         //convert AABB to cell coordinates
         glm::vec3 min = items[iid].object_->get_AABB().bounds_[0];
         glm::vec3 max = items[iid].object_->get_AABB().bounds_[1];
@@ -324,8 +325,8 @@ Grid::~Grid(void){
         }
     }
     delete[] cells_;
-    delete[] items_;
     for(size_t iid = 0; iid < n_items_; ++iid) delete items_[iid].object_;
+    delete[] items_;
 }
 
 void Grid::ignore_id(int pid){
