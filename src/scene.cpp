@@ -55,7 +55,7 @@ enum ParticleFlags{
 
 Scene::Scene(int width, int height):
     window_width_(width), window_height_(height),
-    fov_(60.0f), zoom_(0.0f),
+    fov_(60.0f),
     model_matrix_(1.0),
     model_matrices_(nullptr),
     background_color_(glm::vec3(44, 114, 220) / 255.0f),
@@ -694,14 +694,14 @@ void Scene::process(void){
 
 void Scene::set_projection(void){
     if(projection_type_ == Projection::ORTHOGRAPHIC){
-        float half_length = glm::length(view_pos_) * tan(0.5f * glm::radians(fov_ + zoom_));
+        float half_length = glm::length(view_pos_) * tan(0.5f * glm::radians(fov_));
         float aspect      = float(window_width_) / window_height_;
 
         projection_matrix_ = glm::ortho(-half_length * aspect, half_length * aspect, -half_length, half_length, znear_, zfar_);
         inv_projection_matrix_    = glm::inverse(projection_matrix_);
     }
     else{
-        projection_matrix_ = glm::perspective(glm::radians(fov_ + zoom_), (float)window_width_/window_height_, znear_, zfar_);
+        projection_matrix_ = glm::perspective(glm::radians(fov_), (float)window_width_/window_height_, znear_, zfar_);
         inv_projection_matrix_    = glm::inverse(projection_matrix_);
     }
 }
@@ -897,7 +897,7 @@ void Scene::render(void){
 
                     //TODO: Move this to a better place
                     if(projection_type_ == Projection::PERSPECTIVE){
-                        sh_spheres_->setUniform("perspective_scale", 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_)));
+                        sh_spheres_->setUniform("perspective_scale", 1.0f / cosf(0.5f * glm::radians(fov_)));
                     }
                     else{
                         sh_spheres_->setUniform("perspective_scale", 1.0f);
@@ -1064,7 +1064,7 @@ void Scene::render(void){
             glStencilFunc(GL_ALWAYS, 1, 0xFF);
             glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
 
-            float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_ + zoom_));
+            float perspective_scale = 1.0f / cosf(0.5f * glm::radians(fov_));
 
             float radius = config_->particles[selected_pid].size;
 
@@ -1151,10 +1151,14 @@ void Scene::rotate(float angle, const glm::vec3& axis){
 }
 
 //TODO: Move to camera
-void Scene::zoom(float dz){
-    zoom_ = zoom_ - 2.0f * dz; // put wheel up and down in one
-    if(zoom_ < -58) zoom_ = -58.0f;
-    else if(zoom_ > 90) zoom_ = 90.0f;
+void Scene::set_fov_degrees(float fov){
+    fov_ = fov;
+    if(fov_ < 2.0f) fov_ = 2.0f;
+    else if(fov_ > 90.0f) fov_ = 90.0f;
+}
+
+float Scene::get_fov_degrees(void){
+    return fov_;
 }
 
 glm::mat4 Scene::get_view_matrix(void)const{

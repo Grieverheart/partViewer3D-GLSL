@@ -45,10 +45,8 @@ public:
 	void process(void);
 
     void rotate(float angle, const glm::vec3& axis);
-
-    //TODO: Change this function to do something more obvious.
-	void zoom(float dz);
-
+	void set_fov_degrees(float fov);
+	float get_fov_degrees(void);
     bool raytrace(int x, int y, int& pid);
     void select_particle(int pid);
     //TODO: Rename to is_particle_selected
@@ -118,7 +116,7 @@ public:
 private:
 	int window_width_;
 	int window_height_;
-	float fov_, zoom_;
+	float fov_;
 	float znear_, zfar_;
     float out_radius_;
 

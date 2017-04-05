@@ -15,7 +15,8 @@ Along with the following functions:
 * [load](#load)
 * [draw_text](#draw_text)
 * [save_snapshot](#save_snapshot)
-* [zoom](#zoom)
+* [get_fov_degrees](#get_fov_degrees)
+* [set_fov_degrees](#set_fov_degrees)
 * [rotate](#rotate)
 * [select_particle](#select_particle)
 * [is_selected](#is_selected)
@@ -165,8 +166,11 @@ Draw the text given by the string `text`, with text properties `props` on the sc
 #### <a name="save_snapshot"><a/>`save_snapshot(string path)`
 Save a snapshot of the current window view in PNG format at path `path`.
 
-#### <a name="zoom"><a/>`zoom(float dz)`
-Change the scene zoom level by `dz`. The zoom level changes the field of view angle.
+#### <a name="get_fov_degrees"><a/> `get_fov_degrees() -> float`
+Get the field of view angle in degrees.
+
+#### <a name="set_fov_degrees"><a/> `set_fov_degrees(float fov)`
+Set the field of view angle to `fov`, given in degrees. The field of view angle is clipped to [2, 90].
 
 #### <a name="rotate"><a/>`rotate(float angle, glm.vec3 axis)`
 Rotate the scene by `angle` radians around `axis`.
