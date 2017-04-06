@@ -17,6 +17,7 @@ Along with the following functions:
 * [get_fov_degrees](#get_fov_degrees)
 * [set_fov_degrees](#set_fov_degrees)
 * [rotate](#rotate)
+* [raytrace](#raytrace)
 * [select_particle](#select_particle)
 * [is_particle_selected](#is_particle_selected)
 * [clear_particle_selections](#clear_particle_selections)
@@ -153,6 +154,9 @@ Set the field of view angle to `fov`, given in degrees. The field of view angle 
 
 #### <a name="rotate"><a/>`rotate(float angle, glm.vec3 axis)`
 Rotate the scene by `angle` radians around `axis`.
+
+#### <a name="raytrace"><a/> `raytrace(int x, int y) -> int`
+Shoots a ray through the window `x` and `y` coordinates and returns the id of the first particle encountered by the ray, if any.
 
 #### <a name="select_particle"><a/>`select_particle(int i)`
 Set particle `i` as selected. This enables the selection drawing for that particle.
