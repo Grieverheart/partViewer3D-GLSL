@@ -28,7 +28,7 @@ local function load_obj(filepath)
 
     for _, face in ipairs(face_indices) do
         for _, fi in ipairs(face) do
-            mesh:add_vertex(scene.Vertex(vertices[fi[1]], vertex_normals[fi[3]]))
+            mesh:add_vertex(vertices[fi[1]], vertex_normals[fi[3]])
         end
     end
 

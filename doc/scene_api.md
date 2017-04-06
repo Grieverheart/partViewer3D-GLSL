@@ -5,7 +5,6 @@ The scene module contains functionality for manipulating the scene as well as va
 The following classes are exposed to the Lua API:
 
 * [Particle](#particle)
-* [Vertex](#vertex)
 * [Sphere](#sphere)
 * [Mesh](#mesh)
 * [TextProperties](#textproperties)
@@ -91,22 +90,6 @@ Constructor.
 #### `Particle(Particle) -> Particle`
 Copy constructor.
 
-## <a name="vertex"><a/> `Vertex`
-The `Vertex` class is used for building a `Mesh`.
-
-### Class Members:
-
-#### `glm.vec3 coord`
-Coordinate of the vertex.
-
-#### `glm.vec3 normal`
-Normal vector at vertex.
-
-### Class Methods:
-
-#### `Vertex(glm.vec3 coord, glm.vec3 normal) -> Vertex`
-Construct a `Vertex` with coordinate `coord` and normal vector `normal`.
-
 ## <a name="sphere"><a/> `Sphere`
 A sphere of unit radius. The renderer spheres in screen space instead of triangulating. This makes the rendering good looking and efficient.
 
@@ -123,14 +106,8 @@ A triangle mesh. Vertices are added through the `add_vertex` method. During rend
 #### `Mesh() -> Mesh`
 Constructor.
 
-#### `add_vertex(Vertex v)`
-Add a vertex `v` to the mesh.
-
-#### `get_vertex(int i) -> Vertex`
-Get the `i`th vertex.
-
-#### `get_num_vertices() -> int`
-Get the current number of vertices added to the mesh.
+#### `add_vertex(glm.vec3 pos, glm.vec3 normal)`
+Add a vertex with position `pos` and normal vector `normal` to the mesh.
 
 ## <a name="textproperties"><a/> `TextProperties`
 A helper for defining text font properties which are passed to [`draw_text`](#draw_text) to draw text on the screen.

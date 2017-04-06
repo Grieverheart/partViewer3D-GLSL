@@ -50,16 +50,8 @@ namespace{
     struct Sphere{};
 
     struct Mesh{
-        void add_vertex(const Vertex& v){
-            vertices_.push_back(v);
-        }
-
-        Vertex get_vertex(size_t vi)const{
-            return vertices_[vi];
-        }
-
-        size_t get_num_vertices(void)const{
-            return vertices_.size();
+        void add_vertex(const glm::vec3& pos, const glm::vec3& normal){
+            vertices_.emplace_back(pos, normal);
         }
 
         std::vector<Vertex> vertices_;
@@ -444,13 +436,6 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
             .def_readwrite("pos", &Particle::pos)
             .def_readwrite("size", &Particle::size)
             .endef()
-        //TODO: Remove the vertex class
-        //Register Vertex
-        .class_<Vertex>("Vertex")
-            .def_constructor<const glm::vec3&, const glm::vec3&>()
-            .def_readwrite("coord", &Vertex::_coord)
-            .def_readwrite("normal", &Vertex::_normal)
-            .endef()
         //Register shape
         .class_<Sphere>("Sphere")
             .def_constructor<>()
@@ -459,8 +444,6 @@ bool register_lua_bindings(lua_State* L, Scene* scene, GLFWwindow* window){
         .class_<Mesh>("Mesh")
             .def_constructor<>()
             .def("add_vertex", &Mesh::add_vertex)
-            .def("get_vertex", &Mesh::get_vertex)
-            .def("get_num_vertices", &Mesh::get_num_vertices)
             .endef()
         .class_<Text::Properties>("TextProperties")
             .def_constructor<>()
