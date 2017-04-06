@@ -71,8 +71,8 @@ local function load_scene(filepath)
 
         if string.lower(shape_type) == 'sphere' then
             shapes[shape_id] = scene.Sphere()
-        elseif string.lower(shape_type) == 'polyhedron' then
-            shapes[shape_id] = load_obj("obj/"..shape_info..".obj")
+        elseif string.lower(shape_type) == 'mesh' then
+            shapes[shape_id] = load_obj(shape_info)
         else
             fp:close()
             error("Unknown shape type, "..shape_type)

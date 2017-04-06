@@ -52,6 +52,21 @@ This function will be called every time the mouse pointer moves. The `x` and `y`
 #### `OnMouseScroll(dz)`
 This function will be called every time the mouse scroll is used. The `dz` argument is the offset of the scroll from its previous value.
 
+An example initialization script is included in the repository, named 'init.lua'. The script expects to be passed a configuration file with the following format:
+
+    n_part
+    x y z phi a_x a_y a_z sid
+    ...
+    sid shape_info
+
+where `n_part` is the total number of particles, `x`, `y`, and `z` are the particle coordinates, `phi` is the rotation angle, in degrees, around the axis with coordinates, `a_x`, `a_y`, and `a_z`. `sid` is the shape id for the particle. The shapes with respective ids, `sid`, are defined at the end of the file in `shape_info`, and can have either one of the following formats:
+
+    sphere
+or
+    mesh path
+
+where `path` is the path of a wavefront .obj type file.
+
 ## API Reference ##
 
 For documentation on the exposed Lua API and the various modules take a look [here](doc/api.md).
