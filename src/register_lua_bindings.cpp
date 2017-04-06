@@ -151,7 +151,6 @@ static int luaScene_raw_load(lua_State* L){
     return 0;
 }
 
-//TODO: No window module yet, these functions are not bound.
 static int luaWindow_size(lua_State* L){
     int width, height;
     auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
