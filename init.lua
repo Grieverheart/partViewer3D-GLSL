@@ -183,11 +183,11 @@ function OnMouseClick(x, y, button, action, mods)
                 pid = scene.raytrace(x, y)
                 if pid and (mods == keyboard.mod.shift) then
                     scene.select_particle(pid)
-                elseif pid and (not scene.is_selected(pid)) then
-                    scene.clear_selection()
+                elseif pid and (not scene.is_particle_selected(pid)) then
+                    scene.clear_particle_selections()
                     scene.select_particle(pid)
                 else
-                    scene.clear_selection()
+                    scene.clear_particle_selections()
                 end
             end
         end

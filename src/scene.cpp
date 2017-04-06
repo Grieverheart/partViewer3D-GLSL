@@ -588,11 +588,12 @@ void Scene::select_particle(int pid){
 }
 
 bool Scene::is_particle_selected(int pid)const{
-    return std::any_of(selected_pids_, selected_pids_ + config_->n_particles, [pid](int id) -> bool {return id == pid;});
+    return std::any_of(selected_pids_, selected_pids_ + num_selected_pids_, [pid](int id) -> bool {return id == pid;});
 }
 
 void Scene::clear_particle_selections(void){
     for(size_t i = 0; i < num_selected_pids_; ++i) selected_pids_[i] = -1;
+    num_selected_pids_ = 0;
 }
 
 void Scene::hide_particle(int pid){

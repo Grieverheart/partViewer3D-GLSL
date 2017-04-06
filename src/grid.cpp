@@ -282,8 +282,8 @@ Grid::Grid(const SimConfig& config):
     for(size_t iid = 0; iid < n_items_; ++iid){
         items_[iid] = items[iid];
         //convert AABB to cell coordinates
-        glm::vec3 min = items[iid].object_->get_AABB().bounds_[0];
-        glm::vec3 max = items[iid].object_->get_AABB().bounds_[1];
+        glm::vec3 min = items_[iid].object_->get_AABB().bounds_[0];
+        glm::vec3 max = items_[iid].object_->get_AABB().bounds_[1];
         min = (min - scene_bounds_.bounds_[0]) / cell_size_;
         max = (max - scene_bounds_.bounds_[0]) / cell_size_;
         for(int z = int(min.z); z <= int(max.z); z++){
@@ -293,7 +293,7 @@ Grid::Grid(const SimConfig& config):
                     if(cells_[index] == nullptr){
                         Cell* new_cell = new Cell();
                         new_cell->next = nullptr;
-                        new_cell->item = &items[iid];
+                        new_cell->item = &items_[iid];
                         cells_[index] = new_cell;
                     }
                     else{
@@ -301,7 +301,7 @@ Grid::Grid(const SimConfig& config):
                             if(cell->next == nullptr){
                                 Cell* new_cell = new Cell();
                                 new_cell->next = nullptr;
-                                new_cell->item = &items[iid];
+                                new_cell->item = &items_[iid];
                                 cell->next = new_cell;
                                 break;
                             }
@@ -355,18 +355,18 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, float& t, int& pid){
 
     //Convert ray origin to cell coordinates
     glm::vec3 rayOrigCell = origin - scene_bounds_.bounds_[0];
-    glm::ivec3 cell = glm::ivec3(rayOrigCell / cell_size_);
+    glm::ivec3 cell_coords = glm::ivec3(rayOrigCell / cell_size_);
     for(int i = 0; i < 3; ++i){
-        cell[i] = clamp(cell[i], 0, n_cells_[i] - 1);
+        cell_coords[i] = clamp(cell_coords[i], 0, n_cells_[i] - 1);
         if(ray_dir[i] < 0.0f){
             deltaT[i] = -cell_size_[i] * invDir[i];
-            nextCrossingT[i] = tmin + (cell[i] * cell_size_[i] - rayOrigCell[i]) * invDir[i];
+            nextCrossingT[i] = tmin + (cell_coords[i] * cell_size_[i] - rayOrigCell[i]) * invDir[i];
             exitCell[i] = -1;
             step[i] = -1;
         }
         else{
             deltaT[i] = cell_size_[i] * invDir[i];
-            nextCrossingT[i] = tmin + ((cell[i] + 1) * cell_size_[i] - rayOrigCell[i]) * invDir[i];
+            nextCrossingT[i] = tmin + ((cell_coords[i] + 1) * cell_size_[i] - rayOrigCell[i]) * invDir[i];
             exitCell[i] = n_cells_[i];
             step[i] = 1;
         }
@@ -375,9 +375,9 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, float& t, int& pid){
     //Traverse the cells using 3d-DDA
     float retValue = false;
     while(1){
-        int index = cell[0] + cell[1] * n_cells_[0] + cell[2] * n_cells_[0] * n_cells_[1];
+        int index = cell_coords[0] + cell_coords[1] * n_cells_[0] + cell_coords[2] * n_cells_[0] * n_cells_[1];
         for(Cell* cell = cells_[index]; cell != nullptr; cell = cell->next){
-            const auto& item = cell->item;
+            const Item* item = cell->item;
             float temp_t = t;
             if(item->object_->raycast(o, ray_dir, temp_t)){
                 if(!is_ignored[item->pid_]){
@@ -394,8 +394,8 @@ bool Grid::raycast(glm::vec3 o, glm::vec3 ray_dir, float& t, int& pid){
         static const unsigned char map[8] = {2, 1, 2, 1, 2, 2, 0, 0};
         unsigned char axis = map[k];
         if(t < nextCrossingT[axis]) break;
-        cell[axis] += step[axis];
-        if(cell[axis] == exitCell[axis]) break;
+        cell_coords[axis] += step[axis];
+        if(cell_coords[axis] == exitCell[axis]) break;
         nextCrossingT[axis] += deltaT[axis];
     }
 
