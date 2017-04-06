@@ -29,7 +29,6 @@ static int luaScene_set_projection_type(lua_State* L){
     return 0;
 }
 
-//TODO: Add to docs
 static int luaScene_raytrace(lua_State* L){
     auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 

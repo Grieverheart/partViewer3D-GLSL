@@ -16,6 +16,7 @@ Along with the following functions:
 * [save_snapshot_png](#save_snapshot_png)
 * [get_fov_degrees](#get_fov_degrees)
 * [set_fov_degrees](#set_fov_degrees)
+* [set_projection_type](#set_projection_type)
 * [rotate](#rotate)
 * [raytrace](#raytrace)
 * [select_particle](#select_particle)
@@ -151,6 +152,9 @@ Get the field of view angle in degrees.
 
 #### <a name="set_fov_degrees"><a/> `set_fov_degrees(float fov)`
 Set the field of view angle to `fov`, given in degrees. The field of view angle is clipped to [2, 90].
+
+#### <a name="set_projection_type"><a/> `set_projection_type(string projection_type)`
+Set the projection type to 'projection_type', where 'projection_type' can be one of either 'orthographic', or 'perspective'.
 
 #### <a name="rotate"><a/>`rotate(float angle, glm.vec3 axis)`
 Rotate the scene by `angle` radians around `axis`.
