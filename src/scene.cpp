@@ -298,6 +298,9 @@ Scene::Scene(int width, int height):
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    //Clear at least once.
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 Scene::~Scene(void){
@@ -321,6 +324,10 @@ Scene::~Scene(void){
     if(config_){
         glDeleteVertexArrays(config_->n_shapes, shape_vaos_);
         glDeleteBuffers(config_->n_shapes, shape_vbos_);
+
+        delete[] config_->particles;
+        delete[] config_->shapes;
+        delete config_;
     }
 
     delete[] shape_vaos_;
@@ -332,10 +339,6 @@ Scene::~Scene(void){
     delete[] selected_pids_;
 
     delete grid_;
-
-    delete[] config_->particles;
-    delete[] config_->shapes;
-    delete config_;
 
     glDeleteVertexArrays(1, &box_vao_);
     glDeleteBuffers(1, &box_vbo_);

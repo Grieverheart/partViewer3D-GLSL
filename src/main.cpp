@@ -102,6 +102,7 @@ static void call_lua_OnMouseScroll(lua_State* L, float dz){
 ////////////GLUT Keyboard Function Wrappers/////////////
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     call_lua_OnKey(L, key, action, mods);
+    //TODO: Add lua binding for quitting the program.
     switch(key){
     case GLFW_KEY_ESCAPE:
         if(action == GLFW_PRESS) running = false;

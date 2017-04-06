@@ -23,12 +23,13 @@ static int luaScene_set_projection_type(lua_State* L){
         scene->set_projection_type(Projection::ORTHOGRAPHIC);
     }
     else{
-        printf("Projection type, '%s', not supported\n", lua_tostring(L, 1));
+        fprintf(stderr, "Projection type, '%s', not supported\n", lua_tostring(L, 1));
     }
     lua_pop(L, 2);
     return 0;
 }
 
+//TODO: Add to docs
 static int luaScene_raytrace(lua_State* L){
     auto scene = reinterpret_cast<Scene*>(lua_touserdata(L, lua_upvalueindex(1)));
 
@@ -58,13 +59,16 @@ namespace{
     };
 }
 
-//TODO: Add type safety, and logic validation
 //box[], particles[], shapes[]
 static int luaScene_load(lua_State* L){
     SimConfig config;
 
     for(lua_pushnil(L); lua_next(L, 1); lua_pop(L, 1)){
         long long int i = lua_tointeger(L, -2) - 1;
+        if(i < 0 || i >= 9){
+            fprintf(stderr, "Invalid index for box table encountered while loading scene.\n");
+            return 0;
+        }
         config.box[i % 3][i / 3] = lua_tonumber(L, -1);
     }
 
@@ -82,9 +86,22 @@ static int luaScene_load(lua_State* L){
     //TODO: Add a is_class(lua_State* L, int idx) function to maan.
     size_t sid = 0;
     for(lua_pushnil(L); lua_next(L, 3);){
+        if(!lua_isuserdata(L, -1)){
+            fprintf(stderr, "Unknown item type encountered in shapes table while loading scene. 'Shape' expected, got '%s'.\n", luaL_typename(L, -1));
+            delete[] config.particles;
+            delete[] config.shapes;
+            return 0;
+        }
         lua_getmetatable(L, -1);
         lua_pushstring(L, "__class_id");
         lua_rawget(L, -2);
+        if(lua_isnil(L, -1)){
+            fprintf(stderr, "Unknown userdata type encountered in shapes table while loading scene.\n");
+            delete[] config.particles;
+            delete[] config.shapes;
+            return 0;
+        }
+
         void* class_id = lua_touserdata(L, -1);
         lua_pop(L, 2);
         auto shape = Shape();
@@ -92,7 +109,7 @@ static int luaScene_load(lua_State* L){
             shape.type = Shape::SPHERE;
             lua_pop(L, 1);
         }
-        else{
+        else if(maan::detail::ClassInfo<Mesh>::get_metatable_key() == class_id){
             shape.type = Shape::MESH;
             auto mesh = maan::get_LuaValue<Mesh>(L);
             shape.mesh.n_vertices = mesh.vertices_.size();
@@ -101,6 +118,16 @@ static int luaScene_load(lua_State* L){
             for(auto vertex: mesh.vertices_){
                 shape.mesh.vertices[i++] = vertex;
             }
+        }
+        else{
+            lua_getmetatable(L, -1);
+            lua_pushstring(L, "__name");
+            lua_rawget(L, -2);
+            fprintf(stderr, "Unknown class type encountered in shapes table while loading scene. 'Shape' expected, got '%s'.\n", lua_tostring(L, -1));
+            lua_pop(L, 2);
+            delete[] config.particles;
+            delete[] config.shapes;
+            return 0;
         }
         config.shapes[sid++] = shape;
     }
@@ -115,6 +142,7 @@ static int luaScene_load(lua_State* L){
     return 0;
 }
 
+//TODO: Add to docs
 static int luaScene_raw_load(lua_State* L){
     void* raw_config = lua_touserdata(L, 1);
     if(raw_config){
@@ -124,6 +152,7 @@ static int luaScene_raw_load(lua_State* L){
     return 0;
 }
 
+//TODO: No window module yet, these functions are not bound.
 static int luaWindow_size(lua_State* L){
     int width, height;
     auto window = reinterpret_cast<GLFWwindow*>(lua_touserdata(L, lua_upvalueindex(1)));
