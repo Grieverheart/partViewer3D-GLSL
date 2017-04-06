@@ -24,11 +24,11 @@ local function load_obj(filepath)
     end
     fp:close()
 
-    local mesh = Mesh()
+    local mesh = scene.Mesh()
 
     for _, face in ipairs(face_indices) do
         for _, fi in ipairs(face) do
-            mesh:add_vertex(Vertex(vertices[fi[1]], vertex_normals[fi[3]]))
+            mesh:add_vertex(scene.Vertex(vertices[fi[1]], vertex_normals[fi[3]]))
         end
     end
 
@@ -55,7 +55,7 @@ local function load_scene(filepath)
     -- Read particle data
     for pid = 1, n_part do
         local match = string.gmatch(fp:read(), '(%S+)')
-        local particle = Particle()
+        local particle = scene.Particle()
         particle.pos = glm.vec3(tonumber(match()), tonumber(match()), tonumber(match()))
         particle.rot = glm.vec4(math.pi * tonumber(match()) / 180.0, tonumber(match()), tonumber(match()), tonumber(match()))
         particle.shape_id = tonumber(match())
@@ -70,7 +70,7 @@ local function load_scene(filepath)
         local shape_type, shape_info = string.match(shape_info, '([0-z]+)%s*(.*)')
 
         if string.lower(shape_type) == 'sphere' then
-            shapes[shape_id] = Sphere()
+            shapes[shape_id] = scene.Sphere()
         elseif string.lower(shape_type) == 'polyhedron' then
             shapes[shape_id] = load_obj("obj/"..shape_info..".obj")
         else
@@ -89,7 +89,7 @@ end
 local start_time = 0
 function OnInit(argv)
     start_time = os.clock()
-    scene.zoom(12.5)
+    scene.set_fov_degrees(47.5)
 
     if #argv > 0 and argv[1] ~= nil then
         print("Loading "..argv[1])
@@ -227,15 +227,15 @@ function OnMouseMotion(x, y)
     end
 end
 
-function OnMouseScroll(y)
-    scene.zoom(y)
+function OnMouseScroll(dy)
+    scene.set_fov_degrees(scene.get_fov_degrees() - dy)
 end
 
 local fps = 0
 local frames = 0
 function OnFrame()
     frames = frames + 1
-    props = TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
+    props = scene.TextProperties("/usr/share/fonts/TTF/Inconsolata-Regular.ttf", 24, glm.vec4(1.0, 1.0, 0.0, 1.0), 0, 20)
     local end_time = os.clock()
     if end_time - start_time > 0.2 then
         fps = math.floor(frames / (end_time - start_time))
