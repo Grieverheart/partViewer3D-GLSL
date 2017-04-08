@@ -41,8 +41,6 @@
 #include "include/shaders/smaa/blend_weights.glsl"
 #include "include/shaders/smaa/edge_detection.glsl"
 
-//TODO: Change iteration type of draw_pids_, selected_pids_.
-
 static const glm::mat4 biasMatrix(
     0.5, 0.0, 0.0, 0.0,
     0.0, 0.5, 0.0, 0.0,
@@ -423,7 +421,7 @@ void Scene::load_scene(const SimConfig& config){
         float* vertex_data = new float[24 * 5];
         for(size_t qid = 0; qid < 6; ++qid){
             for(size_t vid = 0; vid < 4; ++vid){
-                std::copy(&box_vertices[vertex_ids[4 * qid + vid]].x, &box_vertices[vertex_ids[4 * qid + vid]].z + 1, &vertex_data[20 * qid + 5 * vid]);
+                memcpy(&vertex_data[20 * qid + 5 * vid], &box_vertices[vertex_ids[4 * qid + vid]].x, 3 * sizeof(float));
                 vertex_data[20 * qid + 5 * vid + 3] = float(vid & 1);
                 vertex_data[20 * qid + 5 * vid + 4] = float((vid & 2) >> 1);
             }
@@ -588,7 +586,10 @@ void Scene::select_particle(int pid){
 }
 
 bool Scene::is_particle_selected(int pid)const{
-    return std::any_of(selected_pids_, selected_pids_ + num_selected_pids_, [pid](int id) -> bool {return id == pid;});
+    for(size_t i = 0; i < num_selected_pids_; ++i){
+        if(selected_pids_[i] == pid) return true;
+    }
+    return false;
 }
 
 void Scene::clear_particle_selections(void){
@@ -708,12 +709,31 @@ void Scene::process(void){
         sh_accumulator_->setUniform("invProjMatrix", 1, inv_projection_matrix_);
     }
 
-    //TODO: alculate pointer offset
-    draw_points_end_ = std::partition(draw_pids_, draw_pids_ + config_->n_particles,
-        [=](int i) -> bool {
-            return (particle_flags_[i] & ParticleFlags::Point);
+    //Rearrange draw_pids_, so that particles that are supposed to be drawn as
+    //points show up first.
+    {
+        //Find the first particle id that is not to be drawn as a point
+        size_t first = config_->n_particles;
+        for(size_t i = 0; i < config_->n_particles; ++i){
+            if(!(particle_flags_[draw_pids_[i]] & ParticleFlags::Point)){
+                first = i;
+                break;
+            }
         }
-    );
+
+        if(first == config_->n_particles) draw_points_end_ = first;
+        else{
+            for(size_t i = first + 1; i < config_->n_particles; ++i){
+                if(particle_flags_[draw_pids_[i]] & ParticleFlags::Point){
+                    int temp = draw_pids_[i];
+                    draw_pids_[i] = draw_pids_[first];
+                    draw_pids_[first] = temp;
+                    ++first;
+                }
+            }
+        }
+        draw_points_end_ = first;
+    }
 
     if(config_){
         double* depths = new double[config_->n_particles];
@@ -723,13 +743,13 @@ void Scene::process(void){
             depths[i] = pos.z / pos.w;
         }
 
-        std::sort(draw_pids_, draw_points_end_,
+        std::sort(draw_pids_, draw_pids_ + draw_points_end_,
             [depths](int i, int j) -> bool {
                 return (depths[i] < depths[j]);
             }
         );
 
-        std::sort(draw_points_end_, draw_pids_ + config_->n_particles,
+        std::sort(draw_pids_ + draw_points_end_, draw_pids_ + config_->n_particles,
             [depths](int i, int j) -> bool {
                 return (depths[i] > depths[j]);
             }
@@ -788,7 +808,7 @@ void Scene::render(void){
     glClearColor(0.0, 0.0, 0.0, 1.0);
 
 
-    if(draw_points_end_ != draw_pids_ + config_->n_particles){
+    if(draw_points_end_ != config_->n_particles){
         //"Shadow Pass"
         {
             m_shadowmap_.Bind();
@@ -817,8 +837,8 @@ void Scene::render(void){
                     sh_shadowmap_instanced_->setUniform("MVPMatrix", 1, light_projection_matrix_ * light_view_matrix_ * model_matrix_);
                     sh_shadowmap_instanced_->setUniform("clip_plane", 1, clip_plane_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
-                        auto pid = *pid_itr;
+                    for(size_t i = draw_points_end_; i < config_->n_particles; ++i){
+                        auto pid = draw_pids_[i];
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_shadowmap_instanced_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
@@ -858,8 +878,8 @@ void Scene::render(void){
                     sh_shadowmap_spheres_->setUniform("MVMatrix", 1, light_view_matrix_ * model_matrix_);
                     sh_shadowmap_spheres_->setUniform("ProjectionMatrix", 1, light_projection_matrix_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
-                        auto pid = *pid_itr;
+                    for(size_t i = draw_points_end_; i < config_->n_particles; ++i){
+                        auto pid = draw_pids_[i];
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_shadowmap_spheres_->setUniform("radius", config_->particles[pid].size);
@@ -898,8 +918,8 @@ void Scene::render(void){
                     sh_gbuffer_instanced_->setUniform("MVMatrix", 1, view_matrix_ * model_matrix_);
                     sh_gbuffer_instanced_->setUniform("ProjectionMatrix", 1, projection_matrix_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
-                        auto pid = *pid_itr;
+                    for(size_t i = draw_points_end_; i < config_->n_particles; ++i){
+                        auto pid = draw_pids_[i];
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_gbuffer_instanced_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
@@ -952,8 +972,8 @@ void Scene::render(void){
                     sh_spheres_->setUniform("ProjectionMatrix", 1, projection_matrix_);
                     sh_spheres_->setUniform("InvProjectionMatrix", 1, inv_projection_matrix_);
 
-                    for(auto pid_itr = draw_points_end_; pid_itr != draw_pids_ + config_->n_particles; ++pid_itr){
-                        auto pid = *pid_itr;
+                    for(size_t i = draw_points_end_; i < config_->n_particles; ++i){
+                        auto pid = draw_pids_[i];
                         if((config_->particles[pid].shape_id != shape_id) ||
                            (particle_flags_[pid] & ParticleFlags::Hidden)) continue;
                         sh_spheres_->setUniform("radius", config_->particles[pid].size);
@@ -1050,7 +1070,7 @@ void Scene::render(void){
     }
 
     //"Point Drawing Pass"
-    if(draw_points_end_ != draw_pids_){
+    if(draw_points_end_ != 0){
         glEnable(GL_BLEND);
         //glDisable(GL_DEPTH_TEST);
         glBindVertexArray(fullscreen_triangle_vao_);
@@ -1065,8 +1085,8 @@ void Scene::render(void){
             sh_points_->setUniform("clip_plane", 1, clip_plane_);
         }
 
-        for(auto pid_itr = draw_pids_; pid_itr != draw_points_end_; ++pid_itr){
-            auto pid = *pid_itr;
+        for(size_t i = 0; i < draw_points_end_; ++i){
+            auto pid = draw_pids_[i];
             if(particle_flags_[pid] & ParticleFlags::Hidden) continue;
             sh_points_->setUniform("ModelMatrix", 1, model_matrices_[pid]);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
@@ -1079,8 +1099,8 @@ void Scene::render(void){
     //"Selection Pass"
     glEnable(GL_STENCIL_TEST);
     //TODO: Do something nicer.
-    for(size_t selected_pid_itr = 0; selected_pid_itr < num_selected_pids_; ++selected_pid_itr){
-        int selected_pid = selected_pids_[selected_pid_itr];
+    for(size_t i = 0; i < num_selected_pids_; ++i){
+        int selected_pid = selected_pids_[i];
         int shape_id = config_->particles[selected_pid].shape_id;
 
         glBindVertexArray(shape_vaos_[shape_id]);

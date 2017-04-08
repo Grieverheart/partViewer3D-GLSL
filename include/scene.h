@@ -162,7 +162,7 @@ private:
     size_t num_selected_pids_;
 
     int* draw_pids_;
-    int* draw_points_end_;
+    size_t draw_points_end_;
 
     bool is_clip_plane_active_;
 	bool is_box_drawing_active_;
