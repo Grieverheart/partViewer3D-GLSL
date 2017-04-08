@@ -62,7 +62,9 @@ An example initialization script is included in the repository, named 'init.lua'
 where `n_part` is the total number of particles, `x`, `y`, and `z` are the particle coordinates, `phi` is the rotation angle, in degrees, around the axis with coordinates, `a_x`, `a_y`, and `a_z`. `sid` is the shape id for the particle. The shapes with respective ids, `sid`, are defined at the end of the file in `shape_info`, and can have either one of the following formats:
 
     sphere
+    
 or
+
     mesh path
 
 where `path` is the path of a wavefront .obj type file.
