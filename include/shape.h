@@ -5,7 +5,10 @@
 
 //TODO: Perhaps add definitions for move constructors for improved performance.
 struct Shape{
-    Shape(void){}
+    Shape(void):
+        type(OTHER)
+    {}
+
     Shape(const Shape& other){
         *this = other;
     }
