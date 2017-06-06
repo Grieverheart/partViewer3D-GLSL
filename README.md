@@ -55,11 +55,12 @@ This function will be called every time the mouse scroll is used. The `dz` argum
 An example initialization script is included in the repository, named 'init.lua'. The script expects to be passed a configuration file with the following format:
 
     n_part
+    x0 x1 x2 y0 y1 y2 z0 z1 z2
     x y z phi a_x a_y a_z sid
     ...
     sid shape_info
 
-where `n_part` is the total number of particles, `x`, `y`, and `z` are the particle coordinates, `phi` is the rotation angle, in degrees, around the axis with coordinates, `a_x`, `a_y`, and `a_z`. `sid` is the shape id for the particle. The shapes with respective ids, `sid`, are defined at the end of the file in `shape_info`, and can have either one of the following formats:
+where `n_part` is the total number of particles, xn, yn, zn are the coordinates of the three box vectors,`x`, `y`, and `z` are the particle coordinates, `phi` is the rotation angle, in degrees, around the axis with coordinates, `a_x`, `a_y`, and `a_z`. `sid` is the shape id for the particle. The shapes with respective ids, `sid`, are defined at the end of the file in `shape_info`, and can have either one of the following formats:
 
     sphere
     
