@@ -9,6 +9,12 @@ To build PartViewer3D, CMake (2.8.12+) is needed.
 
 ### Linux ###
 
+You will first need to install a few development libraries, namely, xorg, libgl, and libglu. For **Ubuntu** based systems you can install these and any other possible dependencies by running the following command on the terminal:
+
+`sudo apt install xorg-dev libgl1-mesa-dev libgl1-mesa-glx libglu-dev cmake build-essential`
+
+To compile, run the following commands on the terminal,
+
 1. Run `mkdir build && cd build` to create the build directory and move to it.
 
 2. Run `cmake -DCMAKE_INSTALL_PREFIX:PATH="installation path" ..` if you want to install the application to a specific location, or `cmake ..` to install it to the main directory.
@@ -70,6 +76,13 @@ or
     mesh path
 
 where `path` is the path of a wavefront .obj type file.
+
+As an example, you could copy and paste the following text in a file and pass it to the program to view a single sphere of unit radius at the center of a cubic box with side length 5.
+
+    1
+    5.0 0.0 0.0 0.0 5.0 0.0 0.0 0.0 5.0
+    2.5 2.5 2.5 0.0 1.0 0.0 0.0 0
+    0 sphere
 
 ## API Reference ##
 
