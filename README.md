@@ -1,4 +1,5 @@
 ## Introduction ##
+![crystal](plastic_crystal1.png)
 
 PartViewer3D is a simple 3D scene viewer written using modern OpenGL deferred shading techniques. The main usage case of PartViewer3D is for viewing e.g. hard particle configurations. As different people have different needs, the viewer can be programmed using Lua scripts through the exposed API.
 
