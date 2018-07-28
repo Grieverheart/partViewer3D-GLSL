@@ -97,8 +97,6 @@ static void call_lua_OnMouseScroll(lua_State* L, float dz){
     else lua_pop(L, 1);
 }
 
-//TODO: Move TW events to Gui class
-
 ////////////GLUT Keyboard Function Wrappers/////////////
 static void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods){
     call_lua_OnKey(L, key, action, mods);
@@ -211,9 +209,9 @@ int main(int argc,char *argv[] ){
 
     while(!glfwWindowShouldClose(window) && running){
         evt_mgr->processQueue();
-        call_lua_OnFrame(L);
         scene->process();
         scene->render();
+        call_lua_OnFrame(L);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -221,7 +219,6 @@ int main(int argc,char *argv[] ){
 
 	lua_close(L);
 
-    //TODO: Make these unique pointers.
     delete evt_mgr;
     delete scene;
 
